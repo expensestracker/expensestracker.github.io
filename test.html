@@ -1,224 +1,526 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Expense Tracker</title>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .summary-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-overlay {
+            transition: opacity 0.3s ease;
+        }
+        .modal-container {
+            transition: transform 0.3s ease;
+        }
+        #mobile-menu, #mobile-menu-backdrop {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        /* Hide date selector arrow */
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
+        input[type="date"] { appearance: textfield; -moz-appearance: textfield; }
+        input[type="date"]::-webkit-inner-spin-button,
+        input[type="date"]::-webkit-clear-button { display: none; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; appearance: none; }
+        /* New Input Field Styles */
+        .form-input {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-bottom-width: 2px;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.2s ease-in-out;
+            width: 100%;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1; /* indigo-500 */
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-100 text-gray-800">
 
-<!-- ================= Splash / Logged Out ================= -->
-<div id="logged-out-view" class="h-screen w-screen flex flex-col p-8">
-  <div class="flex-grow flex flex-col items-center justify-center text-center">
-    <div class="mb-8">
-      <div class="inline-block bg-indigo-600 text-white p-4 rounded-2xl shadow-lg">
-        <!-- Icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 9V7a2 2 0 00-2-2H5a2 
-                2 0 00-2 2v6a2 2 0 002 2h2m2 
-                4h10a2 2 0 002-2v-6a2 2 0 
-                00-2-2H9a2 2 0 00-2 2v6a2 2 
-                0 002 2zm7-5a2 2 0 11-4 0 
-                2 2 0 014 0z"/>
-        </svg>
-      </div>
-      <h1 class="text-3xl font-bold text-gray-800 mt-4">Expense Tracker</h1>
-      <p class="text-gray-500 mt-1">Your project finances, simplified.</p>
-      <!-- Version Code -->
-      <p class="text-xs text-gray-400 mt-1">v1.0.0</p>
+    <header id="app-header" class="bg-white/80 backdrop-blur-sm shadow-sm fixed top-0 left-0 right-0 z-20 hidden">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <button id="hamburger-btn" class="md:hidden p-2 -ml-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                    <div class="flex items-center ml-2 md:ml-0">
+                        <span class="text-xl font-semibold text-gray-800">Expense Tracker</span>
+                    </div>
+                </div>
+                <div id="user-profile-desktop" class="hidden md:flex items-center"></div>
+            </div>
+        </div>
+    </header>
+
+    <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
+        <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full">
+            <div id="user-profile-mobile" class="border-b pb-4 mb-4"></div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">Menu</h2>
+                <button id="close-menu-btn" class="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <nav>
+                <a href="#" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-indigo-50 text-gray-700">Dashboard</a>
+                <a href="#" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-indigo-50 text-gray-700">Reports</a>
+            </nav>
+            <div class="absolute bottom-5 left-5 right-5">
+                 <button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button>
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="mb-6 space-y-4">
-    <button id="google-login-btn" class="w-full bg-red-500 text-white py-2 px-4 rounded-lg">Login with Google</button>
-  </div>
-</div>
 
-<!-- ================= Logged In ================= -->
-<div id="logged-in-view" class="hidden h-screen w-screen flex flex-col p-4">
-
-  <!-- Project Selector -->
-  <div class="flex items-center justify-between mb-4">
-    <h2 class="text-xl font-semibold">Select Project</h2>
-    <div class="flex items-center space-x-2">
-      <select id="project-select" class="form-input text-sm border p-1 rounded"></select>
-      <button id="add-project-btn" class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-sm">+ Add</button>
+    <div id="logged-out-view" class="relative h-screen w-screen flex flex-col p-8">
+        <div class="flex-grow flex flex-col items-center justify-center text-center">
+            <div class="mb-8">
+                <div class="inline-block bg-indigo-600 text-white p-4 rounded-2xl shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mt-4">Expense Tracker</h1>
+                <p class="text-gray-500 mt-1">Your project finances, simplified.</p>
+            </div>
+        </div>
+        <div class="w-full max-w-sm mx-auto">
+            <button id="sign-in-btn" class="w-full bg-transparent border border-gray-400 text-gray-700 font-semibold py-3 px-4 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out flex items-center justify-center">
+                <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                <span id="sign-in-text">Sign in with Google</span>
+            </button>
+            <p id="auth-error" class="text-red-500 text-sm mt-2 h-4 text-center"></p>
+        </div>
+        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center">v1.1.0</p>
     </div>
-  </div>
 
-  <!-- Expense Form -->
-  <form id="expense-form" class="flex space-x-2 mb-4">
-    <input type="text" id="expense-title" placeholder="Title" class="form-input border p-1 rounded w-1/3">
-    <input type="number" id="expense-amount" placeholder="Amount" class="form-input border p-1 rounded w-1/3">
-    <button type="submit" class="bg-green-600 text-white px-4 py-1 rounded">Add</button>
-  </form>
+    <main id="logged-in-view" class="container mx-auto p-4 sm:p-6 lg:p-8 pt-24 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-8">
+                <div id="project-container" class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Project</h2>
+                    <div class="flex items-center space-x-2">
+                        <select id="project-selector" class="form-input flex-grow"></select>
+                        <button id="add-project-btn" title="Add New Project" class="flex-shrink-0 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 font-bold p-2 rounded-full transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="expense-form-container" class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Add New Expense</h2>
+                    <form id="expense-form" class="space-y-4">
+                        <div>
+                            <label for="material-name" class="block text-sm font-medium text-gray-700">Material Name</label>
+                            <input type="text" id="material-name" required class="form-input mt-1">
+                        </div>
+                        <div>
+                            <label for="cost" class="block text-sm font-medium text-gray-700">Cost (Amount)</label>
+                            <input type="number" id="cost" required min="0" step="0.01" class="form-input mt-1">
+                        </div>
+                        <div>
+                            <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+                            <input type="date" id="date" required class="form-input mt-1">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Add Expense</button>
+                    </form>
+                </div>
+            </div>
 
-  <!-- Expenses List -->
-  <ul id="expenses-list" class="space-y-2 flex-grow overflow-y-auto"></ul>
+            <div class="lg:col-span-2 space-y-8">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-4">Expense Summary</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="summary-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+                            <h3 class="text-lg font-semibold">Total Expenses (Project)</h3>
+                            <p id="final-expenses" class="text-3xl font-bold mt-2">₹0.00</p>
+                        </div>
+                        <div class="summary-card bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Material-wise Summary</h3>
+                            <div id="material-summary" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-4 gap-4">
+                        <h2 class="text-2xl font-semibold text-gray-800 whitespace-nowrap">All Expenses</h2>
+                        <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                            <div class="relative w-full sm:w-64">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                                </div>
+                                <input type="search" id="search-input" placeholder="Search..." class="form-input pl-10 text-sm">
+                            </div>
+                            <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                                <div class="w-full">
+                                    <label for="start-date-input" class="block text-xs font-medium text-gray-600 mb-1">From</label>
+                                    <div class="relative"><input id="start-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div>
+                                </div>
+                                <div class="w-full">
+                                    <label for="end-date-input" class="block text-xs font-medium text-gray-600 mb-1">To</label>
+                                    <div class="relative"><input id="end-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Material</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th></tr></thead>
+                            <tbody id="expense-list" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-  <button id="logout-btn" class="mt-4 bg-gray-600 text-white py-2 px-4 rounded-lg">Logout</button>
-</div>
+    <div id="edit-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50">
+        <div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-lg text-center font-medium">Edit Expense</h3>
+            <form id="edit-expense-form" class="space-y-4 mt-4 text-left">
+                <input type="hidden" id="edit-expense-id">
+                <div><label for="edit-material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="edit-material-name" required class="form-input mt-1"></div>
+                <div><label for="edit-cost" class="block text-sm font-medium">Cost</label><input type="number" id="edit-cost" required min="0" step="0.01" class="form-input mt-1"></div>
+                <div><label for="edit-date" class="block text-sm font-medium">Date</label><input type="date" id="edit-date" required class="form-input mt-1"></div>
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" id="cancel-edit-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" id="save-edit-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="add-project-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50">
+        <div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <h3 class="text-lg text-center font-medium">Add New Project</h3>
+            <form id="add-project-form" class="space-y-4 mt-4 text-left">
+                <div><label for="project-name" class="block text-sm font-medium">Project Name</label><input type="text" id="project-name" required class="form-input mt-1"></div>
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" id="cancel-add-project-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<script>
-  // ================= Firebase Init =================
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_DOMAIN",
-    projectId: "YOUR_PROJECT_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  const appId = "construction-expenses"; // base path
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+            authDomain: "construction-expenses-app.firebaseapp.com",
+            projectId: "construction-expenses-app",
+            storageBucket: "construction-expenses-app.appspot.com",
+            messagingSenderId: "944353147981",
+            appId: "1:944353147981:web:36ff635b184d5eac69b004"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-  // ================= State =================
-  let currentUser = null;
-  let currentProjectId = null;
-  let projectsUnsubscribe = null;
-  let expensesUnsubscribe = null;
-  let allProjects = [];
+        let currentUser = null;
+        let expensesUnsubscribe = null;
+        let projectsUnsubscribe = null;
+        let allExpenses = [];
+        let currentProjectId = null;
 
-  // ================= DOM Elements =================
-  const loggedOutView = document.getElementById("logged-out-view");
-  const loggedInView = document.getElementById("logged-in-view");
-  const loginBtn = document.getElementById("google-login-btn");
-  const logoutBtn = document.getElementById("logout-btn");
-  const projectSelect = document.getElementById("project-select");
-  const addProjectBtn = document.getElementById("add-project-btn");
-  const expenseForm = document.getElementById("expense-form");
-  const expensesList = document.getElementById("expenses-list");
-  const expenseTitle = document.getElementById("expense-title");
-  const expenseAmount = document.getElementById("expense-amount");
+        const appHeader = document.getElementById('app-header');
+        const loggedInView = document.getElementById('logged-in-view');
+        const loggedOutView = document.getElementById('logged-out-view');
+        const signInBtn = document.getElementById('sign-in-btn');
+        const signInText = document.getElementById('sign-in-text');
+        const authErrorEl = document.getElementById('auth-error');
+        const userProfileDesktop = document.getElementById('user-profile-desktop');
+        const userProfileMobile = document.getElementById('user-profile-mobile');
+        const expenseForm = document.getElementById('expense-form');
+        const expenseList = document.getElementById('expense-list');
+        const finalExpensesEl = document.getElementById('final-expenses');
+        const materialSummaryEl = document.getElementById('material-summary');
+        const editModal = document.getElementById('edit-modal');
+        const editExpenseForm = document.getElementById('edit-expense-form');
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenuBtn = document.getElementById('close-menu-btn');
+        const mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
+        const searchInput = document.getElementById('search-input');
+        const startDateInput = document.getElementById('start-date-input');
+        const endDateInput = document.getElementById('end-date-input');
+        const projectSelector = document.getElementById('project-selector');
+        const addProjectBtn = document.getElementById('add-project-btn');
+        const addProjectModal = document.getElementById('add-project-modal');
+        const addProjectForm = document.getElementById('add-project-form');
+        const cancelAddProjectBtn = document.getElementById('cancel-add-project-btn');
+        
+        const provider = new GoogleAuthProvider();
 
-  // ================= Auth =================
-  loginBtn.addEventListener("click", async () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
-  });
-  logoutBtn.addEventListener("click", async () => auth.signOut());
+        signInBtn.addEventListener('click', async () => {
+            signInBtn.disabled = true;
+            signInText.textContent = "Signing in...";
+            authErrorEl.textContent = "";
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google Sign-In Error:", error);
+                authErrorEl.textContent = "Sign-in cancelled or failed.";
+                signInBtn.disabled = false;
+                signInText.textContent = "Sign in with Google";
+            }
+        });
 
-  auth.onAuthStateChanged(async user => {
-    if (user) {
-      currentUser = user;
-      loggedOutView.classList.add("hidden");
-      loggedInView.classList.remove("hidden");
-      await migrateOldData(user.uid);
-      listenForProjects(user.uid);
-    } else {
-      currentUser = null;
-      loggedOutView.classList.remove("hidden");
-      loggedInView.classList.add("hidden");
-      if (projectsUnsubscribe) projectsUnsubscribe();
-      if (expensesUnsubscribe) expensesUnsubscribe();
-    }
-  });
+        const handleSignOut = () => signOut(auth).catch(error => console.error("Sign out error", error));
 
-  // ================= Migration =================
-  async function migrateOldData(uid) {
-    const oldExpensesRef = db.collection(`artifacts/${appId}/users/${uid}/expenses`);
-    const snap = await oldExpensesRef.get();
-    if (snap.empty) return;
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user && !user.isAnonymous) {
+                setupUIForUser(user);
+                listenForProjects(user.uid);
+                appHeader.classList.remove('hidden');
+                loggedInView.classList.remove('hidden');
+                loggedOutView.classList.add('hidden');
+            } else {
+                if (expensesUnsubscribe) expensesUnsubscribe();
+                if (projectsUnsubscribe) projectsUnsubscribe();
+                clearUI();
+                appHeader.classList.add('hidden');
+                loggedInView.classList.add('hidden');
+                loggedOutView.classList.remove('hidden');
+            }
+        });
 
-    // Ensure Default Project exists
-    const projectsRef = db.collection(`artifacts/${appId}/users/${uid}/projects`);
-    let defaultProjDoc = await projectsRef.where("name", "==", "Default Project").get();
-    let defaultProjId;
-    if (defaultProjDoc.empty) {
-      const newProj = await projectsRef.add({ name: "Default Project" });
-      defaultProjId = newProj.id;
-    } else {
-      defaultProjId = defaultProjDoc.docs[0].id;
-    }
+        function setupUIForUser(user) {
+            const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
+            const profileHTML = `<div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
+            const mobileProfileHTML = `<div class="flex items-center"><div class="w-12 h-12 bg-gray-200 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold text-gray-800">${escapeHTML(user.displayName)}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
+            userProfileDesktop.innerHTML = profileHTML;
+            userProfileMobile.innerHTML = mobileProfileHTML;
+            document.getElementById('date').valueAsDate = new Date();
+        }
 
-    // Move expenses
-    const batch = db.batch();
-    snap.forEach(doc => {
-      const newRef = db.collection(`artifacts/${appId}/users/${uid}/projects/${defaultProjId}/expenses`).doc(doc.id);
-      batch.set(newRef, doc.data());
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-  }
+        function clearUI() {
+            userProfileDesktop.innerHTML = '';
+            userProfileMobile.innerHTML = '';
+            expenseList.innerHTML = '';
+            projectSelector.innerHTML = '';
+            updateSummaries([]);
+        }
 
-  // ================= Projects =================
-  function listenForProjects(uid) {
-    if (projectsUnsubscribe) projectsUnsubscribe();
-    const projectsRef = db.collection(`artifacts/${appId}/users/${uid}/projects`);
-    projectsUnsubscribe = projectsRef.onSnapshot(snapshot => {
-      allProjects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      renderProjects();
-    });
-  }
+        const openMenu = () => { mobileMenuBackdrop.classList.remove('pointer-events-none'); mobileMenuBackdrop.classList.add('opacity-100'); mobileMenu.classList.remove('-translate-x-full'); };
+        const closeMenu = () => { mobileMenuBackdrop.classList.add('pointer-events-none'); mobileMenuBackdrop.classList.remove('opacity-100'); mobileMenu.classList.add('-translate-x-full'); };
+        hamburgerBtn.addEventListener('click', openMenu);
+        closeMenuBtn.addEventListener('click', closeMenu);
+        mobileMenuBackdrop.addEventListener('click', (e) => { if (e.target === mobileMenuBackdrop) closeMenu(); });
+        mobileSignOutBtn.addEventListener('click', handleSignOut);
 
-  function renderProjects() {
-    projectSelect.innerHTML = "";
-    if (allProjects.length === 0) {
-      projectSelect.innerHTML = `<option disabled selected>No Projects</option>`;
-      return;
-    }
-    allProjects.forEach(proj => {
-      const opt = document.createElement("option");
-      opt.value = proj.id;
-      opt.textContent = proj.name;
-      if (!currentProjectId) currentProjectId = proj.id;
-      if (proj.id === currentProjectId) opt.selected = true;
-      projectSelect.appendChild(opt);
-    });
-    listenForExpenses(currentUser.uid, currentProjectId);
-  }
+        [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
 
-  addProjectBtn.addEventListener("click", async () => {
-    const name = prompt("Enter new project name:");
-    if (name && currentUser) {
-      const projectsRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/projects`);
-      await projectsRef.add({ name });
-    }
-  });
+        function applyFilters() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            const filtered = allExpenses.filter(exp => (exp.material.toLowerCase().includes(searchTerm)) && (!startDate || exp.date >= startDate) && (!endDate || exp.date <= endDate));
+            renderExpenses(filtered);
+        }
 
-  projectSelect.addEventListener("change", e => {
-    currentProjectId = e.target.value;
-    listenForExpenses(currentUser.uid, currentProjectId);
-  });
+        function listenForProjects(uid) {
+            if (projectsUnsubscribe) projectsUnsubscribe();
+            if (!uid) return;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+            projectsUnsubscribe = onSnapshot(projectsRef, (snapshot) => {
+                if (snapshot.empty) { createDefaultProject(uid); return; }
+                const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                populateProjectSelector(projects);
+                const projectIds = projects.map(p => p.id);
+                if (!currentProjectId || !projectIds.includes(currentProjectId)) {
+                    currentProjectId = projects[0]?.id || null;
+                }
+                projectSelector.value = currentProjectId;
+                listenForExpenses(uid, currentProjectId);
+            }, error => console.error("Error listening for projects:", error));
+        }
 
-  // ================= Expenses =================
-  function listenForExpenses(uid, projectId) {
-    if (expensesUnsubscribe) expensesUnsubscribe();
-    const expensesRef = db.collection(`artifacts/${appId}/users/${uid}/projects/${projectId}/expenses`);
-    expensesUnsubscribe = expensesRef.orderBy("createdAt", "desc").onSnapshot(snapshot => {
-      expensesList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const exp = doc.data();
-        const li = document.createElement("li");
-        li.className = "p-2 border rounded flex justify-between";
-        li.innerHTML = `<span>${exp.title} - ₹${exp.amount}</span>
-          <button class="text-red-500" onclick="deleteExpense('${uid}','${projectId}','${doc.id}')">x</button>`;
-        expensesList.appendChild(li);
-      });
-    });
-  }
+        async function createDefaultProject(uid) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+            await addDoc(projectsRef, { name: 'Default Project', createdAt: new Date().toISOString() });
+        }
 
-  expenseForm.addEventListener("submit", async e => {
-    e.preventDefault();
-    if (!expenseTitle.value || !expenseAmount.value) return;
-    const expensesRef = db.collection(`artifacts/${appId}/users/${currentUser.uid}/projects/${currentProjectId}/expenses`);
-    await expensesRef.add({
-      title: expenseTitle.value,
-      amount: parseFloat(expenseAmount.value),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    expenseTitle.value = "";
-    expenseAmount.value = "";
-  });
+        function populateProjectSelector(projects) {
+            projectSelector.innerHTML = '';
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                projectSelector.appendChild(option);
+            });
+        }
+        
+        projectSelector.addEventListener('change', () => {
+            currentProjectId = projectSelector.value;
+            renderExpenses([]);
+            updateSummaries([]);
+            listenForExpenses(currentUser.uid, currentProjectId);
+        });
 
-  window.deleteExpense = async (uid, projectId, expId) => {
-    const ref = db.doc(`artifacts/${appId}/users/${uid}/projects/${projectId}/expenses/${expId}`);
-    await ref.delete();
-  };
-</script>
+        function listenForExpenses(uid, projectId) {
+            if (expensesUnsubscribe) expensesUnsubscribe();
+            if (!uid || !projectId) {
+                allExpenses = [];
+                applyFilters();
+                updateSummaries([]);
+                return;
+            };
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
+            const q = query(expensesRef, where("projectId", "==", projectId));
+            expensesUnsubscribe = onSnapshot(q, (snapshot) => {
+                allExpenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+                applyFilters();
+                updateSummaries(allExpenses);
+            }, error => {
+                console.error("Error listening for expenses:", error);
+                expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Error loading data. Check Firestore rules.</td></tr>`;
+            });
+        }
+
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser || !currentProjectId) return;
+            const materialName = document.getElementById('material-name').value.trim();
+            const cost = parseFloat(document.getElementById('cost').value);
+            const date = document.getElementById('date').value;
+            if (materialName && !isNaN(cost) && date) {
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+                    const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+                    await addDoc(expensesRef, { material: materialName, cost, date, projectId: currentProjectId });
+                    expenseForm.reset();
+                    document.getElementById('date').valueAsDate = new Date();
+                } catch (error) { console.error("Error adding document:", error); }
+            }
+        });
+
+        function renderExpenses(expenses) {
+            expenseList.innerHTML = '';
+            if (expenses.length === 0) {
+                expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No matching expenses found for this project.</td></tr>`;
+                return;
+            }
+            expenses.forEach(expense => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50";
+                const fCost = `₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const fDate = new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
+                tr.innerHTML = `<td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-6 py-4"><div class="text-sm">${fCost}</div></td><td class="px-6 py-4"><div class="text-sm">${fDate}</div></td><td class="px-6 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td>`;
+                expenseList.appendChild(tr);
+            });
+            document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
+            document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
+        }
+        
+        async function handleDelete(event) {
+            const id = event.target.dataset.id;
+            if (id && confirm("Are you sure?")) {
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+                    const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
+                    await deleteDoc(docRef);
+                } catch (error) { console.error("Error removing document: ", error); }
+            }
+        }
+
+        function handleEdit(event) {
+            const id = event.target.dataset.id;
+            const expense = allExpenses.find(e => e.id === id);
+            if (!expense) return;
+            document.getElementById('edit-expense-id').value = expense.id;
+            document.getElementById('edit-material-name').value = expense.material;
+            document.getElementById('edit-cost').value = expense.cost;
+            document.getElementById('edit-date').value = expense.date;
+            editModal.classList.remove('hidden');
+        }
+
+        editExpenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-expense-id').value;
+            const updatedData = {
+                material: document.getElementById('edit-material-name').value.trim(),
+                cost: parseFloat(document.getElementById('edit-cost').value),
+                date: document.getElementById('edit-date').value,
+            };
+            if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+                try {
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+                    const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
+                    await updateDoc(docRef, updatedData);
+                    closeEditModal();
+                } catch (error) { console.error("Error updating document:", error); }
+            }
+        });
+
+        const closeEditModal = () => editModal.classList.add('hidden');
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+        editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+
+        addProjectBtn.addEventListener('click', () => addProjectModal.classList.remove('hidden'));
+        cancelAddProjectBtn.addEventListener('click', () => addProjectModal.classList.add('hidden'));
+        addProjectModal.addEventListener('click', (e) => { if (e.target === addProjectModal) addProjectModal.classList.add('hidden'); });
+
+        addProjectForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const projectName = document.getElementById('project-name').value.trim();
+            if (projectName && currentUser) {
+                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+                 const projectsRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`);
+                 await addDoc(projectsRef, { name: projectName, createdAt: new Date().toISOString() });
+                 addProjectForm.reset();
+                 addProjectModal.classList.add('hidden');
+            }
+        });
+
+        function updateSummaries(expenses) {
+            const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
+            finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            const materialTotals = expenses.reduce((acc, exp) => {
+                const key = exp.material.trim().toLowerCase();
+                acc[key] = (acc[key] || 0) + exp.cost;
+                return acc;
+            }, {});
+            materialSummaryEl.innerHTML = '';
+            const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
+            if (sorted.length === 0) {
+                materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
+                return;
+            }
+            sorted.forEach(key => {
+                const total = materialTotals[key];
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center text-sm";
+                const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+                div.innerHTML = `<span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+                materialSummaryEl.appendChild(div);
+            });
+        }
+        
+        const escapeHTML = (str) => { const p = document.createElement('p'); p.appendChild(document.createTextNode(str)); return p.innerHTML; };
+
+    </script>
 </body>
 </html>
