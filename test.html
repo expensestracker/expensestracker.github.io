@@ -15,7 +15,6 @@
         input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
         .form-input { background-color: #f8fafc; border: 1px solid #e2e8f0; border-bottom-width: 2px; border-radius: 0.375rem; padding: 0.5rem 0.75rem; transition: border-color 0.2s ease-in-out; width: 100%; }
         .form-input:focus { outline: none; border-color: #6366f1; }
-        .pagination-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .view { display: none; }
         .view.active { display: flex; }
     </style>
@@ -30,7 +29,7 @@
             </div>
             <h1 class="text-3xl font-bold text-gray-800 mt-4">Expense Tracker</h1>
         </div>
-        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center left-0">Version 1.2.0</p>
+        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center left-0">Version 1.3.0</p>
     </div>
 
     <!-- Login/Signup View -->
@@ -133,7 +132,6 @@
                                 </div>
                             </div>
                             <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Material</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Cost</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Date</th><th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th></tr></thead><tbody id="expense-list" class="bg-white divide-y divide-gray-200"></tbody></table></div>
-                            <div id="pagination-controls" class="flex justify-between items-center mt-4"><button id="prev-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Previous</button><span id="page-info" class="text-sm text-gray-600"></span><button id="next-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Next</button></div>
                         </div>
                     </div>
                     <div id="no-project-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow-md"><p>Please select a project to view expenses, or add a new one to get started.</p></div>
@@ -149,7 +147,7 @@
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, setLogLevel, where, orderBy, limit, getDocs, startAfter, endBefore, limitToLast, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, setLogLevel, where, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
@@ -169,13 +167,9 @@
     let currentUser = null;
     let activeProjectId = null;
     let projectsUnsubscribe = null;
-    let summaryUnsubscribe = null;
-    let lastVisibleDoc = null;
-    let firstVisibleDoc = null;
-    let currentPage = 1;
-    const EXPENSES_PER_PAGE = 15;
+    let expensesUnsubscribe = null;
+    let allExpensesForProject = [];
     let isSigningUp = false;
-    let allExpensesForProject = []; // For client-side filtering
 
     // --- DOM Elements ---
     const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
@@ -197,9 +191,6 @@
     const expenseList = document.getElementById('expense-list');
     const finalExpensesEl = document.getElementById('final-expenses');
     const materialSummaryEl = document.getElementById('material-summary');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const pageInfo = document.getElementById('page-info');
     const appHeader = document.getElementById('app-header');
     const userProfileDesktop = document.getElementById('user-profile-desktop');
     const userProfileMobile = document.getElementById('user-profile-mobile');
@@ -236,7 +227,7 @@
         } else {
             showView('auth');
             if (projectsUnsubscribe) projectsUnsubscribe();
-            if (summaryUnsubscribe) summaryUnsubscribe();
+            if (expensesUnsubscribe) expensesUnsubscribe();
             activeProjectId = null;
         }
     });
@@ -315,7 +306,7 @@
     async function migrateOldExpenses(uid, generalProjectId) {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
         const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", null), limit(100));
+        const q = query(expensesRef, where("projectId", "==", null));
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) return;
@@ -336,7 +327,6 @@
             
             if (projects.length === 0) {
                 const generalProjectRef = await addDoc(projectsRef, { name: "General" });
-                // The listener will re-run automatically with the new project.
                 return;
             }
             
@@ -353,8 +343,7 @@
             }
             projectSelect.value = activeProjectId;
             toggleDashboardVisibility(true);
-            fetchExpenses('initial');
-            listenForSummary();
+            listenForExpenses(uid, activeProjectId);
         });
     }
 
@@ -371,8 +360,7 @@
 
     projectSelect.addEventListener('change', () => {
         activeProjectId = projectSelect.value;
-        fetchExpenses('initial');
-        listenForSummary();
+        listenForExpenses(currentUser.uid, activeProjectId);
     });
 
     function populateProjectDropdown(projects) {
@@ -386,51 +374,35 @@
                 e.preventDefault();
                 activeProjectId = e.target.dataset.projectId;
                 projectSelect.value = activeProjectId;
-                fetchExpenses('initial');
-                listenForSummary();
+                listenForExpenses(currentUser.uid, activeProjectId);
                 closeMenu();
             });
         });
     }
 
     function toggleDashboardVisibility(hasProjects) {
-        expenseDashboard.style.display = hasProjects ? 'block' : 'none';
+        expenseDashboard.style.display = hasProjects ? 'flex' : 'none';
         noProjectMessage.style.display = hasProjects ? 'none' : 'block';
     }
 
-    // --- Expenses (Pagination & Filtering) ---
-    async function fetchExpenses(direction = 'initial') {
-        if (!currentUser || !activeProjectId) {
-            renderExpenses([]);
+    // --- Expenses & Filtering ---
+    function listenForExpenses(uid, projectId) {
+        if (expensesUnsubscribe) expensesUnsubscribe();
+        if (!uid || !projectId) {
+            allExpensesForProject = [];
+            applyFilters();
+            updateSummaries([]);
             return;
-        }
+        };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-        const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-        
-        let qConstraints = [where("projectId", "==", activeProjectId), orderBy("date", "desc")];
-        
-        if (direction === 'next' && lastVisibleDoc) qConstraints.push(startAfter(lastVisibleDoc));
-        if (direction === 'prev' && firstVisibleDoc) qConstraints.push(endBefore(firstVisibleDoc), limitToLast(EXPENSES_PER_PAGE));
-        else qConstraints.push(limit(EXPENSES_PER_PAGE));
-
-        const q = query(expensesRef, ...qConstraints);
-        const snapshot = await getDocs(q);
-        const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        if (direction === 'initial') currentPage = 1;
-        if (direction === 'next' && snapshot.docs.length > 0) currentPage++;
-        if (direction === 'prev' && currentPage > 1) currentPage--;
-        
-        firstVisibleDoc = snapshot.docs[0];
-        lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
-        
-        // Fetch all for client-side filtering
-        const allQuery = query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`), where("projectId", "==", activeProjectId));
-        const allSnapshot = await getDocs(allQuery);
-        allExpensesForProject = allSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        applyFilters();
-        updatePaginationButtons(snapshot.size);
+        const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
+        const q = query(expensesRef, where("projectId", "==", projectId));
+        expensesUnsubscribe = onSnapshot(q, (snapshot) => {
+            allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
+            applyFilters();
+            updateSummaries(allExpensesForProject);
+        });
     }
     
     function applyFilters() {
@@ -451,15 +423,6 @@
 
     [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
     
-    function updatePaginationButtons(docsOnPage) {
-        nextBtn.disabled = docsOnPage < EXPENSES_PER_PAGE;
-        prevBtn.disabled = currentPage <= 1;
-        pageInfo.textContent = `Page ${currentPage}`;
-    }
-
-    nextBtn.addEventListener('click', () => fetchExpenses('next'));
-    prevBtn.addEventListener('click', () => fetchExpenses('prev'));
-    
     expenseForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentUser || !activeProjectId) return;
@@ -472,7 +435,6 @@
             await addDoc(expensesRef, { material, cost, date, projectId: activeProjectId });
             expenseForm.reset();
             document.getElementById('date').valueAsDate = new Date();
-            fetchExpenses('initial');
         }
     });
 
@@ -496,25 +458,49 @@
             `;
             expenseList.appendChild(tr);
         });
-        // Add event listeners for edit/delete buttons
+        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
+        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
     }
+
+    async function handleDelete(event) {
+        const id = event.target.dataset.id;
+        if (id && confirm("Are you sure?")) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id));
+        }
+    }
+
+    function handleEdit(event) {
+        const id = event.target.dataset.id;
+        const expense = allExpensesForProject.find(e => e.id === id);
+        if (!expense) return;
+        document.getElementById('edit-expense-id').value = expense.id;
+        document.getElementById('edit-material-name').value = expense.material;
+        document.getElementById('edit-cost').value = expense.cost;
+        document.getElementById('edit-date').value = expense.date;
+        editModal.classList.remove('hidden');
+    }
+
+    editExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-expense-id').value;
+        const updatedData = {
+            material: document.getElementById('edit-material-name').value.trim(),
+            cost: parseFloat(document.getElementById('edit-cost').value),
+            date: document.getElementById('edit-date').value,
+        };
+        if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id), updatedData);
+            closeEditModal();
+        }
+    });
+    
+    const closeEditModal = () => editModal.classList.add('hidden');
+    cancelEditBtn.addEventListener('click', closeEditModal);
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
 
     // --- Summaries ---
-    function listenForSummary() {
-        if (summaryUnsubscribe) summaryUnsubscribe();
-        if (!currentUser || !activeProjectId) {
-            updateSummaries([]);
-            return;
-        }
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-        const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", activeProjectId));
-        summaryUnsubscribe = onSnapshot(q, snapshot => {
-            const allProjectExpenses = snapshot.docs.map(doc => doc.data());
-            updateSummaries(allProjectExpenses);
-        });
-    }
-
     function updateSummaries(expenses) {
         const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
         finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -543,10 +529,6 @@
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(str || ''));
         return div.innerHTML;
-    }
-    function getSimpleId(uid) {
-        if (!uid || uid.length < 6) return uid;
-        return `${uid.substring(0, 2)}...${uid.substring(uid.length - 3)}`;
     }
 </script>
 </body>
