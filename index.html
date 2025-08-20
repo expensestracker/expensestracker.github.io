@@ -36,7 +36,7 @@
     <div id="auth-view" class="view h-screen w-screen flex-col items-center justify-center p-4">
         <div class="w-full max-w-sm">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">Welcome</h1>
+                <h1 id="auth-title" class="text-3xl font-bold text-gray-800">Welcome</h1>
                 <p class="text-gray-500 mt-1">Sign in or create an account to continue.</p>
             </div>
             <div class="bg-white p-8 rounded-lg shadow-md">
@@ -44,16 +44,15 @@
                     <input type="email" id="email-input" placeholder="Email Address" required class="form-input">
                     <input type="password" id="password-input" placeholder="Password" required class="form-input">
                     <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
-                    <button type="submit" id="email-signin-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Sign In</button>
-                    <button type="button" id="email-signup-btn" class="w-full bg-gray-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-700">Sign Up</button>
+                    <button type="submit" id="email-action-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Sign In</button>
                 </form>
-                <div class="text-center my-4">
-                    <a href="#" id="forgot-password-link" class="text-xs text-indigo-600 hover:underline">Forgot Password?</a>
+                <div class="text-center my-4 text-xs">
+                    <a href="#" id="auth-toggle-link" class="text-indigo-600 hover:underline">Need an account? Sign Up</a>
+                    <span class="mx-1 text-gray-300">|</span>
+                    <a href="#" id="forgot-password-link" class="text-indigo-600 hover:underline">Forgot Password?</a>
                 </div>
                 <div class="relative flex py-2 items-center">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="flex-shrink mx-4 text-gray-400 text-xs">OR</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
+                    <div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink mx-4 text-gray-400 text-xs">OR</span><div class="flex-grow border-t border-gray-300"></div>
                 </div>
                 <button id="google-signin-btn" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-50 flex items-center justify-center">
                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
@@ -69,15 +68,22 @@
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center">
-                        <button id="hamburger-btn" class="md:hidden p-2 -ml-2 rounded-md text-gray-500 hover:bg-gray-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        </button>
+                        <button id="hamburger-btn" class="md:hidden p-2 -ml-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
                         <span class="ml-2 md:ml-0 text-xl font-semibold text-gray-800">Expense Tracker</span>
                     </div>
                     <div id="user-profile-desktop" class="hidden md:flex items-center"></div>
                 </div>
             </div>
         </header>
+
+        <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
+            <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full">
+                <div id="user-profile-mobile" class="border-b pb-4 mb-4"></div>
+                <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold">Menu</h2><button id="close-menu-btn" class="p-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+                <nav><a href="#" class="flex items-center py-2.5 px-4 rounded hover:bg-indigo-50">Dashboard</a><a href="#" class="flex items-center py-2.5 px-4 rounded hover:bg-indigo-50">Reports</a></nav>
+                <div class="absolute bottom-5 left-5 right-5"><button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button></div>
+            </div>
+        </div>
 
         <main class="container mx-auto p-4 sm:p-6 lg:p-8 pt-24">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -86,31 +92,16 @@
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Projects</h2>
                         <div class="space-y-4">
-                            <div>
-                                <label for="project-select" class="block text-sm font-medium">Current Project</label>
-                                <select id="project-select" class="form-input mt-1"></select>
-                            </div>
-                            <form id="add-project-form" class="flex gap-2">
-                                <input type="text" id="new-project-name" placeholder="New project name..." required class="form-input text-sm">
-                                <button type="submit" class="bg-indigo-600 text-white px-4 rounded-md hover:bg-indigo-700 text-sm font-semibold">Add</button>
-                            </form>
+                            <div><label for="project-select" class="block text-sm font-medium">Current Project</label><select id="project-select" class="form-input mt-1"></select></div>
+                            <form id="add-project-form" class="flex gap-2"><input type="text" id="new-project-name" placeholder="New project name..." required class="form-input text-sm"><button type="submit" class="bg-indigo-600 text-white px-4 rounded-md hover:bg-indigo-700 text-sm font-semibold">Add</button></form>
                         </div>
                     </div>
                     <div id="add-expense-container" class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Add New Expense</h2>
                         <form id="expense-form" class="space-y-4">
-                            <div>
-                                <label for="material-name" class="block text-sm font-medium">Material Name</label>
-                                <input type="text" id="material-name" required class="form-input mt-1">
-                            </div>
-                            <div>
-                                <label for="cost" class="block text-sm font-medium">Cost (Amount)</label>
-                                <input type="number" id="cost" required min="0" step="0.01" class="form-input mt-1">
-                            </div>
-                            <div>
-                                <label for="date" class="block text-sm font-medium">Date</label>
-                                <input type="date" id="date" required class="form-input mt-1">
-                            </div>
+                            <div><label for="material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="material-name" required class="form-input mt-1"></div>
+                            <div><label for="cost" class="block text-sm font-medium">Cost (Amount)</label><input type="number" id="cost" required min="0" step="0.01" class="form-input mt-1"></div>
+                            <div><label for="date" class="block text-sm font-medium">Date</label><input type="date" id="date" required class="form-input mt-1"></div>
                             <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Add Expense</button>
                         </form>
                     </div>
@@ -120,134 +111,116 @@
                 <div class="lg:col-span-2 space-y-8">
                     <div id="expense-dashboard" class="space-y-8">
                         <div>
-                            <h2 class="text-2xl font-semibold mb-4">Expense Summary</h2>
+                            <h2 class="text-2xl font-semibold mb-4">Project Summary</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="summary-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
-                                    <h3 class="text-lg font-semibold">Total Expenses</h3>
-                                    <p id="final-expenses" class="text-3xl font-bold mt-2">₹0.00</p>
-                                </div>
-                                <div class="summary-card bg-white p-6 rounded-lg shadow-md">
-                                    <h3 class="text-lg font-semibold mb-3">Material-wise Summary</h3>
-                                    <div id="material-summary" class="space-y-2 max-h-48 overflow-y-auto"></div>
-                                </div>
+                                <div class="summary-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg"><h3 class="text-lg font-semibold">Total Expenses</h3><p id="final-expenses" class="text-3xl font-bold mt-2">₹0.00</p></div>
+                                <div class="summary-card bg-white p-6 rounded-lg shadow-md"><h3 class="text-lg font-semibold mb-3">Material-wise Summary</h3><div id="material-summary" class="space-y-2 max-h-48 overflow-y-auto"></div></div>
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-4 gap-4">
                                 <h2 class="text-2xl font-semibold whitespace-nowrap">All Expenses</h2>
-                                <!-- Filter controls here -->
+                                <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                                    <div class="relative w-full sm:w-64"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg></div><input type="search" id="search-input" placeholder="Search..." class="form-input pl-10 text-sm"></div>
+                                    <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                                        <div class="w-full"><label for="start-date-input" class="block text-xs font-medium mb-1">From</label><div class="relative"><input id="start-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div></div>
+                                        <div class="w-full"><label for="end-date-input" class="block text-xs font-medium mb-1">To</label><div class="relative"><input id="end-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase">Material</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase">Cost</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium uppercase">Date</th>
-                                            <th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="expense-list" class="bg-white divide-y divide-gray-200"></tbody>
-                                </table>
-                            </div>
-                            <div id="pagination-controls" class="flex justify-between items-center mt-4">
-                                <button id="prev-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Previous</button>
-                                <span id="page-info" class="text-sm text-gray-600"></span>
-                                <button id="next-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Next</button>
-                            </div>
+                            <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Material</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Cost</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Date</th><th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th></tr></thead><tbody id="expense-list" class="bg-white divide-y divide-gray-200"></tbody></table></div>
+                            <div id="pagination-controls" class="flex justify-between items-center mt-4"><button id="prev-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Previous</button><span id="page-info" class="text-sm text-gray-600"></span><button id="next-btn" class="pagination-btn px-4 py-2 bg-gray-200 text-sm font-medium rounded-md hover:bg-gray-300">Next</button></div>
                         </div>
                     </div>
-                    <div id="no-project-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow-md">
-                        <p>Please select a project to view expenses, or add a new one to get started.</p>
-                    </div>
+                    <div id="no-project-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow-md"><p>Please select a project to view expenses, or add a new one to get started.</p></div>
                 </div>
             </div>
         </main>
     </div>
     
-    <!-- Other elements like mobile menu and modals -->
-</body>
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 class="text-lg text-center font-medium">Edit Expense</h3><form id="edit-expense-form" class="space-y-4 mt-4 text-left"><input type="hidden" id="edit-expense-id"><div><label for="edit-material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="edit-material-name" required class="form-input mt-1"></div><div><label for="edit-cost" class="block text-sm font-medium">Cost</label><input type="number" id="edit-cost" required min="0" step="0.01" class="form-input mt-1"></div><div><label for="edit-date" class="block text-sm font-medium">Date</label><input type="date" id="edit-date" required class="form-input mt-1"></div><div class="flex justify-end space-x-2 pt-4"><button type="button" id="cancel-edit-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" id="save-edit-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button></div></form></div></div>
+
 <script type="module">
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, setLogLevel, where, orderBy, limit, getDocs, startAfter, endBefore, limitToLast } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- Config and Init ---
-    const firebaseConfig = { /* ... your config ... */ };
+    const firebaseConfig = {
+        apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+        authDomain: "construction-expenses-app.firebaseapp.com",
+        projectId: "construction-expenses-app",
+        storageBucket: "construction-expenses-app.firebasestorage.app",
+        messagingSenderId: "944353147981",
+        appId: "1:944353147981:web:36ff635b184d5eac69b004"
+    };
+    
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    setLogLevel('debug');
 
-    // --- State ---
+    // --- Global State ---
     let currentUser = null;
     let activeProjectId = null;
     let projectsUnsubscribe = null;
-    let expensesUnsubscribe = null;
+    let summaryUnsubscribe = null;
+    let lastVisibleDoc = null;
+    let firstVisibleDoc = null;
+    let currentPage = 1;
+    const EXPENSES_PER_PAGE = 15;
+    let isSigningUp = false;
 
     // --- DOM Elements ---
-    const views = {
-        splash: document.getElementById('splash-view'),
-        auth: document.getElementById('auth-view'),
-        app: document.getElementById('app-view'),
-    };
-    // ... other DOM elements ...
+    const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
+    const authTitle = document.getElementById('auth-title');
+    const emailForm = document.getElementById('email-form');
+    const emailInput = document.getElementById('email-input');
+    const passwordInput = document.getElementById('password-input');
+    const authError = document.getElementById('auth-error');
+    const emailActionBtn = document.getElementById('email-action-btn');
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const googleSignInBtn = document.getElementById('google-signin-btn');
+    const projectSelect = document.getElementById('project-select');
+    const addProjectForm = document.getElementById('add-project-form');
+    const newProjectNameInput = document.getElementById('new-project-name');
+    const expenseDashboard = document.getElementById('expense-dashboard');
+    const noProjectMessage = document.getElementById('no-project-message');
+    const expenseForm = document.getElementById('expense-form');
+    const expenseList = document.getElementById('expense-list');
+    const finalExpensesEl = document.getElementById('final-expenses');
+    const materialSummaryEl = document.getElementById('material-summary');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const pageInfo = document.getElementById('page-info');
+    // ... other elements ...
 
     // --- View Management ---
     function showView(viewName) {
-        Object.values(views).forEach(view => view.classList.remove('active'));
+        Object.values(views).forEach(v => v.classList.remove('active'));
         views[viewName].classList.add('active');
     }
 
-    // --- Auth ---
-    onAuthStateChanged(auth, user => {
-        currentUser = user;
-        if (user) {
-            showView('app');
-            setupUIForUser(user);
-            listenForProjects(user.uid);
-        } else {
-            showView('auth');
-            if (projectsUnsubscribe) projectsUnsubscribe();
-            if (expensesUnsubscribe) expensesUnsubscribe();
-        }
-    });
-    
-    // Splash screen logic
+    // --- Authentication ---
     setTimeout(() => {
         if (!currentUser) showView('auth');
     }, 1500);
 
-    // ... email/password/google sign-in and forgot password functions ...
-
-    // --- Projects ---
-    function listenForProjects(uid) {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-        const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
-        projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), snapshot => {
-            const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            populateProjectDropdown(projects);
-            if (!activeProjectId && projects.length > 0) {
-                activeProjectId = projects[0].id;
-                document.getElementById('project-select').value = activeProjectId;
-            }
-            toggleDashboardVisibility(projects.length > 0);
-            if (activeProjectId) fetchExpenses();
-        });
-    }
-
-    // ... add project, populate dropdown, toggle dashboard functions ...
-
-    // --- Expenses ---
-    async function fetchExpenses() {
-        if (!currentUser || !activeProjectId) {
-            renderExpenses([]);
-            return;
+    onAuthStateChanged(auth, user => {
+        currentUser = user;
+        if (user) {
+            showView('app');
+            // ... setup logic ...
+        } else {
+            showView('auth');
+            // ... cleanup logic ...
         }
-        // ... updated fetchExpenses with projectId query ...
-    }
+    });
 
-    // ... other functions (render, CRUD, utils) ...
+    // ... All other JS functions for auth, projects, expenses, UI, etc. would go here ...
 
 </script>
+</body>
 </html>
