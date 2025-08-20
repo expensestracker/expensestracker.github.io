@@ -3,162 +3,533 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assign Unassigned Expenses</title>
+    <title>Expense Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .summary-card { transition: all 0.2s ease-in-out; }
+        .summary-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .modal-overlay, #mobile-menu-backdrop { transition: opacity 0.3s ease; }
+        .modal-container, #mobile-menu { transition: transform 0.3s ease-in-out; }
+        input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
+        .form-input { background-color: #f8fafc; border: 1px solid #e2e8f0; border-bottom-width: 2px; border-radius: 0.375rem; padding: 0.5rem 0.75rem; transition: border-color 0.2s ease-in-out; width: 100%; }
+        .form-input:focus { outline: none; border-color: #6366f1; }
+        .view { display: none; }
+        .view.active { display: flex; }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gray-100 text-gray-800">
 
-    <div class="w-full max-w-lg p-8 bg-white rounded-lg shadow-md text-center">
-        <h1 class="text-2xl font-bold text-gray-800">Assign Expenses Tool</h1>
-        <p id="status-message" class="text-gray-600 mt-2 mb-6">This script finds expenses not assigned to any project and moves them to your "General" project.</p>
-        
-        <div id="auth-view">
-            <button id="google-signin-btn" class="btn w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out inline-flex items-center justify-center shadow-md">
-                <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-                Sign in with Google
-            </button>
+    <!-- Splash Screen View -->
+    <div id="splash-view" class="view active h-screen w-screen flex-col p-8">
+        <div class="flex-grow flex flex-col items-center justify-center text-center">
+            <div class="inline-block bg-indigo-600 text-white p-4 rounded-2xl shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mt-4">Expense Tracker</h1>
         </div>
+        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center left-0">Version 1.4.1</p>
+    </div>
 
-        <div id="script-view" class="hidden">
-             <button id="run-script-btn" class="btn w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-150 ease-in-out">
-                Assign Expenses to General Project
-            </button>
-        </div>
-
-        <div id="logs" class="mt-6 text-left text-sm text-gray-500 bg-gray-50 p-4 rounded-md h-48 overflow-y-auto border">
-            <p>Logs will appear here...</p>
+    <!-- Login/Signup View -->
+    <div id="auth-view" class="view h-screen w-screen flex-col items-center justify-center p-4">
+        <div class="w-full max-w-sm">
+            <div class="text-center mb-8">
+                <h1 id="auth-title" class="text-3xl font-bold text-gray-800">Welcome</h1>
+                <p class="text-gray-500 mt-1">Sign in or create an account to continue.</p>
+            </div>
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <form id="email-form" class="space-y-4">
+                    <input type="email" id="email-input" placeholder="Email Address" required class="form-input">
+                    <input type="password" id="password-input" placeholder="Password (min. 6 characters)" required class="form-input">
+                    <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
+                    <button type="submit" id="email-action-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Sign In</button>
+                </form>
+                <div class="text-center my-4 text-xs">
+                    <a href="#" id="auth-toggle-link" class="text-indigo-600 hover:underline">Need an account? Sign Up</a>
+                    <span class="mx-1 text-gray-300">|</span>
+                    <a href="#" id="forgot-password-link" class="text-indigo-600 hover:underline">Forgot Password?</a>
+                </div>
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink mx-4 text-gray-400 text-xs">OR</span><div class="flex-grow border-t border-gray-300"></div>
+                </div>
+                <button id="google-signin-btn" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-50 flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                    Sign in with Google
+                </button>
+            </div>
         </div>
     </div>
 
-    <script type="module">
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, writeBatch, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Main Application View -->
+    <div id="app-view" class="view flex-col">
+        <header id="app-header" class="bg-white/80 backdrop-blur-sm shadow-sm fixed top-0 left-0 right-0 z-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <button id="hamburger-btn" class="md:hidden p-2 -ml-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+                        <span class="ml-2 md:ml-0 text-xl font-semibold text-gray-800">Expense Tracker</span>
+                    </div>
+                    <div id="user-profile-desktop" class="hidden md:flex items-center"></div>
+                </div>
+            </div>
+        </header>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
-            authDomain: "construction-expenses-app.firebaseapp.com",
-            projectId: "construction-expenses-app",
-            storageBucket: "construction-expenses-app.firebasestorage.app",
-            messagingSenderId: "944353147981",
-            appId: "1:944353147981:web:36ff635b184d5eac69b004"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
+            <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full">
+                <div id="user-profile-mobile" class="border-b pb-4 mb-4"></div>
+                <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold">Menu</h2><button id="close-menu-btn" class="p-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+                <nav>
+                    <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Projects</h3>
+                    <div id="sidebar-project-list" class="mt-2"></div>
+                </nav>
+                <div class="absolute bottom-5 left-5 right-5"><button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button></div>
+            </div>
+        </div>
 
-        const statusMessage = document.getElementById('status-message');
-        const authView = document.getElementById('auth-view');
-        const scriptView = document.getElementById('script-view');
-        const googleSignInBtn = document.getElementById('google-signin-btn');
-        const runScriptBtn = document.getElementById('run-script-btn');
-        const logsEl = document.getElementById('logs');
-        let currentUser = null;
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8 pt-24">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column -->
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Projects</h2>
+                        <div class="space-y-4">
+                            <div><label for="project-select" class="block text-sm font-medium">Current Project</label><select id="project-select" class="form-input mt-1"></select></div>
+                            <form id="add-project-form" class="flex gap-2"><input type="text" id="new-project-name" placeholder="New project name..." required class="form-input text-sm"><button type="submit" class="bg-indigo-600 text-white px-4 rounded-md hover:bg-indigo-700 text-sm font-semibold">Add</button></form>
+                        </div>
+                    </div>
+                    <div id="add-expense-container" class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Add New Expense</h2>
+                        <form id="expense-form" class="space-y-4">
+                            <div><label for="material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="material-name" required class="form-input mt-1"></div>
+                            <div><label for="cost" class="block text-sm font-medium">Cost (Amount)</label><input type="number" id="cost" required min="0" step="0.01" class="form-input mt-1"></div>
+                            <div><label for="date" class="block text-sm font-medium">Date</label><input type="date" id="date" required class="form-input mt-1"></div>
+                            <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Add Expense</button>
+                        </form>
+                    </div>
+                </div>
 
-        function log(message) {
-            const p = document.createElement('p');
-            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logsEl.appendChild(p);
-            logsEl.scrollTop = logsEl.scrollHeight;
+                <!-- Right Column -->
+                <div class="lg:col-span-2 flex flex-col gap-8">
+                    <div id="expense-dashboard" class="space-y-8">
+                        <div>
+                            <h2 class="text-2xl font-semibold mb-4">Project Summary</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="summary-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg"><h3 class="text-lg font-semibold">Total Expenses</h3><p id="final-expenses" class="text-3xl font-bold mt-2">₹0.00</p></div>
+                                <div class="summary-card bg-white p-6 rounded-lg shadow-md"><h3 class="text-lg font-semibold mb-3">Material-wise Summary</h3><div id="material-summary" class="space-y-2 max-h-48 overflow-y-auto"></div></div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-4 gap-4">
+                                <h2 class="text-2xl font-semibold whitespace-nowrap">All Expenses</h2>
+                                <div class="flex flex-col items-end gap-2 w-full md:w-auto">
+                                    <div class="relative w-full sm:w-64"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg></div><input type="search" id="search-input" placeholder="Search..." class="form-input pl-10 text-sm"></div>
+                                    <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                                        <div class="w-full"><label for="start-date-input" class="block text-xs font-medium mb-1">From</label><div class="relative"><input id="start-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div></div>
+                                        <div class="w-full"><label for="end-date-input" class="block text-xs font-medium mb-1">To</label><div class="relative"><input id="end-date-input" type="date" class="form-input text-sm pr-10"><div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium uppercase">Material</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Cost</th><th class="px-6 py-3 text-left text-xs font-medium uppercase">Date</th><th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th></tr></thead><tbody id="expense-list" class="bg-white divide-y divide-gray-200"></tbody></table></div>
+                        </div>
+                    </div>
+                    <div id="no-project-message" class="text-center text-gray-500 p-8 bg-white rounded-lg shadow-md"><p>Please select a project to view expenses, or add a new one to get started.</p></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 class="text-lg text-center font-medium">Edit Expense</h3><form id="edit-expense-form" class="space-y-4 mt-4 text-left"><input type="hidden" id="edit-expense-id"><div><label for="edit-material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="edit-material-name" required class="form-input mt-1"></div><div><label for="edit-cost" class="block text-sm font-medium">Cost</label><input type="number" id="edit-cost" required min="0" step="0.01" class="form-input mt-1"></div><div><label for="edit-date" class="block text-sm font-medium">Date</label><input type="date" id="edit-date" required class="form-input mt-1"></div><div class="flex justify-end space-x-2 pt-4"><button type="button" id="cancel-edit-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" id="save-edit-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button></div></form></div></div>
+
+<script type="module">
+    // Firebase Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, setLogLevel, where, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+        authDomain: "construction-expenses-app.firebaseapp.com",
+        projectId: "construction-expenses-app",
+        storageBucket: "construction-expenses-app.firebasestorage.app",
+        messagingSenderId: "944353147981",
+        appId: "1:944353147981:web:36ff635b184d5eac69b004"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    setLogLevel('debug');
+
+    // --- Global State ---
+    let currentUser = null;
+    let activeProjectId = null;
+    let projectsUnsubscribe = null;
+    let expensesUnsubscribe = null;
+    let allExpensesForProject = [];
+    let isSigningUp = false;
+
+    // --- DOM Elements ---
+    const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
+    const authTitle = document.getElementById('auth-title');
+    const emailForm = document.getElementById('email-form');
+    const emailInput = document.getElementById('email-input');
+    const passwordInput = document.getElementById('password-input');
+    const authError = document.getElementById('auth-error');
+    const emailActionBtn = document.getElementById('email-action-btn');
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const googleSignInBtn = document.getElementById('google-signin-btn');
+    const projectSelect = document.getElementById('project-select');
+    const addProjectForm = document.getElementById('add-project-form');
+    const newProjectNameInput = document.getElementById('new-project-name');
+    const expenseDashboard = document.getElementById('expense-dashboard');
+    const noProjectMessage = document.getElementById('no-project-message');
+    const expenseForm = document.getElementById('expense-form');
+    const expenseList = document.getElementById('expense-list');
+    const finalExpensesEl = document.getElementById('final-expenses');
+    const materialSummaryEl = document.getElementById('material-summary');
+    const appHeader = document.getElementById('app-header');
+    const userProfileDesktop = document.getElementById('user-profile-desktop');
+    const userProfileMobile = document.getElementById('user-profile-mobile');
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const closeMenuBtn = document.getElementById('close-menu-btn');
+    const mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
+    const editModal = document.getElementById('edit-modal');
+    const editExpenseForm = document.getElementById('edit-expense-form');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const searchInput = document.getElementById('search-input');
+    const startDateInput = document.getElementById('start-date-input');
+    const endDateInput = document.getElementById('end-date-input');
+    const sidebarProjectList = document.getElementById('sidebar-project-list');
+
+    // --- View Management ---
+    function showView(viewName) {
+        Object.values(views).forEach(v => v.classList.remove('active'));
+        views[viewName].classList.add('active');
+    }
+
+    // --- Authentication ---
+    setTimeout(() => {
+        if (!currentUser) showView('auth');
+    }, 1500);
+
+    onAuthStateChanged(auth, user => {
+        currentUser = user;
+        if (user) {
+            showView('app');
+            setupUIForUser(user);
+            listenForProjects(user.uid);
+        } else {
+            showView('auth');
+            if (projectsUnsubscribe) projectsUnsubscribe();
+            if (expensesUnsubscribe) expensesUnsubscribe();
+            activeProjectId = null;
         }
+    });
 
-        googleSignInBtn.addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(error => {
-                log(`Sign-in failed: ${error.message}`);
+    authToggleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isSigningUp = !isSigningUp;
+        authTitle.textContent = isSigningUp ? 'Create Account' : 'Welcome Back';
+        emailActionBtn.textContent = isSigningUp ? 'Sign Up' : 'Sign In';
+        authToggleLink.textContent = isSigningUp ? 'Have an account? Sign In' : 'Need an account? Sign Up';
+        authError.textContent = '';
+    });
+
+    emailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        authError.textContent = '';
+        try {
+            if (isSigningUp) {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+        } catch (error) {
+            authError.textContent = error.message;
+        }
+    });
+
+    googleSignInBtn.addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).catch(error => authError.textContent = error.message);
+    });
+
+    forgotPasswordLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        if (!email) {
+            authError.textContent = 'Please enter your email address first.';
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert('Password reset email sent! Please check your inbox.');
+        } catch (error) {
+            authError.textContent = error.message;
+        }
+    });
+
+    // --- UI Setup & Mobile Menu ---
+    function setupUIForUser(user) {
+        const photo = user.photoURL || `https://placehold.co/100x100/E2E8F0/4A5568?text=${user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}`;
+        const profileHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
+        const mobileProfileHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
+        userProfileDesktop.innerHTML = profileHTML;
+        userProfileMobile.innerHTML = mobileProfileHTML;
+        document.getElementById('date').valueAsDate = new Date();
+    }
+
+    function openMenu() {
+        mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0');
+        mobileMenu.classList.remove('-translate-x-full');
+    }
+    function closeMenu() {
+        mobileMenuBackdrop.classList.add('pointer-events-none', 'opacity-0');
+        mobileMenu.classList.add('-translate-x-full');
+    }
+    hamburgerBtn.addEventListener('click', openMenu);
+    closeMenuBtn.addEventListener('click', closeMenu);
+    mobileMenuBackdrop.addEventListener('click', (e) => {
+        if (e.target === mobileMenuBackdrop) closeMenu();
+    });
+    mobileSignOutBtn.addEventListener('click', () => signOut(auth));
+
+    // --- Projects & Data Migration ---
+    async function migrateOldExpenses(uid, generalProjectId) {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
+        const q = query(expensesRef, where("projectId", "==", null));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) return;
+
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => {
+            batch.update(doc.ref, { projectId: generalProjectId });
+        });
+        await batch.commit();
+        console.log(`Migrated ${snapshot.size} old expenses.`);
+    }
+
+    function listenForProjects(uid) {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+        projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
+            let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            if (projects.length === 0) {
+                await addDoc(projectsRef, { name: "General" });
+                return;
+            }
+            
+            let generalProject = projects.find(p => p.name === "General");
+            if (generalProject) {
+                 migrateOldExpenses(uid, generalProject.id);
+            }
+
+            populateProjectDropdown(projects);
+            populateSidebarProjects(projects);
+
+            if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+                activeProjectId = projects[0].id;
+            }
+            projectSelect.value = activeProjectId;
+            toggleDashboardVisibility(true);
+            listenForExpenses(uid, activeProjectId);
+        });
+    }
+
+    addProjectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const projectName = newProjectNameInput.value.trim();
+        if (projectName && currentUser) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const projectsRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`);
+            await addDoc(projectsRef, { name: projectName });
+            newProjectNameInput.value = '';
+        }
+    });
+
+    projectSelect.addEventListener('change', () => {
+        activeProjectId = projectSelect.value;
+        listenForExpenses(currentUser.uid, activeProjectId);
+    });
+
+    function populateProjectDropdown(projects) {
+        projectSelect.innerHTML = projects.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join('');
+    }
+    
+    function populateSidebarProjects(projects) {
+        sidebarProjectList.innerHTML = projects.map(p => `<a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 rounded text-sm transition duration-200 hover:bg-indigo-50">${escapeHTML(p.name)}</a>`).join('');
+        document.querySelectorAll('.sidebar-project-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                activeProjectId = e.target.dataset.projectId;
+                projectSelect.value = activeProjectId;
+                listenForExpenses(currentUser.uid, activeProjectId);
+                closeMenu();
             });
         });
+    }
 
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                authView.classList.add('hidden');
-                scriptView.classList.remove('hidden');
-                statusMessage.textContent = `Signed in as ${user.email}. Ready to run script.`;
-                logsEl.innerHTML = '<p>Ready. Click the button to begin.</p>';
-            } else {
-                authView.classList.remove('hidden');
-                scriptView.classList.add('hidden');
-                statusMessage.textContent = 'Please sign in to run the migration script.';
-            }
+    function toggleDashboardVisibility(hasProjects) {
+        expenseDashboard.style.display = hasProjects ? 'block' : 'none';
+        noProjectMessage.style.display = hasProjects ? 'none' : 'block';
+    }
+
+    // --- Expenses & Filtering ---
+    function listenForExpenses(uid, projectId) {
+        if (expensesUnsubscribe) expensesUnsubscribe();
+        if (!uid || !projectId) {
+            allExpensesForProject = [];
+            applyFilters();
+            updateSummaries([]);
+            return;
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
+        const q = query(expensesRef, where("projectId", "==", projectId));
+        expensesUnsubscribe = onSnapshot(q, (snapshot) => {
+            allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
+            applyFilters();
+            updateSummaries(allExpensesForProject);
+        });
+    }
+    
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        let filtered = allExpensesForProject.filter(expense => {
+            const materialMatch = expense.material.toLowerCase().includes(searchTerm);
+            const expenseDate = expense.date;
+            const startMatch = !startDate || expenseDate >= startDate;
+            const endMatch = !endDate || expenseDate <= endDate;
+            return materialMatch && startMatch && endMatch;
         });
 
-        async function assignUnassignedExpenses() {
-            if (!currentUser) {
-                log("Error: You must be signed in to run this script.");
-                return;
-            }
+        renderExpenses(filtered);
+    }
 
-            const uid = currentUser.uid;
+    [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
+    
+    expenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser || !activeProjectId) return;
+        const material = document.getElementById('material-name').value.trim();
+        const cost = parseFloat(document.getElementById('cost').value);
+        const date = document.getElementById('date').value;
+        if (material && !isNaN(cost) && date) {
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-            const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
-            const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-            let generalProjectId;
-
-            try {
-                log("Step 1: Finding or creating 'General' project...");
-                const q = query(projectsRef, where("name", "==", "General"));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    log("No 'General' project found. Creating one...");
-                    const newProjectDoc = await addDoc(projectsRef, { name: "General" });
-                    generalProjectId = newProjectDoc.id;
-                    log(`Created 'General' project with ID: ${generalProjectId}`);
-                } else {
-                    generalProjectId = querySnapshot.docs[0].id;
-                    log(`Found 'General' project with ID: ${generalProjectId}`);
-                }
-            } catch (error) {
-                log(`Error in Step 1: ${error.message}`);
-                return;
-            }
-
-            try {
-                log("Step 2: Finding all expenses without a project ID...");
-                const qExpenses = query(expensesRef, where("projectId", "==", null));
-                const expensesToMigrateSnapshot = await getDocs(qExpenses);
-
-                if (expensesToMigrateSnapshot.empty) {
-                    log("Success: No unassigned expenses found. Your data is already up-to-date.");
-                    return;
-                }
-
-                log(`Found ${expensesToMigrateSnapshot.size} unassigned expenses to update.`);
-                
-                log("Step 3: Updating expenses in a batch. Please wait...");
-                const batch = writeBatch(db);
-                expensesToMigrateSnapshot.forEach(doc => {
-                    batch.update(doc.ref, { projectId: generalProjectId });
-                });
-
-                await batch.commit();
-                log(`Success! Migrated ${expensesToMigrateSnapshot.size} expenses to the 'General' project.`);
-                alert(`Migration complete! ${expensesToMigrateSnapshot.size} expenses were updated.`);
-
-            } catch (error) {
-                log(`Error during migration (Step 2/3): ${error.message}`);
-            }
+            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+            await addDoc(expensesRef, { material, cost, date, projectId: activeProjectId });
+            expenseForm.reset();
+            document.getElementById('date').valueAsDate = new Date();
         }
+    });
 
-        runScriptBtn.addEventListener('click', async () => {
-            runScriptBtn.disabled = true;
-            runScriptBtn.textContent = "Running...";
-            logsEl.innerHTML = '';
-            
-            await assignUnassignedExpenses();
-            
-            runScriptBtn.disabled = false;
-            runScriptBtn.textContent = "Assign Expenses to General Project";
+    // --- Render, CRUD, Utils ---
+    function renderExpenses(expenses) {
+        expenseList.innerHTML = '';
+        if (expenses.length === 0) {
+            expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
+            return;
+        }
+        expenses.forEach(expense => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td>
+                <td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN')}</div></td>
+                <td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC' })}</div></td>
+                <td class="px-6 py-4 text-right text-sm font-medium space-x-4">
+                    <button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
+                    <button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            `;
+            expenseList.appendChild(tr);
         });
+        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
+        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
+    }
 
-    </script>
+    async function handleDelete(event) {
+        const id = event.target.dataset.id;
+        if (id && confirm("Are you sure?")) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id));
+        }
+    }
+
+    function handleEdit(event) {
+        const id = event.target.dataset.id;
+        const expense = allExpensesForProject.find(e => e.id === id);
+        if (!expense) return;
+        document.getElementById('edit-expense-id').value = expense.id;
+        document.getElementById('edit-material-name').value = expense.material;
+        document.getElementById('edit-cost').value = expense.cost;
+        document.getElementById('edit-date').value = expense.date;
+        editModal.classList.remove('hidden');
+    }
+
+    editExpenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-expense-id').value;
+        const updatedData = {
+            material: document.getElementById('edit-material-name').value.trim(),
+            cost: parseFloat(document.getElementById('edit-cost').value),
+            date: document.getElementById('edit-date').value,
+        };
+        if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id), updatedData);
+            closeEditModal();
+        }
+    });
+    
+    const closeEditModal = () => editModal.classList.add('hidden');
+    cancelEditBtn.addEventListener('click', closeEditModal);
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+
+    // --- Summaries ---
+    function updateSummaries(expenses) {
+        const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
+        finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const materialTotals = expenses.reduce((acc, exp) => {
+            const key = exp.material.trim().toLowerCase();
+            acc[key] = (acc[key] || 0) + exp.cost;
+            return acc;
+        }, {});
+        materialSummaryEl.innerHTML = '';
+        const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
+        if (sorted.length === 0) {
+            materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
+            return;
+        }
+        sorted.forEach(key => {
+            const total = materialTotals[key];
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-center text-sm";
+            const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+            div.innerHTML = `<span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+            materialSummaryEl.appendChild(div);
+        });
+    }
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
+</script>
 </body>
 </html>
