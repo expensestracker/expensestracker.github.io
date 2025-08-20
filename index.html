@@ -174,6 +174,7 @@
     let currentPage = 1;
     const EXPENSES_PER_PAGE = 15;
     let isSigningUp = false;
+    let allProjectExpenses = []; // For client-side filtering
 
     // --- DOM Elements ---
     const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
@@ -309,24 +310,21 @@
     });
     mobileSignOutBtn.addEventListener('click', () => signOut(auth));
 
-    // --- Projects ---
+    // --- Projects & Data Migration ---
     async function migrateOldExpenses(uid, generalProjectId) {
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
         const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", null), limit(100)); // Process in batches
+        const q = query(expensesRef, where("projectId", "==", null), limit(100));
         const snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
-            console.log("No old expenses to migrate.");
-            return;
-        }
+        if (snapshot.empty) return;
 
         const batch = writeBatch(db);
         snapshot.docs.forEach(doc => {
             batch.update(doc.ref, { projectId: generalProjectId });
         });
         await batch.commit();
-        console.log(`Migrated ${snapshot.size} old expenses to General project.`);
+        console.log(`Migrated ${snapshot.size} old expenses.`);
     }
 
     function listenForProjects(uid) {
@@ -336,18 +334,15 @@
             let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             
             if (projects.length === 0) {
-                // Create a default project for new users or users with no projects
                 const generalProjectRef = await addDoc(projectsRef, { name: "General" });
                 activeProjectId = generalProjectRef.id;
-                return; // The listener will re-run with the new project
+                return;
             }
             
-            // Check for a "General" project and run migration if needed
             let generalProject = projects.find(p => p.name === "General");
             if (!generalProject) {
                 const generalProjectRef = await addDoc(projectsRef, { name: "General" });
-                generalProject = { id: generalProjectRef.id, name: "General" };
-                // The listener will re-run, so we just wait
+                // Listener will re-run with the new project, so we wait.
             } else {
                  migrateOldExpenses(uid, generalProject.id);
             }
@@ -416,9 +411,6 @@
         
         let qConstraints = [where("projectId", "==", activeProjectId), orderBy("date", "desc")];
         
-        // Server-side filtering logic here... (omitted for brevity, but it's complex)
-        // For now, we'll keep client-side filtering as server-side is more involved
-        
         if (direction === 'next' && lastVisibleDoc) qConstraints.push(startAfter(lastVisibleDoc));
         if (direction === 'prev' && firstVisibleDoc) qConstraints.push(endBefore(firstVisibleDoc), limitToLast(EXPENSES_PER_PAGE));
         else qConstraints.push(limit(EXPENSES_PER_PAGE));
@@ -430,8 +422,6 @@
         if (expenses.length > 0) {
             if (direction === 'next') currentPage++;
             if (direction === 'prev' && currentPage > 1) currentPage--;
-        } else if (direction === 'prev' && currentPage > 1) {
-            // Handle empty previous page
         } else if (direction === 'initial') {
             currentPage = 1;
         }
