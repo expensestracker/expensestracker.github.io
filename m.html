@@ -3,33 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker - Data Migration</title>
+    <title>All Expenses Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
+<body class="bg-gray-100">
 
-    <div class="w-full max-w-lg p-8 bg-white rounded-lg shadow-md text-center">
-        <h1 class="text-2xl font-bold text-gray-800">Expense Data Migration</h1>
-        <p class="text-gray-600 mt-2 mb-6">This script will find any old expenses that are not assigned to a project and move them to a default project named "General".</p>
-        
-        <button id="run-migration-btn" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
-            Run Migration Script
-        </button>
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">All Expenses Report</h1>
+            <p id="status-message" class="text-gray-600 mt-2">Please sign in to view your expenses.</p>
+        </header>
 
-        <div id="logs" class="mt-6 text-left text-sm text-gray-500 bg-gray-50 p-4 rounded-md h-48 overflow-y-auto border">
-            <p>Logs will appear here...</p>
+        <!-- Auth View -->
+        <div id="auth-view" class="text-center">
+            <button id="google-signin-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out inline-flex items-center shadow-md">
+                <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                Sign in with Google
+            </button>
+        </div>
+
+        <!-- Report View -->
+        <div id="report-view" class="hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, writeBatch, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
@@ -44,108 +67,95 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const runMigrationBtn = document.getElementById('run-migration-btn');
-        const logsEl = document.getElementById('logs');
-        let currentUser = null;
+        const statusMessage = document.getElementById('status-message');
+        const authView = document.getElementById('auth-view');
+        const reportView = document.getElementById('report-view');
+        const googleSignInBtn = document.getElementById('google-signin-btn');
+        const reportTableBody = document.getElementById('report-table-body');
 
-        function log(message) {
-            const p = document.createElement('p');
-            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logsEl.appendChild(p);
-            logsEl.scrollTop = logsEl.scrollHeight;
-        }
+        googleSignInBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(error => {
+                statusMessage.textContent = `Sign-in failed: ${error.message}`;
+            });
+        });
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUser = user;
-                log("Authenticated successfully.");
-                runMigrationBtn.disabled = false;
-                runMigrationBtn.textContent = "Run Migration Script";
+                authView.classList.add('hidden');
+                reportView.classList.remove('hidden');
+                statusMessage.textContent = 'Loading your expense report...';
+                fetchAllDataAndGenerateReport(user.uid);
             } else {
-                log("Not authenticated. Please ensure you are logged into your Firebase project in this browser.");
+                authView.classList.remove('hidden');
+                reportView.classList.add('hidden');
+                statusMessage.textContent = 'Please sign in to view your expenses.';
             }
         });
 
-        async function migrateOldExpensesToDefaultProject(userId) {
-            if (!userId) {
-                log("Error: User ID is missing.");
-                return;
-            }
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-            const projectsRef = collection(db, `artifacts/${appId}/users/${userId}/projects`);
-            const expensesRef = collection(db, `artifacts/${appId}/users/${userId}/expenses`);
-            let generalProjectId;
-
+        async function fetchAllDataAndGenerateReport(userId) {
             try {
-                log("Step 1: Checking for 'General' project...");
-                const q = query(projectsRef, where("name", "==", "General"));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    log("No 'General' project found. Creating one...");
-                    const newProjectDoc = await addDoc(projectsRef, {
-                        name: "General",
-                        createdAt: new Date().toISOString()
-                    });
-                    generalProjectId = newProjectDoc.id;
-                    log(`Created 'General' project with ID: ${generalProjectId}`);
-                } else {
-                    generalProjectId = querySnapshot.docs[0].id;
-                    log(`Found 'General' project with ID: ${generalProjectId}`);
-                }
-            } catch (error) {
-                log(`Error in Step 1: ${error.message}`);
-                return;
-            }
-
-            try {
-                log("Step 2: Finding expenses without a project ID...");
-                const qExpenses = query(expensesRef, where("projectId", "==", null));
-                const expensesToMigrateSnapshot = await getDocs(qExpenses);
-
-                if (expensesToMigrateSnapshot.empty) {
-                    log("Success: No expenses needed migration. All data is up to date.");
-                    return;
-                }
-
-                log(`Found ${expensesToMigrateSnapshot.size} expenses to migrate.`);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
                 
-                log("Step 3: Updating expenses in a batch...");
-                const batch = writeBatch(db);
-                expensesToMigrateSnapshot.forEach(doc => {
-                    const docRef = doc.ref;
-                    batch.update(docRef, { projectId: generalProjectId });
+                // 1. Fetch all projects and create a lookup map
+                statusMessage.textContent = 'Step 1/3: Fetching projects...';
+                const projectsRef = collection(db, `artifacts/${appId}/users/${userId}/projects`);
+                const projectsSnapshot = await getDocs(projectsRef);
+                const projectMap = new Map();
+                projectsSnapshot.forEach(doc => {
+                    projectMap.set(doc.id, doc.data().name);
                 });
+                projectMap.set(null, 'Unassigned'); // Handle old data without a projectId
 
-                await batch.commit();
-                log(`Success: Migrated ${expensesToMigrateSnapshot.size} expenses to the 'General' project.`);
-                alert(`Migration complete! ${expensesToMigrateSnapshot.size} expenses were updated.`);
+                // 2. Fetch all expenses
+                statusMessage.textContent = 'Step 2/3: Fetching all expenses...';
+                const expensesRef = collection(db, `artifacts/${appId}/users/${userId}/expenses`);
+                const expensesQuery = query(expensesRef, orderBy("date", "desc"));
+                const expensesSnapshot = await getDocs(expensesQuery);
+                const allExpenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // 3. Combine data and render the report
+                statusMessage.textContent = 'Step 3/3: Generating report...';
+                renderReport(allExpenses, projectMap);
+                statusMessage.textContent = `Report generated for ${allExpenses.length} expenses across ${projectMap.size - 1} project(s).`;
 
             } catch (error) {
-                log(`Error in Step 2/3: ${error.message}`);
+                console.error("Error generating report:", error);
+                statusMessage.textContent = `Error: ${error.message}`;
+                reportTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Could not load data. Please check your Firestore rules and ensure you have an internet connection.</td></tr>`;
             }
         }
 
-        runMigrationBtn.addEventListener('click', async () => {
-            runMigrationBtn.disabled = true;
-            runMigrationBtn.textContent = "Running...";
-            logsEl.innerHTML = ''; // Clear previous logs
-            
-            if (currentUser) {
-                await migrateOldExpensesToDefaultProject(currentUser.uid);
-            } else {
-                log("Authenticating...");
-                try {
-                    const userCredential = await signInAnonymously(auth);
-                    await migrateOldExpensesToDefaultProject(userCredential.user.uid);
-                } catch (error) {
-                    log(`Authentication failed: ${error.message}`);
-                }
+        function renderReport(expenses, projectMap) {
+            reportTableBody.innerHTML = '';
+            if (expenses.length === 0) {
+                reportTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
+                return;
             }
-            runMigrationBtn.disabled = false;
-            runMigrationBtn.textContent = "Run Migration Script";
-        });
+
+            expenses.forEach(expense => {
+                const projectName = projectMap.get(expense.projectId) || 'Unassigned';
+                const formattedCost = `₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const formattedDate = new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-semibold text-gray-900">${escapeHTML(projectName)}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${escapeHTML(expense.material)}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${formattedCost}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${formattedDate}</div></td>
+                `;
+                reportTableBody.appendChild(tr);
+            });
+        }
+
+        function escapeHTML(str) {
+            const p = document.createElement('p');
+            p.appendChild(document.createTextNode(str || ''));
+            return p.innerHTML;
+        }
+
     </script>
 </body>
 </html>
