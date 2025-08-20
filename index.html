@@ -195,7 +195,20 @@
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     const pageInfo = document.getElementById('page-info');
-    // ... other elements ...
+    const appHeader = document.getElementById('app-header');
+    const userProfileDesktop = document.getElementById('user-profile-desktop');
+    const userProfileMobile = document.getElementById('user-profile-mobile');
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const closeMenuBtn = document.getElementById('close-menu-btn');
+    const mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
+    const editModal = document.getElementById('edit-modal');
+    const editExpenseForm = document.getElementById('edit-expense-form');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const searchInput = document.getElementById('search-input');
+    const startDateInput = document.getElementById('start-date-input');
+    const endDateInput = document.getElementById('end-date-input');
 
     // --- View Management ---
     function showView(viewName) {
@@ -212,15 +225,258 @@
         currentUser = user;
         if (user) {
             showView('app');
-            // ... setup logic ...
+            setupUIForUser(user);
+            listenForProjects(user.uid);
         } else {
             showView('auth');
-            // ... cleanup logic ...
+            if (projectsUnsubscribe) projectsUnsubscribe();
+            if (summaryUnsubscribe) summaryUnsubscribe();
         }
     });
 
-    // ... All other JS functions for auth, projects, expenses, UI, etc. would go here ...
+    authToggleLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        isSigningUp = !isSigningUp;
+        authTitle.textContent = isSigningUp ? 'Create Account' : 'Welcome Back';
+        emailActionBtn.textContent = isSigningUp ? 'Sign Up' : 'Sign In';
+        authToggleLink.textContent = isSigningUp ? 'Have an account? Sign In' : 'Need an account? Sign Up';
+        authError.textContent = '';
+    });
 
+    emailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        authError.textContent = '';
+        try {
+            if (isSigningUp) {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+        } catch (error) {
+            authError.textContent = error.message;
+        }
+    });
+
+    googleSignInBtn.addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).catch(error => authError.textContent = error.message);
+    });
+
+    forgotPasswordLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        if (!email) {
+            authError.textContent = 'Please enter your email address first.';
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            alert('Password reset email sent! Please check your inbox.');
+        } catch (error) {
+            authError.textContent = error.message;
+        }
+    });
+
+    // --- UI Setup & Mobile Menu ---
+    function setupUIForUser(user) {
+        const photo = user.photoURL || `https://placehold.co/100x100/E2E8F0/4A5568?text=${user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}`;
+        const profileHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
+        const mobileProfileHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
+        userProfileDesktop.innerHTML = profileHTML;
+        userProfileMobile.innerHTML = mobileProfileHTML;
+        document.getElementById('date').valueAsDate = new Date();
+    }
+
+    function openMenu() {
+        mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0');
+        mobileMenu.classList.remove('-translate-x-full');
+    }
+    function closeMenu() {
+        mobileMenuBackdrop.classList.add('pointer-events-none', 'opacity-0');
+        mobileMenu.classList.add('-translate-x-full');
+    }
+    hamburgerBtn.addEventListener('click', openMenu);
+    closeMenuBtn.addEventListener('click', closeMenu);
+    mobileMenuBackdrop.addEventListener('click', (e) => {
+        if (e.target === mobileMenuBackdrop) closeMenu();
+    });
+    mobileSignOutBtn.addEventListener('click', () => signOut(auth));
+
+    // --- Projects ---
+    function listenForProjects(uid) {
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+        projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), snapshot => {
+            const projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            populateProjectDropdown(projects);
+            const currentSelected = projectSelect.value;
+            if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+                activeProjectId = projects.length > 0 ? projects[0].id : null;
+            }
+            projectSelect.value = activeProjectId;
+            toggleDashboardVisibility(projects.length > 0);
+            fetchExpenses('initial');
+            listenForSummary();
+        });
+    }
+
+    addProjectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const projectName = newProjectNameInput.value.trim();
+        if (projectName && currentUser) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const projectsRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`);
+            await addDoc(projectsRef, { name: projectName });
+            newProjectNameInput.value = '';
+        }
+    });
+
+    projectSelect.addEventListener('change', () => {
+        activeProjectId = projectSelect.value;
+        fetchExpenses('initial');
+        listenForSummary();
+    });
+
+    function populateProjectDropdown(projects) {
+        projectSelect.innerHTML = projects.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join('');
+    }
+
+    function toggleDashboardVisibility(hasProjects) {
+        expenseDashboard.style.display = hasProjects ? 'block' : 'none';
+        noProjectMessage.style.display = hasProjects ? 'none' : 'block';
+    }
+
+    // --- Expenses (Pagination & Filtering) ---
+    async function fetchExpenses(direction = 'initial') {
+        if (!currentUser || !activeProjectId) {
+            renderExpenses([]);
+            return;
+        }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+        
+        let qConstraints = [where("projectId", "==", activeProjectId), orderBy("date", "desc")];
+        
+        if (direction === 'next' && lastVisibleDoc) qConstraints.push(startAfter(lastVisibleDoc));
+        if (direction === 'prev' && firstVisibleDoc) qConstraints.push(endBefore(firstVisibleDoc), limitToLast(EXPENSES_PER_PAGE));
+        else qConstraints.push(limit(EXPENSES_PER_PAGE));
+
+        const q = query(expensesRef, ...qConstraints);
+        const snapshot = await getDocs(q);
+        const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (expenses.length > 0) {
+            if (direction === 'next') currentPage++;
+            if (direction === 'prev' && currentPage > 1) currentPage--;
+        }
+        
+        firstVisibleDoc = snapshot.docs[0];
+        lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+        
+        renderExpenses(expenses);
+        updatePaginationButtons(snapshot.size);
+    }
+    
+    function updatePaginationButtons(docsOnPage) {
+        nextBtn.disabled = docsOnPage < EXPENSES_PER_PAGE;
+        prevBtn.disabled = currentPage <= 1;
+        pageInfo.textContent = `Page ${currentPage}`;
+    }
+
+    nextBtn.addEventListener('click', () => fetchExpenses('next'));
+    prevBtn.addEventListener('click', () => fetchExpenses('prev'));
+    
+    // --- Expense Form ---
+    expenseForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser || !activeProjectId) return;
+        const material = document.getElementById('material-name').value.trim();
+        const cost = parseFloat(document.getElementById('cost').value);
+        const date = document.getElementById('date').value;
+        if (material && !isNaN(cost) && date) {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+            await addDoc(expensesRef, { material, cost, date, projectId: activeProjectId });
+            expenseForm.reset();
+            document.getElementById('date').valueAsDate = new Date();
+            fetchExpenses('initial');
+        }
+    });
+
+    // --- Render, CRUD, Utils ---
+    function renderExpenses(expenses) {
+        expenseList.innerHTML = '';
+        if (expenses.length === 0) {
+            expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
+            return;
+        }
+        expenses.forEach(expense => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td>
+                <td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN')}</div></td>
+                <td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC' })}</div></td>
+                <td class="px-6 py-4 text-right text-sm font-medium space-x-4">
+                    <button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
+                    <button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button>
+                </td>
+            `;
+            expenseList.appendChild(tr);
+        });
+        // Add event listeners for edit/delete buttons
+    }
+
+    // --- Summaries ---
+    function listenForSummary() {
+        if (summaryUnsubscribe) summaryUnsubscribe();
+        if (!currentUser || !activeProjectId) {
+            updateSummaries([]);
+            return;
+        }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+        const q = query(expensesRef, where("projectId", "==", activeProjectId));
+        summaryUnsubscribe = onSnapshot(q, snapshot => {
+            const allProjectExpenses = snapshot.docs.map(doc => doc.data());
+            updateSummaries(allProjectExpenses);
+        });
+    }
+
+    function updateSummaries(expenses) {
+        const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
+        finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const materialTotals = expenses.reduce((acc, exp) => {
+            const key = exp.material.trim().toLowerCase();
+            acc[key] = (acc[key] || 0) + exp.cost;
+            return acc;
+        }, {});
+        materialSummaryEl.innerHTML = '';
+        const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
+        if (sorted.length === 0) {
+            materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
+            return;
+        }
+        sorted.forEach(key => {
+            const total = materialTotals[key];
+            const div = document.createElement('div');
+            div.className = "flex justify-between items-center text-sm";
+            const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+            div.innerHTML = `<span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+            materialSummaryEl.appendChild(div);
+        });
+    }
+
+    function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str || ''));
+        return div.innerHTML;
+    }
+    function getSimpleId(uid) {
+        if (!uid || uid.length < 6) return uid;
+        return `${uid.substring(0, 2)}...${uid.substring(uid.length - 3)}`;
+    }
 </script>
 </body>
 </html>
