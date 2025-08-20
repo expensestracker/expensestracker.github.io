@@ -174,7 +174,7 @@
     let currentPage = 1;
     const EXPENSES_PER_PAGE = 15;
     let isSigningUp = false;
-    let allProjectExpenses = []; // For client-side filtering
+    let allExpensesForProject = []; // For client-side filtering
 
     // --- DOM Elements ---
     const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
@@ -335,15 +335,12 @@
             
             if (projects.length === 0) {
                 const generalProjectRef = await addDoc(projectsRef, { name: "General" });
-                activeProjectId = generalProjectRef.id;
+                // The listener will re-run automatically with the new project, so we don't need to do anything else.
                 return;
             }
             
             let generalProject = projects.find(p => p.name === "General");
-            if (!generalProject) {
-                const generalProjectRef = await addDoc(projectsRef, { name: "General" });
-                // Listener will re-run with the new project, so we wait.
-            } else {
+            if (generalProject) {
                  migrateOldExpenses(uid, generalProject.id);
             }
 
@@ -419,19 +416,39 @@
         const snapshot = await getDocs(q);
         const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (expenses.length > 0) {
-            if (direction === 'next') currentPage++;
-            if (direction === 'prev' && currentPage > 1) currentPage--;
-        } else if (direction === 'initial') {
-            currentPage = 1;
-        }
+        if (direction === 'initial') currentPage = 1;
+        if (direction === 'next' && snapshot.docs.length > 0) currentPage++;
+        if (direction === 'prev' && currentPage > 1) currentPage--;
         
         firstVisibleDoc = snapshot.docs[0];
         lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
         
-        renderExpenses(expenses);
+        // Fetch all for client-side filtering
+        const allQuery = query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`), where("projectId", "==", activeProjectId));
+        const allSnapshot = await getDocs(allQuery);
+        allProjectExpenses = allSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        applyFilters();
         updatePaginationButtons(snapshot.size);
     }
+    
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        let filtered = allProjectExpenses.filter(expense => {
+            const materialMatch = expense.material.toLowerCase().includes(searchTerm);
+            const expenseDate = expense.date;
+            const startMatch = !startDate || expenseDate >= startDate;
+            const endMatch = !endDate || expenseDate <= endDate;
+            return materialMatch && startMatch && endMatch;
+        });
+
+        renderExpenses(filtered);
+    }
+
+    [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
     
     function updatePaginationButtons(docsOnPage) {
         nextBtn.disabled = docsOnPage < EXPENSES_PER_PAGE;
