@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - Data Migration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+    <div class="w-full max-w-lg p-8 bg-white rounded-lg shadow-md text-center">
+        <h1 class="text-2xl font-bold text-gray-800">Expense Data Migration</h1>
+        <p class="text-gray-600 mt-2 mb-6">This script will find any old expenses that are not assigned to a project and move them to a default project named "General".</p>
+        
+        <button id="run-migration-btn" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+            Run Migration Script
+        </button>
+
+        <div id="logs" class="mt-6 text-left text-sm text-gray-500 bg-gray-50 p-4 rounded-md h-48 overflow-y-auto border">
+            <p>Logs will appear here...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, writeBatch, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+            authDomain: "construction-expenses-app.firebaseapp.com",
+            projectId: "construction-expenses-app",
+            storageBucket: "construction-expenses-app.firebasestorage.app",
+            messagingSenderId: "944353147981",
+            appId: "1:944353147981:web:36ff635b184d5eac69b004"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const runMigrationBtn = document.getElementById('run-migration-btn');
+        const logsEl = document.getElementById('logs');
+        let currentUser = null;
+
+        function log(message) {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsEl.appendChild(p);
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                log("Authenticated successfully.");
+                runMigrationBtn.disabled = false;
+                runMigrationBtn.textContent = "Run Migration Script";
+            } else {
+                log("Not authenticated. Please ensure you are logged into your Firebase project in this browser.");
+            }
+        });
+
+        async function migrateOldExpensesToDefaultProject(userId) {
+            if (!userId) {
+                log("Error: User ID is missing.");
+                return;
+            }
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const projectsRef = collection(db, `artifacts/${appId}/users/${userId}/projects`);
+            const expensesRef = collection(db, `artifacts/${appId}/users/${userId}/expenses`);
+            let generalProjectId;
+
+            try {
+                log("Step 1: Checking for 'General' project...");
+                const q = query(projectsRef, where("name", "==", "General"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    log("No 'General' project found. Creating one...");
+                    const newProjectDoc = await addDoc(projectsRef, {
+                        name: "General",
+                        createdAt: new Date().toISOString()
+                    });
+                    generalProjectId = newProjectDoc.id;
+                    log(`Created 'General' project with ID: ${generalProjectId}`);
+                } else {
+                    generalProjectId = querySnapshot.docs[0].id;
+                    log(`Found 'General' project with ID: ${generalProjectId}`);
+                }
+            } catch (error) {
+                log(`Error in Step 1: ${error.message}`);
+                return;
+            }
+
+            try {
+                log("Step 2: Finding expenses without a project ID...");
+                const qExpenses = query(expensesRef, where("projectId", "==", null));
+                const expensesToMigrateSnapshot = await getDocs(qExpenses);
+
+                if (expensesToMigrateSnapshot.empty) {
+                    log("Success: No expenses needed migration. All data is up to date.");
+                    return;
+                }
+
+                log(`Found ${expensesToMigrateSnapshot.size} expenses to migrate.`);
+                
+                log("Step 3: Updating expenses in a batch...");
+                const batch = writeBatch(db);
+                expensesToMigrateSnapshot.forEach(doc => {
+                    const docRef = doc.ref;
+                    batch.update(docRef, { projectId: generalProjectId });
+                });
+
+                await batch.commit();
+                log(`Success: Migrated ${expensesToMigrateSnapshot.size} expenses to the 'General' project.`);
+                alert(`Migration complete! ${expensesToMigrateSnapshot.size} expenses were updated.`);
+
+            } catch (error) {
+                log(`Error in Step 2/3: ${error.message}`);
+            }
+        }
+
+        runMigrationBtn.addEventListener('click', async () => {
+            runMigrationBtn.disabled = true;
+            runMigrationBtn.textContent = "Running...";
+            logsEl.innerHTML = ''; // Clear previous logs
+            
+            if (currentUser) {
+                await migrateOldExpensesToDefaultProject(currentUser.uid);
+            } else {
+                log("Authenticating...");
+                try {
+                    const userCredential = await signInAnonymously(auth);
+                    await migrateOldExpensesToDefaultProject(userCredential.user.uid);
+                } catch (error) {
+                    log(`Authentication failed: ${error.message}`);
+                }
+            }
+            runMigrationBtn.disabled = false;
+            runMigrationBtn.textContent = "Run Migration Script";
+        });
+    </script>
+</body>
+</html>
