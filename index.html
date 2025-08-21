@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker</title>
+    <title>Free Construction Expense Tracker | Manage Project Budgets Easily</title>
+    <meta name="description" content="A free and easy-to-use expense tracker for construction projects. Log material costs, monitor spending, and manage your project budgets in one place. Sign up for free!">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,6 +18,7 @@
         .form-input:focus { outline: none; border-color: #6366f1; }
         .view { display: none; }
         .view.active { display: flex; }
+        .sidebar-project-link.active { background-color: #eef2ff; color: #4338ca; font-weight: 600; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -29,15 +31,25 @@
             </div>
             <h1 class="text-3xl font-bold text-gray-800 mt-4">Expense Tracker</h1>
         </div>
-        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center left-0">Version 1.4.0</p>
+        <p class="absolute bottom-4 text-xs text-gray-400 w-full text-center left-0">Version 1.0.0</p>
     </div>
 
     <!-- Login/Signup View -->
     <div id="auth-view" class="view h-screen w-screen flex-col items-center justify-center p-4">
         <div class="w-full max-w-sm">
-            <div class="text-center mb-8">
-                <h1 id="auth-title" class="text-3xl font-bold text-gray-800">Welcome</h1>
-                <p class="text-gray-500 mt-1">Sign in or create an account to continue.</p>
+        	
+            <div class="mb-4">            
+                <section class="pt-32 pb-5 ">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h1 class="text-2xl md:text-6xl font-bold text-gray-800 tracking-tight">
+                        Take Control of Your Project Finances
+                    </h1>
+                    <p class="mt-6 max-w-2xl mx-auto text-lg text-slate-600">
+                        Track materials, manage budgets, and gain clarity on your spending. The simple, secure, and free way to manage construction and project expenses.
+                    </p>
+                    
+                </div>
+            </section>
             </div>
             <div class="bg-white p-8 rounded-lg shadow-md">
                 <form id="email-form" class="space-y-4">
@@ -60,6 +72,11 @@
                 </button>
             </div>
         </div>
+        <footer class="border-t mt-20">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-slate-500">
+                <p>&copy; 2025 Expense Tracker. All Rights Reserved.</p>
+            </div>
+        </footer>
     </div>
 
     <!-- Main Application View -->
@@ -77,28 +94,43 @@
         </header>
 
         <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
-            <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full">
+            <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full flex flex-col">
                 <div id="user-profile-mobile" class="border-b pb-4 mb-4"></div>
-                <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold">Menu</h2><button id="close-menu-btn" class="p-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
-                <nav>
-                    <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Projects</h3>
-                    <div id="sidebar-project-list" class="mt-2"></div>
+                <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold"></h2><button id="close-menu-btn" class="p-2 rounded-md text-gray-500 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
+                <nav class="flex-grow">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Projects</h3>
+                        <button id="sidebar-add-project-btn" class="p-2 text-indigo-600 hover:bg-indigo-100 rounded-full">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                    </div>
+                    <div id="sidebar-project-list" class="mt-2 space-y-1"></div>
+                    <div class="mt-8">
+                        <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Information</h3>
+                        <div class="mt-2 space-y-1">
+                            <a href="#" id="about-link" class="flex items-center py-2 px-4 rounded text-sm text-gray-700 hover:bg-gray-100"><svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>About Us</a>
+                            <a href="#" id="privacy-link" class="flex items-center py-2 px-4 rounded text-sm text-gray-700 hover:bg-gray-100"><svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>Privacy Policy</a>
+                            <a href="#" id="contact-link" class="flex items-center py-2 px-4 rounded text-sm text-gray-700 hover:bg-gray-100"><svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>Contact Us</a>
+                        </div>
+                    </div>
                 </nav>
-                <div class="absolute bottom-5 left-5 right-5"><button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button></div>
+                <div class="mt-auto"><button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button></div>
             </div>
         </div>
 
         <main class="container mx-auto p-4 sm:p-6 lg:p-8 pt-24">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Left Column -->
-                <div class="lg:col-span-1 space-y-8">
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Projects</h2>
-                        <div class="space-y-4">
-                            <div><label for="project-select" class="block text-sm font-medium">Current Project</label><select id="project-select" class="form-input mt-1"></select></div>
-                            <form id="add-project-form" class="flex gap-2"><input type="text" id="new-project-name" placeholder="New project name..." required class="form-input text-sm"><button type="submit" class="bg-indigo-600 text-white px-4 rounded-md hover:bg-indigo-700 text-sm font-semibold">Add</button></form>
-                        </div>
-                    </div>
+               
+
+                <!-- Right Column -->
+                <div class="lg:col-span-2 flex flex-col gap-8">
+                    <div id="expense-dashboard" class="space-y-8">
+                        <div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="summary-card bg-gradient-to-br from-blue-200 to-white-600 text-black p-6 rounded-lg shadow-lg"><h3 clahss="text-2xl font-semibold">Summary for</h3> <h2 id="project-summary-title" class="mb-4 text-2xl font-semibold text-blue-700"></h2><h3 class="text-lg font-semibold">Total Expenses</h3><p id="final-expenses" class="text-3xl font-bold">₹0.00</p></div>
+                                <div class="lg:col-span-1 space-y-8">
                     <div id="add-expense-container" class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Add New Expense</h2>
                         <form id="expense-form" class="space-y-4">
@@ -109,17 +141,10 @@
                         </form>
                     </div>
                 </div>
-
-                <!-- Right Column -->
-                <div class="lg:col-span-2 flex flex-col gap-8">
-                    <div id="expense-dashboard" class="space-y-8">
-                        <div>
-                            <h2 class="text-2xl font-semibold mb-4">Project Summary</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="summary-card bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-6 rounded-lg shadow-lg"><h3 class="text-lg font-semibold">Total Expenses</h3><p id="final-expenses" class="text-3xl font-bold mt-2">₹0.00</p></div>
                                 <div class="summary-card bg-white p-6 rounded-lg shadow-md"><h3 class="text-lg font-semibold mb-3">Material-wise Summary</h3><div id="material-summary" class="space-y-2 max-h-48 overflow-y-auto"></div></div>
                             </div>
                         </div>
+                        
                         <div class="bg-white p-6 rounded-lg shadow-md">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-4 gap-4">
                                 <h2 class="text-2xl font-semibold whitespace-nowrap">All Expenses</h2>
@@ -140,14 +165,17 @@
         </main>
     </div>
     
-    <!-- Edit Modal -->
+    <!-- Modals -->
     <div id="edit-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 class="text-lg text-center font-medium">Edit Expense</h3><form id="edit-expense-form" class="space-y-4 mt-4 text-left"><input type="hidden" id="edit-expense-id"><div><label for="edit-material-name" class="block text-sm font-medium">Material Name</label><input type="text" id="edit-material-name" required class="form-input mt-1"></div><div><label for="edit-cost" class="block text-sm font-medium">Cost</label><input type="number" id="edit-cost" required min="0" step="0.01" class="form-input mt-1"></div><div><label for="edit-date" class="block text-sm font-medium">Date</label><input type="date" id="edit-date" required class="form-input mt-1"></div><div class="flex justify-end space-x-2 pt-4"><button type="button" id="cancel-edit-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" id="save-edit-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save</button></div></form></div></div>
+    <div id="edit-project-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 class="text-lg text-center font-medium">Edit Project Name</h3><form id="edit-project-form" class="space-y-4 mt-4 text-left"><input type="hidden" id="edit-project-id"><div><label for="edit-project-name" class="block text-sm font-medium">Project Name</label><input type="text" id="edit-project-name" required class="form-input mt-1"></div><div class="flex justify-end space-x-2 pt-4"><button type="button" id="cancel-edit-project-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Save Changes</button></div></form></div></div>
+    <div id="add-project-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 class="text-lg text-center font-medium">Add New Project</h3><form id="add-project-form-modal" class="space-y-4 mt-4 text-left"><div><label for="new-project-name-modal" class="block text-sm font-medium">Project Name</label><input type="text" id="new-project-name-modal" required class="form-input mt-1"></div><div class="flex justify-end space-x-2 pt-4"><button type="button" id="cancel-add-project-btn" class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Create Project</button></div></form></div></div>
+    <div id="info-modal" class="modal-overlay fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50"><div class="modal-container relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"><h3 id="info-modal-title" class="text-lg text-center font-medium">Information</h3><div id="info-modal-content" class="mt-4 text-sm text-gray-600"></div><div class="flex justify-end pt-4"><button id="close-info-modal-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Close</button></div></div></div>
 
 <script type="module">
     // Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, setLogLevel, where, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, where, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
@@ -161,375 +189,130 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    setLogLevel('debug');
 
     // --- Global State ---
-    let currentUser = null;
-    let activeProjectId = null;
-    let projectsUnsubscribe = null;
-    let expensesUnsubscribe = null;
-    let allExpensesForProject = [];
-    let isSigningUp = false;
+    let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
 
     // --- DOM Elements ---
     const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
-    const authTitle = document.getElementById('auth-title');
-    const emailForm = document.getElementById('email-form');
-    const emailInput = document.getElementById('email-input');
-    const passwordInput = document.getElementById('password-input');
-    const authError = document.getElementById('auth-error');
-    const emailActionBtn = document.getElementById('email-action-btn');
-    const authToggleLink = document.getElementById('auth-toggle-link');
-    const forgotPasswordLink = document.getElementById('forgot-password-link');
-    const googleSignInBtn = document.getElementById('google-signin-btn');
-    const projectSelect = document.getElementById('project-select');
-    const addProjectForm = document.getElementById('add-project-form');
-    const newProjectNameInput = document.getElementById('new-project-name');
-    const expenseDashboard = document.getElementById('expense-dashboard');
-    const noProjectMessage = document.getElementById('no-project-message');
-    const expenseForm = document.getElementById('expense-form');
-    const expenseList = document.getElementById('expense-list');
-    const finalExpensesEl = document.getElementById('final-expenses');
-    const materialSummaryEl = document.getElementById('material-summary');
-    const appHeader = document.getElementById('app-header');
-    const userProfileDesktop = document.getElementById('user-profile-desktop');
-    const userProfileMobile = document.getElementById('user-profile-mobile');
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
-    const mobileMenu = document.getElementById('mobile-menu');
-    const closeMenuBtn = document.getElementById('close-menu-btn');
-    const mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
-    const editModal = document.getElementById('edit-modal');
-    const editExpenseForm = document.getElementById('edit-expense-form');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
-    const searchInput = document.getElementById('search-input');
-    const startDateInput = document.getElementById('start-date-input');
-    const endDateInput = document.getElementById('end-date-input');
-    const sidebarProjectList = document.getElementById('sidebar-project-list');
+    const authTitle = document.getElementById('auth-title'), emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), authError = document.getElementById('auth-error'), emailActionBtn = document.getElementById('email-action-btn'), authToggleLink = document.getElementById('auth-toggle-link'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
+    const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
+    const userProfileDesktop = document.getElementById('user-profile-desktop'), userProfileMobile = document.getElementById('user-profile-mobile');
+    const hamburgerBtn = document.getElementById('hamburger-btn'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
+    const editModal = document.getElementById('edit-modal'), editExpenseForm = document.getElementById('edit-expense-form'), cancelEditBtn = document.getElementById('cancel-edit-btn');
+    const searchInput = document.getElementById('search-input'), startDateInput = document.getElementById('start-date-input'), endDateInput = document.getElementById('end-date-input');
+    const sidebarProjectList = document.getElementById('sidebar-project-list'), sidebarAddProjectBtn = document.getElementById('sidebar-add-project-btn');
+    const editProjectModal = document.getElementById('edit-project-modal'), editProjectForm = document.getElementById('edit-project-form'), cancelEditProjectBtn = document.getElementById('cancel-edit-project-btn');
+    const addProjectModal = document.getElementById('add-project-modal'), addProjectFormModal = document.getElementById('add-project-form-modal'), cancelAddProjectBtn = document.getElementById('cancel-add-project-btn');
+    const infoModal = document.getElementById('info-modal'), infoModalTitle = document.getElementById('info-modal-title'), infoModalContent = document.getElementById('info-modal-content'), closeInfoModalBtn = document.getElementById('close-info-modal-btn');
+    const projectSummaryTitle = document.getElementById('project-summary-title');
 
     // --- View Management ---
-    function showView(viewName) {
-        Object.values(views).forEach(v => v.classList.remove('active'));
-        views[viewName].classList.add('active');
-    }
+    const showView = (viewName) => { Object.values(views).forEach(v => v.classList.remove('active')); views[viewName].classList.add('active'); };
 
     // --- Authentication ---
-    setTimeout(() => {
-        if (!currentUser) showView('auth');
-    }, 1500);
-
+    setTimeout(() => { if (!currentUser) showView('auth'); }, 1500);
     onAuthStateChanged(auth, user => {
         currentUser = user;
-        if (user) {
-            showView('app');
-            setupUIForUser(user);
-            listenForProjects(user.uid);
-        } else {
-            showView('auth');
-            if (projectsUnsubscribe) projectsUnsubscribe();
-            if (expensesUnsubscribe) expensesUnsubscribe();
-            activeProjectId = null;
-        }
+        if (user) { showView('app'); setupUIForUser(user); listenForProjects(user.uid); } 
+        else { showView('auth'); if (projectsUnsubscribe) projectsUnsubscribe(); if (expensesUnsubscribe) expensesUnsubscribe(); activeProjectId = null; }
     });
-
-    authToggleLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        isSigningUp = !isSigningUp;
-        authTitle.textContent = isSigningUp ? 'Create Account' : 'Welcome Back';
-        emailActionBtn.textContent = isSigningUp ? 'Sign Up' : 'Sign In';
-        authToggleLink.textContent = isSigningUp ? 'Have an account? Sign In' : 'Need an account? Sign Up';
-        authError.textContent = '';
-    });
-
-    emailForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        authError.textContent = '';
-        try {
-            if (isSigningUp) {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } else {
-                await signInWithEmailAndPassword(auth, email, password);
-            }
-        } catch (error) {
-            authError.textContent = error.message;
-        }
-    });
-
-    googleSignInBtn.addEventListener('click', () => {
-        const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider).catch(error => authError.textContent = error.message);
-    });
-
-    forgotPasswordLink.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const email = emailInput.value;
-        if (!email) {
-            authError.textContent = 'Please enter your email address first.';
-            return;
-        }
-        try {
-            await sendPasswordResetEmail(auth, email);
-            alert('Password reset email sent! Please check your inbox.');
-        } catch (error) {
-            authError.textContent = error.message;
-        }
-    });
+    authToggleLink.addEventListener('click', e => { e.preventDefault(); isSigningUp = !isSigningUp; authTitle.textContent = isSigningUp ? 'Create Account' : 'Welcome Back'; emailActionBtn.textContent = isSigningUp ? 'Sign Up' : 'Sign In'; authToggleLink.textContent = isSigningUp ? 'Have an account? Sign In' : 'Need an account? Sign Up'; authError.textContent = ''; });
+    emailForm.addEventListener('submit', async e => { e.preventDefault(); const email = emailInput.value, password = passwordInput.value; authError.textContent = ''; try { if (isSigningUp) await createUserWithEmailAndPassword(auth, email, password); else await signInWithEmailAndPassword(auth, email, password); } catch (error) { authError.textContent = error.message; } });
+    googleSignInBtn.addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()).catch(error => authError.textContent = error.message));
+    forgotPasswordLink.addEventListener('click', async e => { e.preventDefault(); const email = emailInput.value; if (!email) { authError.textContent = 'Please enter your email address first.'; return; } try { await sendPasswordResetEmail(auth, email); alert('Password reset email sent!'); } catch (error) { authError.textContent = error.message; } });
 
     // --- UI Setup & Mobile Menu ---
     function setupUIForUser(user) {
-        const photo = user.photoURL || `https://placehold.co/100x100/E2E8F0/4A5568?text=${user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}`;
-        const profileHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
-        const mobileProfileHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
-        userProfileDesktop.innerHTML = profileHTML;
-        userProfileMobile.innerHTML = mobileProfileHTML;
+        const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
+        userProfileDesktop.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
+        userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
         document.getElementById('date').valueAsDate = new Date();
     }
-
-    function openMenu() {
-        mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0');
-        mobileMenu.classList.remove('-translate-x-full');
-    }
-    function closeMenu() {
-        mobileMenuBackdrop.classList.add('pointer-events-none', 'opacity-0');
-        mobileMenu.classList.add('-translate-x-full');
-    }
+    const openMenu = () => { mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0'); mobileMenu.classList.remove('-translate-x-full'); };
+    const closeMenu = () => { mobileMenuBackdrop.classList.add('pointer-events-none', 'opacity-0'); mobileMenu.classList.add('-translate-x-full'); };
     hamburgerBtn.addEventListener('click', openMenu);
     closeMenuBtn.addEventListener('click', closeMenu);
-    mobileMenuBackdrop.addEventListener('click', (e) => {
-        if (e.target === mobileMenuBackdrop) closeMenu();
-    });
+    mobileMenuBackdrop.addEventListener('click', e => { if (e.target === mobileMenuBackdrop) closeMenu(); });
     mobileSignOutBtn.addEventListener('click', () => signOut(auth));
 
-    // --- Projects & Data Migration ---
-    async function migrateOldExpenses(uid, generalProjectId) {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-        const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", null));
-        const snapshot = await getDocs(q);
-
-        if (snapshot.empty) return;
-
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => {
-            batch.update(doc.ref, { projectId: generalProjectId });
-        });
-        await batch.commit();
-        console.log(`Migrated ${snapshot.size} old expenses.`);
-    }
-
+    // --- Projects ---
     function listenForProjects(uid) {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+        const appId = "construction-expenses";
         const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
         projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
-            let projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            if (projects.length === 0) {
-                await addDoc(projectsRef, { name: "General" });
-                return;
-            }
-            
-            let generalProject = projects.find(p => p.name === "General");
-            if (generalProject) {
-                 migrateOldExpenses(uid, generalProject.id);
-            }
-
-            populateProjectDropdown(projects);
+            projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (projects.length === 0) { await addDoc(projectsRef, { name: "General" }); return; }
             populateSidebarProjects(projects);
-
-            if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
-                activeProjectId = projects[0].id;
-            }
-            projectSelect.value = activeProjectId;
-            toggleDashboardVisibility(true);
-            listenForExpenses(uid, activeProjectId);
+            if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) activeProjectId = projects[0].id;
+            updateActiveProject();
         });
     }
+    
+    function updateActiveProject() {
+        const activeProject = projects.find(p => p.id === activeProjectId);
+        if (activeProject) {
+            projectSummaryTitle.textContent = `${activeProject.name}`;
+        }
+        updateSidebarSelection();
+        toggleDashboardVisibility(true);
+        listenForExpenses(currentUser.uid, activeProjectId);
+    }
 
-    addProjectForm.addEventListener('submit', async (e) => {
+    sidebarAddProjectBtn.addEventListener('click', () => { addProjectModal.classList.remove('hidden'); document.getElementById('new-project-name-modal').focus(); closeMenu(); });
+    addProjectFormModal.addEventListener('submit', async e => {
         e.preventDefault();
-        const projectName = newProjectNameInput.value.trim();
+        const projectName = document.getElementById('new-project-name-modal').value.trim();
         if (projectName && currentUser) {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
+            const appId = "construction-expenses";
             const projectsRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`);
             await addDoc(projectsRef, { name: projectName });
-            newProjectNameInput.value = '';
+            addProjectFormModal.reset();
+            addProjectModal.classList.add('hidden');
         }
     });
 
-    projectSelect.addEventListener('change', () => {
-        activeProjectId = projectSelect.value;
-        listenForExpenses(currentUser.uid, activeProjectId);
-    });
-
-    function populateProjectDropdown(projects) {
-        projectSelect.innerHTML = projects.map(p => `<option value="${p.id}">${escapeHTML(p.name)}</option>`).join('');
-    }
-    
     function populateSidebarProjects(projects) {
-        sidebarProjectList.innerHTML = projects.map(p => `<a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 rounded text-sm transition duration-200 hover:bg-indigo-50">${escapeHTML(p.name)}</a>`).join('');
-        document.querySelectorAll('.sidebar-project-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                activeProjectId = e.target.dataset.projectId;
-                projectSelect.value = activeProjectId;
-                listenForExpenses(currentUser.uid, activeProjectId);
-                closeMenu();
-            });
-        });
+        sidebarProjectList.innerHTML = projects.map(p => {
+            const isGeneral = p.name === "General";
+            const buttonsHTML = isGeneral ? '' : `<div class="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity"><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1 text-gray-400 hover:text-indigo-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1 text-gray-400 hover:text-red-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+            return `<div class="flex justify-between items-center group rounded"><a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 text-sm flex-grow truncate rounded">${escapeHTML(p.name)}</a>${buttonsHTML}</div>`;
+        }).join('');
+        document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); activeProjectId = e.target.dataset.projectId; updateActiveProject(); closeMenu(); }));
+        document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click', handleEditProject));
+        document.querySelectorAll('.delete-project-btn').forEach(btn => btn.addEventListener('click', handleDeleteProject));
     }
 
-    function toggleDashboardVisibility(hasProjects) {
-        expenseDashboard.style.display = hasProjects ? 'block' : 'none';
-        noProjectMessage.style.display = hasProjects ? 'none' : 'block';
-    }
+    function updateSidebarSelection() { document.querySelectorAll('.sidebar-project-link').forEach(link => { link.classList.toggle('active', link.dataset.projectId === activeProjectId); }); }
+    const toggleDashboardVisibility = (hasProjects) => { expenseDashboard.style.display = hasProjects ? 'block' : 'none'; noProjectMessage.style.display = hasProjects ? 'none' : 'block'; };
 
     // --- Expenses & Filtering ---
-    function listenForExpenses(uid, projectId) {
-        if (expensesUnsubscribe) expensesUnsubscribe();
-        if (!uid || !projectId) {
-            allExpensesForProject = [];
-            applyFilters();
-            updateSummaries([]);
-            return;
-        };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-        const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", projectId));
-        expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-            allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
-            applyFilters();
-            updateSummaries(allExpensesForProject);
-        });
-    }
-    
-    function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-
-        let filtered = allExpensesForProject.filter(expense => {
-            const materialMatch = expense.material.toLowerCase().includes(searchTerm);
-            const expenseDate = expense.date;
-            const startMatch = !startDate || expenseDate >= startDate;
-            const endMatch = !endDate || expenseDate <= endDate;
-            return materialMatch && startMatch && endMatch;
-        });
-
-        renderExpenses(filtered);
-    }
-
+    function listenForExpenses(uid, projectId) { if (expensesUnsubscribe) expensesUnsubscribe(); if (!uid || !projectId) { allExpensesForProject = []; applyFilters(); updateSummaries([]); return; }; const appId = "construction-expenses"; const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`); const q = query(expensesRef, where("projectId", "==", projectId)); expensesUnsubscribe = onSnapshot(q, (snapshot) => { allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date)); applyFilters(); updateSummaries(allExpensesForProject); }); }
+    const applyFilters = () => { const searchTerm = searchInput.value.toLowerCase(), startDate = startDateInput.value, endDate = endDateInput.value; const filtered = allExpensesForProject.filter(exp => (exp.material.toLowerCase().includes(searchTerm)) && (!startDate || exp.date >= startDate) && (!endDate || exp.date <= endDate)); renderExpenses(filtered); };
     [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
-    
-    expenseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!currentUser || !activeProjectId) return;
-        const material = document.getElementById('material-name').value.trim();
-        const cost = parseFloat(document.getElementById('cost').value);
-        const date = document.getElementById('date').value;
-        if (material && !isNaN(cost) && date) {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-            await addDoc(expensesRef, { material, cost, date, projectId: activeProjectId });
-            expenseForm.reset();
-            document.getElementById('date').valueAsDate = new Date();
-        }
-    });
+    expenseForm.addEventListener('submit', async e => { e.preventDefault(); if (!currentUser || !activeProjectId) return; const material = document.getElementById('material-name').value.trim(), cost = parseFloat(document.getElementById('cost').value), date = document.getElementById('date').value; if (material && !isNaN(cost) && date) { const appId = "construction-expenses"; const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`); await addDoc(expensesRef, { material, cost, date, projectId: activeProjectId }); expenseForm.reset(); document.getElementById('date').valueAsDate = new Date(); } });
 
     // --- Render, CRUD, Utils ---
-    function renderExpenses(expenses) {
-        expenseList.innerHTML = '';
-        if (expenses.length === 0) {
-            expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
-            return;
-        }
-        expenses.forEach(expense => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td>
-                <td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN')}</div></td>
-                <td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC' })}</div></td>
-                <td class="px-6 py-4 text-right text-sm font-medium space-x-4">
-                    <button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button>
-                    <button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button>
-                </td>
-            `;
-            expenseList.appendChild(tr);
-        });
-        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
-        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
-    }
-
-    async function handleDelete(event) {
-        const id = event.target.dataset.id;
-        if (id && confirm("Are you sure?")) {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id));
-        }
-    }
-
-    function handleEdit(event) {
-        const id = event.target.dataset.id;
-        const expense = allExpensesForProject.find(e => e.id === id);
-        if (!expense) return;
-        document.getElementById('edit-expense-id').value = expense.id;
-        document.getElementById('edit-material-name').value = expense.material;
-        document.getElementById('edit-cost').value = expense.cost;
-        document.getElementById('edit-date').value = expense.date;
-        editModal.classList.remove('hidden');
-    }
-
-    editExpenseForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('edit-expense-id').value;
-        const updatedData = {
-            material: document.getElementById('edit-material-name').value.trim(),
-            cost: parseFloat(document.getElementById('edit-cost').value),
-            date: document.getElementById('edit-date').value,
-        };
-        if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-            await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id), updatedData);
-            closeEditModal();
-        }
-    });
+    function renderExpenses(expenses) { if (expenses.length === 0) { expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`; return; } expenseList.innerHTML = expenses.map(expense => `<tr><td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></td><td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })}</div></td><td class="px-6 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join(''); document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete)); document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit)); }
+    async function handleDelete(event) { const id = event.target.dataset.id; if (id && confirm("Are you sure you want to delete this expense?")) { const appId = "construction-expenses"; await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id)); } }
+    function handleEdit(event) { const id = event.target.dataset.id; const expense = allExpensesForProject.find(e => e.id === id); if (!expense) return; document.getElementById('edit-expense-id').value = expense.id; document.getElementById('edit-material-name').value = expense.material; document.getElementById('edit-cost').value = expense.cost; document.getElementById('edit-date').value = expense.date; editModal.classList.remove('hidden'); }
+    editExpenseForm.addEventListener('submit', async e => { e.preventDefault(); const id = document.getElementById('edit-expense-id').value; const updatedData = { material: document.getElementById('edit-material-name').value.trim(), cost: parseFloat(document.getElementById('edit-cost').value), date: document.getElementById('edit-date').value }; if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) { const appId = "construction-expenses"; await updateDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id), updatedData); closeEditModal(); } });
+    function handleEditProject(e) { const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName; document.getElementById('edit-project-id').value = projectId; document.getElementById('edit-project-name').value = projectName; editProjectModal.classList.remove('hidden'); }
+    async function handleDeleteProject(e) { const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName; if (!projectId) return; const confirmation = confirm(`Are you sure you want to delete the project "${projectName}"?\n\nWARNING: This will also permanently delete all expenses associated with this project.`); if (!confirmation) return; const appId = "construction-expenses"; const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`); const q = query(expensesRef, where("projectId", "==", projectId)); const expensesSnapshot = await getDocs(q); const batch = writeBatch(db); expensesSnapshot.forEach(doc => batch.delete(doc.ref)); const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId); batch.delete(projectRef); try { await batch.commit(); if (activeProjectId === projectId) { const generalProject = projects.find(p => p.name === 'General') || projects[0]; if(generalProject) { activeProjectId = generalProject.id; updateActiveProject(); } } } catch (error) { console.error("Error deleting project:", error); alert("Failed to delete the project."); } }
+    editProjectForm.addEventListener('submit', async e => { e.preventDefault(); const projectId = document.getElementById('edit-project-id').value, newName = document.getElementById('edit-project-name').value.trim(); if (newName && projectId) { const appId = "construction-expenses"; const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId); await updateDoc(projectRef, { name: newName }); closeEditProjectModal(); } });
+    const closeEditModal = () => editModal.classList.add('hidden'); cancelEditBtn.addEventListener('click', closeEditModal); editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+    const closeEditProjectModal = () => editProjectModal.classList.add('hidden'); cancelEditProjectBtn.addEventListener('click', closeEditProjectModal); editProjectModal.addEventListener('click', e => { if (e.target === editProjectModal) closeEditProjectModal(); });
+    const closeAddProjectModal = () => addProjectModal.classList.add('hidden'); cancelAddProjectBtn.addEventListener('click', closeAddProjectModal); addProjectModal.addEventListener('click', e => { if (e.target === addProjectModal) closeAddProjectModal(); });
     
-    const closeEditModal = () => editModal.classList.add('hidden');
-    cancelEditBtn.addEventListener('click', closeEditModal);
-    editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+    // --- Info Modals ---
+    const infoContent = { 'about-link': { title: 'About Us', content: 'This Expense Tracker was built to help you manage your project finances with ease. Track materials, costs, and dates efficiently.' }, 'privacy-link': { title: 'Privacy Policy', content: 'Your data is stored securely with Firebase and is only accessible by you. We do not share your personal or financial information with any third parties.' }, 'contact-link': { title: 'Contact Us', content: 'For support or inquiries, please email us at: <a href="mailto:support@expensetracker.app" class="text-indigo-600">support@expensetracker.app</a>' } };
+    document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(link => { link.addEventListener('click', e => { e.preventDefault(); const { title, content } = infoContent[e.currentTarget.id]; infoModalTitle.textContent = title; infoModalContent.innerHTML = content; infoModal.classList.remove('hidden'); }); });
+    closeInfoModalBtn.addEventListener('click', () => infoModal.classList.add('hidden'));
+    infoModal.addEventListener('click', e => { if (e.target === infoModal) infoModal.classList.add('hidden'); });
 
     // --- Summaries ---
-    function updateSummaries(expenses) {
-        const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
-        finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        const materialTotals = expenses.reduce((acc, exp) => {
-            const key = exp.material.trim().toLowerCase();
-            acc[key] = (acc[key] || 0) + exp.cost;
-            return acc;
-        }, {});
-        materialSummaryEl.innerHTML = '';
-        const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
-        if (sorted.length === 0) {
-            materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
-            return;
-        }
-        sorted.forEach(key => {
-            const total = materialTotals[key];
-            const div = document.createElement('div');
-            div.className = "flex justify-between items-center text-sm";
-            const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-            div.innerHTML = `<span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
-            materialSummaryEl.appendChild(div);
-        });
-    }
-
-    function escapeHTML(str) {
-        const div = document.createElement('div');
-        div.appendChild(document.createTextNode(str || ''));
-        return div.innerHTML;
-    }
+    function updateSummaries(expenses) { const total = expenses.reduce((sum, exp) => sum + exp.cost, 0); finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; const materialTotals = expenses.reduce((acc, exp) => { const key = exp.material.trim().toLowerCase(); acc[key] = (acc[key] || 0) + exp.cost; return acc; }, {}); const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]); if (sorted.length === 0) { materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`; return; } materialSummaryEl.innerHTML = sorted.map(key => { const total = materialTotals[key]; const displayName = key.charAt(0).toUpperCase() + key.slice(1); return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>`; }).join(''); }
+    const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 </script>
 </body>
 </html>
