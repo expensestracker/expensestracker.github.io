@@ -3,57 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Expenses Report</title>
+    <title>Expense Tracker - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter',  sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">All Expenses Report</h1>
-            <p id="status-message" class="text-gray-600 mt-2">Please sign in to view your expenses.</p>
-        </header>
-
-        <!-- Auth View -->
-        <div id="auth-view" class="text-center">
-            <button id="google-signin-btn" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out inline-flex items-center shadow-md">
-                <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+    <!-- Login View -->
+    <div id="login-view" class="flex flex-col items-center justify-center h-screen">
+        <div class="p-8 bg-white rounded-lg shadow-md text-center w-full max-w-sm">
+            <h1 class="text-2xl font-bold mb-4">Admin Panel Login</h1>
+            <p class="text-gray-600 mb-6">Please sign in to manage the application.</p>
+            <button id="login-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-6 rounded-md hover:bg-indigo-700 transition">
                 Sign in with Google
             </button>
         </div>
+    </div>
 
-        <!-- Report View -->
-        <div id="report-view" class="hidden">
+    <!-- Main Admin View -->
+    <div id="admin-view" class="hidden">
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <h1 class="text-xl font-semibold">User Management</h1>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-email" class="text-sm text-gray-600"></span>
+                        <button id="logout-btn" class="text-sm text-indigo-600 hover:underline">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
             <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4 border-b pb-4">
+                    <h2 class="text-lg font-semibold">Registered Users</h2>
+                    <button id="refresh-btn" class="text-sm bg-gray-200 px-3 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50">
+                        Refresh
+                    </button>
+                </div>
+                <p id="error-message" class="text-red-500 text-center mb-4 hidden"></p>
+                <div id="loader" class="text-center py-4">Loading users...</div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200 hidden">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase">UID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium uppercase">Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium uppercase">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="report-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Data will be injected here -->
+                        <tbody id="user-list" class="bg-white divide-y divide-gray-200">
+                            <!-- User rows will be inserted here -->
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
+        // --- Firebase Configuration ---
+        // IMPORTANT: Use the same Firebase config as your main app
         const firebaseConfig = {
             apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
             authDomain: "construction-expenses-app.firebaseapp.com",
@@ -62,100 +81,132 @@
             messagingSenderId: "944353147981",
             appId: "1:944353147981:web:36ff635b184d5eac69b004"
         };
-        
+
+        // --- Firebase Initialization ---
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        const functions = getFunctions(app);
 
-        const statusMessage = document.getElementById('status-message');
-        const authView = document.getElementById('auth-view');
-        const reportView = document.getElementById('report-view');
-        const googleSignInBtn = document.getElementById('google-signin-btn');
-        const reportTableBody = document.getElementById('report-table-body');
+        // --- DOM Elements ---
+        const loginView = document.getElementById('login-view');
+        const adminView = document.getElementById('admin-view');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminEmailEl = document.getElementById('admin-email');
+        const userListEl = document.getElementById('user-list');
+        const userTable = userListEl.closest('table');
+        const loader = document.getElementById('loader');
+        const errorEl = document.getElementById('error-message');
+        const refreshBtn = document.getElementById('refresh-btn');
 
-        googleSignInBtn.addEventListener('click', () => {
-            const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(error => {
-                statusMessage.textContent = `Sign-in failed: ${error.message}`;
-            });
-        });
+        // --- Firebase Callable Functions ---
+        const listUsers = httpsCallable(functions, 'listUsers');
+        const enableUser = httpsCallable(functions, 'enableUser');
+        const disableUser = httpsCallable(functions, 'disableUser');
 
-        onAuthStateChanged(auth, (user) => {
+        // --- Authentication Logic ---
+        onAuthStateChanged(auth, user => {
             if (user) {
-                authView.classList.add('hidden');
-                reportView.classList.remove('hidden');
-                statusMessage.textContent = 'Loading your expense report...';
-                fetchAllDataAndGenerateReport(user.uid);
+                // In a real app, you would check for an admin custom claim here
+                adminEmailEl.textContent = user.email;
+                loginView.style.display = 'none';
+                adminView.style.display = 'block';
+                fetchAndRenderUsers();
             } else {
-                authView.classList.remove('hidden');
-                reportView.classList.add('hidden');
-                statusMessage.textContent = 'Please sign in to view your expenses.';
+                loginView.style.display = 'flex';
+                adminView.style.display = 'none';
             }
         });
 
-        async function fetchAllDataAndGenerateReport(userId) {
+        loginBtn.addEventListener('click', () => {
+            const provider = new GoogleAuthProvider();
+            signInWithPopup(auth, provider).catch(err => {
+                console.error("Login failed:", err);
+                alert("Login failed. Check the console for details.");
+            });
+        });
+
+        logoutBtn.addEventListener('click', () => signOut(auth));
+        refreshBtn.addEventListener('click', fetchAndRenderUsers);
+
+        // --- User Management Logic ---
+        async function fetchAndRenderUsers() {
+            loader.style.display = 'block';
+            userTable.style.display = 'none';
+            errorEl.style.display = 'none';
+            refreshBtn.disabled = true;
+
             try {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'construction-expenses';
-                
-                // 1. Fetch all projects and create a lookup map
-                statusMessage.textContent = 'Step 1/3: Fetching projects...';
-                const projectsRef = collection(db, `artifacts/${appId}/users/${userId}/projects`);
-                const projectsSnapshot = await getDocs(projectsRef);
-                const projectMap = new Map();
-                projectsSnapshot.forEach(doc => {
-                    projectMap.set(doc.id, doc.data().name);
-                });
-                projectMap.set(null, 'Unassigned'); // Handle old data without a projectId
-
-                // 2. Fetch all expenses
-                statusMessage.textContent = 'Step 2/3: Fetching all expenses...';
-                const expensesRef = collection(db, `artifacts/${appId}/users/${userId}/expenses`);
-                const expensesQuery = query(expensesRef, orderBy("date", "desc"));
-                const expensesSnapshot = await getDocs(expensesQuery);
-                const allExpenses = expensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                // 3. Combine data and render the report
-                statusMessage.textContent = 'Step 3/3: Generating report...';
-                renderReport(allExpenses, projectMap);
-                statusMessage.textContent = `Report generated for ${allExpenses.length} expenses across ${projectMap.size - 1} project(s).`;
-
-            } catch (error) {
-                console.error("Error generating report:", error);
-                statusMessage.textContent = `Error: ${error.message}`;
-                reportTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-red-500">Could not load data. Please check your Firestore rules and ensure you have an internet connection.</td></tr>`;
+                const result = await listUsers();
+                const users = result.data.users;
+                renderUsers(users);
+                userTable.style.display = 'table';
+            } catch (err) {
+                console.error("Error fetching users:", err);
+                errorEl.textContent = 'Failed to fetch users. You may not have permission to perform this action.';
+                errorEl.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+                refreshBtn.disabled = false;
             }
         }
 
-        function renderReport(expenses, projectMap) {
-            reportTableBody.innerHTML = '';
-            if (expenses.length === 0) {
-                reportTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
-                return;
-            }
-
-            expenses.forEach(expense => {
-                const projectName = projectMap.get(expense.projectId) || 'Unassigned';
-                const formattedCost = `₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                const formattedDate = new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
-
+        function renderUsers(users) {
+            userListEl.innerHTML = ''; // Clear existing list
+            users.forEach(user => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50";
+                const photoURL = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
+                
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm font-semibold text-gray-900">${escapeHTML(projectName)}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${escapeHTML(expense.material)}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${formattedCost}</div></td>
-                    <td class="px-6 py-4 whitespace-nowrap"><div class="text-sm text-gray-700">${formattedDate}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10"><img class="h-10 w-10 rounded-full" src="${photoURL}" alt=""></div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${user.displayName || 'N/A'}</div>
+                                <div class="text-sm text-gray-500">${user.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.uid}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.disabled ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
+                            ${user.disabled ? 'Disabled' : 'Active'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button data-uid="${user.uid}" data-disabled="${user.disabled}" class="toggle-status-btn font-semibold rounded-md px-3 py-1 ${user.disabled ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}">
+                            ${user.disabled ? 'Enable' : 'Disable'}
+                        </button>
+                    </td>
                 `;
-                reportTableBody.appendChild(tr);
+                userListEl.appendChild(tr);
+            });
+
+            // Add event listeners to the new buttons
+            document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+                btn.addEventListener('click', handleToggleUserStatus);
             });
         }
 
-        function escapeHTML(str) {
-            const p = document.createElement('p');
-            p.appendChild(document.createTextNode(str || ''));
-            return p.innerHTML;
-        }
+        async function handleToggleUserStatus(event) {
+            const btn = event.currentTarget;
+            const uid = btn.dataset.uid;
+            const isDisabled = btn.dataset.disabled === 'true';
 
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+                const action = isDisabled ? enableUser : disableUser;
+                await action({ uid });
+                fetchAndRenderUsers(); // Refresh the list on success
+            } catch (err) {
+                console.error("Failed to toggle user status:", err);
+                alert(`Error: ${err.message}`);
+                btn.disabled = false; // Re-enable button on failure
+                btn.textContent = isDisabled ? 'Enable' : 'Disable';
+            }
+        }
     </script>
 </body>
 </html>
