@@ -143,7 +143,7 @@
 
 
 
-<div onclick="binstallApp()" class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm max-w-sm mx-auto">
+<div onclick="installApp()" class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm max-w-sm mx-auto">
     <div class="flex items-center justify-between gap-6">
         <!-- Left Section: Heading -->
         <div class="flex-1">
@@ -176,20 +176,7 @@
             </a>
         </div>
     </div>
-</div>
-
-
-<!-- Install Prompt -->
-<div id="install-banner" class="bg-indigo-600 text-white p-4 rounded-md hidden">
-  <button onclick="installApp()" class="font-semibold">
-    Install App
-  </button>
-</div>
-
-<!-- Installed-only Content -->
-<div id="installed-content" class="hidden">
-  <p class="text-green-600 font-semibold">App is installed ✅</p>
-</div>
+</div>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 ">
                                 <div class="summary-card bg-gradient-to-br from-yellow-200 to-white-600 text-black border border-gray-200 p-4 my-4 rounded-2xl shadow-sm"><h3 clahss="text-2xl font-semibold">Summary of</h3> <h2 id="project-summary-title" class="mb-4 text-2xl font-semibold text-black-700"></h2><h3 class="text-lg font-semibold">Total Expenses</h3><p id="final-expenses" class="text-3xl font-bold">0.00</p></div>
@@ -248,36 +235,13 @@ if ("serviceWorker" in navigator) {
 <script>
 let deferredPrompt;
 
-// Detect install prompt availability
-window.addEventListener("beforeinstallprompt", (e) => {
+window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferredPrompt = e;
-
-  // PWA NOT installed
-  document.getElementById("install-banner").classList.remove("hidden");
 });
 
-// Detect if PWA is already installed
-function isPWAInstalled() {
-  return window.matchMedia("(display-mode: standalone)").matches
-    || window.navigator.standalone === true;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (isPWAInstalled()) {
-    document.getElementById("install-banner").classList.add("hidden");
-    document.getElementById("installed-content").classList.remove("hidden");
-  }
-});
-
-// Install button handler
 function installApp() {
-  if (!deferredPrompt) return;
-
   deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => {
-    deferredPrompt = null;
-  });
 }
 </script>
 </body>
