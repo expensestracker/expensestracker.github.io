@@ -139,3 +139,32 @@
     // --- Summaries ---
     function updateSummaries(expenses) { const total = expenses.reduce((sum, exp) => sum + exp.cost, 0); finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; const materialTotals = expenses.reduce((acc, exp) => { const key = exp.material.trim().toLowerCase(); acc[key] = (acc[key] || 0) + exp.cost; return acc; }, {}); const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]); if (sorted.length === 0) { materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`; return; } materialSummaryEl.innerHTML = sorted.map(key => { const total = materialTotals[key]; const displayName = key.charAt(0).toUpperCase() + key.slice(1); return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>`; }).join(''); }
     const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
+// Register Service Worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js");
+  });
+}
+
+// Install prompt
+let deferredPrompt;
+const installBtn = document.getElementById("installBtn");
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.classList.remove("hidden");
+});
+
+window.installApp = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.classList.add("hidden");
+};
+
+// Hide button after install
+window.addEventListener("appinstalled", () => {
+  installBtn.classList.add("hidden");
+});
