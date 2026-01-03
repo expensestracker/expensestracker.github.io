@@ -148,7 +148,7 @@ if ("serviceWorker" in navigator) {
 
 // Install prompt
 let deferredPrompt;
-const installBtn = document.getElementById("installBtn");
+const installBtn = document.getElementById("ibtn");
 
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
