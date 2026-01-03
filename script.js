@@ -146,6 +146,7 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+
 // Install prompt
 let deferredPrompt;
 const installBtn = document.getElementById("ibtn");
