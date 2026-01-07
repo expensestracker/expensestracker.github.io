@@ -28,22 +28,25 @@
       <div id="auth-view" class="view h-screen w-screen flex-col items-center justify-center p-4">
         <div class="w-full max-w-sm">
           <div class="mb-4">
-            <section class="pt-10 pb-5 ">
+            <section class="pt-5">
               <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-left">
                 <h1 class="text-2xl md:text-6xl font-bold text-gray-800 tracking-tight"> Take Control of Your Finances </h1>
                 <p class="mt-1 max-w-2xl mx-auto text-lg text-slate-600"> Track expenses, manage budgets, and gain clarity on your spending. The simple, secure, and free way to manage finances. </p>
               </div>
+              
             </section>
           </div>
-          <div class="bg-white p-8 rounded-lg">
+          <div class="p-4 rounded-lg">
             <form id="email-form" class="space-y-4">
-              <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
+              
+              <h1 id="auth-title" class="text-slate-600 font-bold text-center h-4"></h1>
               <input type="email" id="email-input" placeholder="Email Address" required class="form-input">
               <input type="password" id="password-input" placeholder="Password (min. 6 characters)" required class="form-input">
-              <button type="submit" id="email-action-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Sign In</button>
+              <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
+              <button type="submit" id="email-action-btn" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700">Log In</button>
             </form>
             <div class="text-center my-4 text-xs">
-              <a href="#" id="auth-toggle-link" class="text-indigo-600 hover:underline">Need an account? Sign Up</a>
+              <a href="#" id="auth-toggle-link" class="text-indigo-600 hover:underline">Need an account? Create now</a>
               <span class="mx-1 text-gray-300">|</span>
               <a href="#" id="forgot-password-link" class="text-indigo-600 hover:underline">Forgot Password?</a>
             </div>
@@ -61,11 +64,7 @@
               </svg> Sign in with Google </button>
           </div>
         </div>
-        <footer class="border-t mt-20">
-          <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-slate-500">
-            <p>&copy; 2025 Expense Tracker. All Rights Reserved.</p>
-          </div>
-        </footer>
+       
       </div>
       <!-- Main Application View -->
       <div id="app-view" class="view flex-col">
@@ -328,6 +327,8 @@
           </div>
         </div>
       </div>
-      <script type="module" src="script.js"></script>
+      <script type="module" src="script.js">
+      
+      </script>
     </body>
 </html>
