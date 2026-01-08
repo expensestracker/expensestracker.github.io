@@ -25,30 +25,44 @@ const db = getFirestore(app);
 // To ensure no "ghost" data exists from previous sessions:
 // (Optional) clearPersistence(db); 
 
-// --- 2. NETWORK STATUS BANNER LOGIC ---
+// --- NETWORK STATUS BANNER (INSIDE HEADER) ---
+
+const header = document.getElementById('app-header');
+
 const networkBanner = document.createElement('div');
 networkBanner.id = 'network-status-banner';
-networkBanner.style = "position: fixed; top: 0; left: 0; width: 100%; padding: 10px; text-align: center; font-weight: bold; z-index: 9999; transition: all 0.3s ease; display: none;";
-document.body.prepend(networkBanner);
+networkBanner.style.cssText = `
+  width: 100%;
+  padding: 8px 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  display: none;
+`;
 
-function updateOnlineStatus() {
+// Insert banner at top of header
+header.prepend(networkBanner);
+
+async function updateOnlineStatus() {
     if (navigator.onLine) {
-        enableNetwork(db); // Re-enable Firestore networking
+        await enableNetwork(db);
         networkBanner.style.display = 'none';
         console.log("App is online. Sync enabled.");
     } else {
-        disableNetwork(db); // Stop Firestore from trying to sync/reconnect
-        networkBanner.textContent = "⚠️ You are offline. Changes cannot be saved.";
+        await disableNetwork(db);
+        networkBanner.textContent = "⚠️ You are offline. Changes will not be saved.";
         networkBanner.style.backgroundColor = "#fee2e2"; // red-100
         networkBanner.style.color = "#991b1b"; // red-800
         networkBanner.style.display = 'block';
-        alert("Connection lost. Please reconnect to continue using the app.");
+        console.warn("App is offline.");
     }
 }
 
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
-updateOnlineStatus(); // Initial check
+
+// Initial check
+updateOnlineStatus();
 
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
