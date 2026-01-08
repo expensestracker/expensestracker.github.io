@@ -1,9 +1,10 @@
-// Firebase Imports
+// Firebase Imports - Added terminate, clearPersistence, disableNetwork, enableNetwork
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { 
     getFirestore, collection, onSnapshot, query, doc, 
-    where, orderBy, getDocs, writeBatch, runTransaction 
+    where, orderBy, getDocs, writeBatch, runTransaction,
+    disableNetwork, enableNetwork 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -18,6 +19,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// --- 1. FORCE LIVE-ONLY DATA ---
+// We do NOT call enableIndexedDbPersistence. 
+// To ensure no "ghost" data exists from previous sessions:
+// (Optional) clearPersistence(db); 
+
+// --- 2. NETWORK STATUS BANNER LOGIC ---
+const networkBanner = document.createElement('div');
+networkBanner.id = 'network-status-banner';
+networkBanner.style = "position: fixed; top: 0; left: 0; width: 100%; padding: 10px; text-align: center; font-weight: bold; z-index: 9999; transition: all 0.3s ease; display: none;";
+document.body.prepend(networkBanner);
+
+function updateOnlineStatus() {
+    if (navigator.onLine) {
+        enableNetwork(db); // Re-enable Firestore networking
+        networkBanner.style.display = 'none';
+        console.log("App is online. Sync enabled.");
+    } else {
+        disableNetwork(db); // Stop Firestore from trying to sync/reconnect
+        networkBanner.textContent = "⚠️ You are offline. Changes cannot be saved.";
+        networkBanner.style.backgroundColor = "#fee2e2"; // red-100
+        networkBanner.style.color = "#991b1b"; // red-800
+        networkBanner.style.display = 'block';
+        alert("Connection lost. Please reconnect to continue using the app.");
+    }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus(); // Initial check
 
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
@@ -37,7 +68,7 @@ const infoModal = document.getElementById('info-modal'), infoModalTitle = docume
 const projectSummaryTitle = document.getElementById('project-summary-title');
 
 // --- View Management ---
-const showView = (viewName) => { Object.values(views).forEach(v => v.classList.remove('active')); views[viewName].classList.add('active'); };
+const showView = (viewName) => { Object.values(views).forEach(v => v.classList.remove('active')); if(views[viewName]) views[viewName].classList.add('active'); };
 
 // --- Authentication ---
 setTimeout(() => { if (!currentUser) showView('auth'); }, 1500);
@@ -63,16 +94,36 @@ authToggleLink.addEventListener('click', e => {
     }
 });
 
-emailForm.addEventListener('submit', async e => { e.preventDefault(); const email = emailInput.value, password = passwordInput.value; authError.textContent = ''; try { if (isSigningUp) await createUserWithEmailAndPassword(auth, email, password); else await signInWithEmailAndPassword(auth, email, password); } catch (error) { authError.textContent = error.message; } });
-googleSignInBtn.addEventListener('click', () => signInWithPopup(auth, new GoogleAuthProvider()).catch(error => authError.textContent = error.message));
-forgotPasswordLink.addEventListener('click', async e => { e.preventDefault(); const email = emailInput.value; if (!email) { authError.textContent = 'Please enter your email address first.'; return; } try { await sendPasswordResetEmail(auth, email); alert('Password reset email sent!'); } catch (error) { authError.textContent = error.message; } });
+emailForm.addEventListener('submit', async e => { 
+    e.preventDefault(); 
+    if(!navigator.onLine) { alert("Cannot login while offline."); return; }
+    const email = emailInput.value, password = passwordInput.value; 
+    authError.textContent = ''; 
+    try { 
+        if (isSigningUp) await createUserWithEmailAndPassword(auth, email, password); 
+        else await signInWithEmailAndPassword(auth, email, password); 
+    } catch (error) { authError.textContent = error.message; } 
+});
+
+googleSignInBtn.addEventListener('click', () => {
+    if(!navigator.onLine) { alert("Cannot login while offline."); return; }
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(error => authError.textContent = error.message);
+});
+
+forgotPasswordLink.addEventListener('click', async e => { 
+    e.preventDefault(); 
+    const email = emailInput.value; 
+    if (!email) { authError.textContent = 'Please enter your email address first.'; return; } 
+    try { await sendPasswordResetEmail(auth, email); alert('Password reset email sent!'); } catch (error) { authError.textContent = error.message; } 
+});
 
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
     const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
     userProfileDesktop.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
     userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
-    document.getElementById('date').valueAsDate = new Date();
+    const dateInput = document.getElementById('date');
+    if(dateInput) dateInput.valueAsDate = new Date();
 }
 const openMenu = () => { mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0'); mobileMenu.classList.remove('-translate-x-full'); };
 const closeMenu = () => { mobileMenuBackdrop.classList.add('pointer-events-none', 'opacity-0'); mobileMenu.classList.add('-translate-x-full'); };
@@ -85,18 +136,20 @@ mobileSignOutBtn.addEventListener('click', () => signOut(auth));
 function listenForProjects(uid) {
     const appId = "construction-expenses";
     const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+    // onSnapshot includes "includeMetadataChanges" - but we just want the server data
     projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
+        // Only update if data is NOT from cache to ensure 100% online accuracy
+        if (snapshot.metadata.fromCache && !navigator.onLine) return;
+        
         projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (projects.length === 0) { 
-            // Note: addDoc still used for initial auto-project, 
-            // but can be changed to transaction if needed.
+        if (projects.length === 0 && navigator.onLine) { 
             const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
             await runTransaction(db, async (t) => { t.set(newProjectRef, { name: "General" }); });
             return; 
         }
         populateSidebarProjects(projects);
-        if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) activeProjectId = projects[0].id;
-        updateActiveProject();
+        if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) activeProjectId = projects[0]?.id;
+        if(activeProjectId) updateActiveProject();
     });
 }
 
@@ -112,6 +165,7 @@ sidebarAddProjectBtn.addEventListener('click', () => { addProjectModal.classList
 
 addProjectFormModal.addEventListener('submit', async e => {
     e.preventDefault();
+    if(!navigator.onLine) { alert("Offline: Action blocked."); return; }
     const projectName = document.getElementById('new-project-name-modal').value.trim();
     if (projectName && currentUser) {
         const appId = "construction-expenses";
@@ -120,7 +174,7 @@ addProjectFormModal.addEventListener('submit', async e => {
             await runTransaction(db, async (t) => { t.set(newProjRef, { name: projectName }); });
             addProjectFormModal.reset();
             addProjectModal.classList.add('hidden');
-        } catch (err) { alert("Failed to add project. Please check your internet connection."); }
+        } catch (err) { alert("Transaction failed: Check your connection."); }
     }
 });
 
@@ -138,7 +192,7 @@ function populateSidebarProjects(projects) {
 function updateSidebarSelection() { document.querySelectorAll('.sidebar-project-link').forEach(link => { link.classList.toggle('active', link.dataset.projectId === activeProjectId); }); }
 const toggleDashboardVisibility = (hasProjects) => { expenseDashboard.style.display = hasProjects ? 'block' : 'none'; noProjectMessage.style.display = hasProjects ? 'none' : 'block'; };
 
-// --- Expenses & Filtering ---
+// --- Expenses ---
 function listenForExpenses(uid, projectId) { 
     if (expensesUnsubscribe) expensesUnsubscribe(); 
     if (!uid || !projectId) { allExpensesForProject = []; applyFilters(); updateSummaries([]); return; }; 
@@ -146,6 +200,7 @@ function listenForExpenses(uid, projectId) {
     const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`); 
     const q = query(expensesRef, where("projectId", "==", projectId)); 
     expensesUnsubscribe = onSnapshot(q, (snapshot) => { 
+        if (snapshot.metadata.fromCache && !navigator.onLine) return; // Prevent showing cached data when offline
         allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); 
         allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date)); 
         applyFilters(); 
@@ -160,10 +215,12 @@ const applyFilters = () => {
 };
 [searchInput, startDateInput, endDateInput].forEach(el => el.addEventListener('input', applyFilters));
 
-// Full Full Sync Disable: Adding Expense via Transaction
 expenseForm.addEventListener('submit', async e => {
     e.preventDefault();
-    if (!currentUser || !activeProjectId) return;
+    if (!currentUser || !activeProjectId || !navigator.onLine) {
+        if(!navigator.onLine) alert("Offline: Cannot save expense.");
+        return;
+    }
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
     const date = document.getElementById('date').value;
@@ -176,26 +233,27 @@ expenseForm.addEventListener('submit', async e => {
             });
             expenseForm.reset();
             document.getElementById('date').valueAsDate = new Date();
-        } catch (err) { alert("Offline: Cannot save expense while disconnected."); }
+        } catch (err) { alert("Network Error: Data not saved."); }
     }
 });
 
 // --- Render, CRUD, Utils ---
 function renderExpenses(expenses) { 
     if (expenses.length === 0) { expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`; return; } 
-    expenseList.innerHTML = expenses.map(expense => `<tr><td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></td><td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })}</div></td><td class="px-6 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join(''); 
+    expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words px-1 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-1 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></td><td class="px-1 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</div></td><td class="px-1 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join(''); 
     document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete)); 
     document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit)); 
 }
 
 async function handleDelete(event) { 
     const id = event.target.dataset.id; 
+    if (!navigator.onLine) { alert("Offline: Cannot delete."); return; }
     if (id && confirm("Are you sure you want to delete this expense?")) { 
         const appId = "construction-expenses"; 
         const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
             await runTransaction(db, async (t) => { t.delete(docRef); });
-        } catch (err) { alert("Offline: Cannot delete while disconnected."); }
+        } catch (err) { alert("Offline error: Delete failed."); }
     } 
 }
 
@@ -212,6 +270,7 @@ function handleEdit(event) {
 
 editExpenseForm.addEventListener('submit', async e => { 
     e.preventDefault(); 
+    if (!navigator.onLine) { alert("Offline: Cannot update."); return; }
     const id = document.getElementById('edit-expense-id').value; 
     const updatedData = { 
         material: document.getElementById('edit-material-name').value.trim(), 
@@ -224,7 +283,7 @@ editExpenseForm.addEventListener('submit', async e => {
         try {
             await runTransaction(db, async (t) => { t.update(docRef, updatedData); });
             closeEditModal(); 
-        } catch (err) { alert("Offline: Cannot update while disconnected."); }
+        } catch (err) { alert("Update failed: Check connection."); }
     } 
 });
 
@@ -232,8 +291,8 @@ function handleEditProject(e) { const projectId = e.target.dataset.projectId, pr
 
 async function handleDeleteProject(e) { 
     const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName; 
-    if (!projectId) return; 
-    if (!confirm(`Are you sure you want to delete "${projectName}"? All associated expenses will be deleted.`)) return;
+    if (!navigator.onLine) { alert("Offline: Cannot delete project."); return; }
+    if (!projectId || !confirm(`Are you sure? All expenses in "${projectName}" will be deleted.`)) return;
     
     const appId = "construction-expenses"; 
     const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`); 
@@ -244,16 +303,17 @@ async function handleDeleteProject(e) {
         const batch = writeBatch(db);
         snapshot.forEach(d => batch.delete(d.ref));
         batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
-        await batch.commit(); // Note: batch also fails if network is completely dead
+        await batch.commit();
         if (activeProjectId === projectId) {
             const generalProject = projects.find(p => p.name === 'General') || projects[0];
             if(generalProject) { activeProjectId = generalProject.id; updateActiveProject(); }
         }
-    } catch (error) { alert("Failed to delete project. You may be offline."); }
+    } catch (error) { alert("Delete failed: Network error."); }
 }
 
 editProjectForm.addEventListener('submit', async e => { 
     e.preventDefault(); 
+    if (!navigator.onLine) { alert("Offline: Cannot rename."); return; }
     const projectId = document.getElementById('edit-project-id').value, newName = document.getElementById('edit-project-name').value.trim(); 
     if (newName && projectId) { 
         const appId = "construction-expenses"; 
@@ -261,10 +321,11 @@ editProjectForm.addEventListener('submit', async e => {
         try {
             await runTransaction(db, async (t) => { t.update(projectRef, { name: newName }); });
             closeEditProjectModal(); 
-        } catch (err) { alert("Offline: Cannot rename project while disconnected."); }
+        } catch (err) { alert("Rename failed."); }
     } 
 });
 
+// Modal Closers
 const closeEditModal = () => editModal.classList.add('hidden'); 
 cancelEditBtn.addEventListener('click', closeEditModal); 
 editModal.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
@@ -293,10 +354,22 @@ function updateSummaries(expenses) {
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
-// Service Worker & Install Logic
+// --- Service Worker ---
 if ("serviceWorker" in navigator) { window.addEventListener("load", () => { navigator.serviceWorker.register("/service-worker.js"); }); }
 let deferredPrompt;
 const installBtn = document.getElementById("ibtn");
-window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; installBtn.classList.remove("hidden"); });
-window.installApp = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; installBtn.classList.add("hidden"); };
-window.addEventListener("appinstalled", () => { installBtn.classList.add("hidden"); });
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; if(installBtn) installBtn.classList.remove("hidden"); });
+window.installApp = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; if(installBtn) installBtn.classList.add("hidden"); };
+window.addEventListener("appinstalled", () => { if(installBtn) installBtn.classList.add("hidden"); });
+
+// App configuration
+  const APP_VERSION = "1.4";
+  const APP_NAME = "Expense Tracker";
+
+  // Get current year
+  const currentYear = new Date().getFullYear();
+
+  // Update DOM
+  document.getElementById("app-version").textContent = `Version-${APP_VERSION}`;
+  document.getElementById("app-copyright").textContent =
+    `© ${currentYear} ${APP_NAME}. All Rights Reserved.`;
