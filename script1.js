@@ -240,7 +240,7 @@ expenseForm.addEventListener('submit', async e => {
 // --- Render, CRUD, Utils ---
 function renderExpenses(expenses) { 
     if (expenses.length === 0) { expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`; return; } 
-    expenseList.innerHTML = expenses.map(expense => `<tr><td class="px-6 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-6 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></td><td class="px-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })}</div></td><td class="px-6 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join(''); 
+    expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words px-1 py-4"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="px-1 py-4"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div></td><td class="px-1 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</div></td><td class="px-1 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join(''); 
     document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete)); 
     document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit)); 
 }
@@ -361,3 +361,15 @@ const installBtn = document.getElementById("ibtn");
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; if(installBtn) installBtn.classList.remove("hidden"); });
 window.installApp = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; if(installBtn) installBtn.classList.add("hidden"); };
 window.addEventListener("appinstalled", () => { if(installBtn) installBtn.classList.add("hidden"); });
+
+// App configuration
+  const APP_VERSION = "1.4";
+  const APP_NAME = "Expense Tracker";
+
+  // Get current year
+  const currentYear = new Date().getFullYear();
+
+  // Update DOM
+  document.getElementById("app-version").textContent = `Version-${APP_VERSION}`;
+  document.getElementById("app-copyright").textContent =
+    `© ${currentYear} ${APP_NAME}. All Rights Reserved.`;
