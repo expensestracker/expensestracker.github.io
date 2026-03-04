@@ -5,8 +5,8 @@ const ASSETS = [
   "/manifest.json",
   "/script.js",
   "/style.css",
-  "/icon-192.webp",
-  "/icon-512.webp"
+  "/logo-192.webp",
+  "/logo-512.webp"
 ];
 
 self.addEventListener("install", event => {
