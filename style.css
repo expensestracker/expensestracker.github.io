@@ -98,4 +98,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(8px);
 }
+/* --- Modern Scrollbar Styling --- */
+/* Target specific scrolling containers, or use * to apply globally */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8; /* slate-400 */
+}
 

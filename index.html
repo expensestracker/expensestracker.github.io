@@ -57,7 +57,7 @@
         <form id="email-form" class="space-y-4">
           <h1 id="auth-title" class="text-slate-600 font-bold text-center h-4"></h1>
           <input type="email" id="email-input" placeholder="Email Address" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
-          
+          <input type="text" id="name-input" placeholder="Name" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
           <input type="password" id="password-input" placeholder="Password (min. 6 characters)" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
           <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
           <button type="submit" id="email-action-btn" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200">Log In</button>
@@ -227,7 +227,7 @@
               <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Item wise summary
               </h2>
-              <div id="material-summary" class="space-y-3 max-h-40 overflow-y-auto "></div>
+              <div id="material-summary" class="space-y-3 max-h-40 overflow-y-auto pr-2"></div>
             </div>
           </div>
 
@@ -301,7 +301,7 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-80 overflow-y-auto">
             <table class="w-full text-left border-collapse ">
               <thead>
                 <tr class="text-sm text-slate-400 bg-slhate-50/50">
