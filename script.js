@@ -40,49 +40,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 1. FORCE LIVE-ONLY DATA ---
-// We do NOT call enableIndexedDbPersistence.
-// To ensure no "ghost" data exists from previous sessions:
-// (Optional) clearPersistence(db);
-
-// --- NETWORK STATUS BANNER (INSIDE HEADER) ---
-
-const header = document.getElementById('app-header');
-
-const networkBanner = document.createElement('div');
-networkBanner.id = 'network-status-banner';
-networkBanner.style.cssText = `
-width: 100%;
-padding: 8px 12px;
-text-align: center;
-font-weight: 600;
-font-size: 14px;
-display: none;
-`;
-
-// Insert banner at top of header
-header.prepend(networkBanner);
-
-async function updateOnlineStatus() {
-  if (navigator.onLine) {
-    await enableNetwork(db);
-    networkBanner.style.display = 'none';
-    console.log("App is online. Sync enabled.");
-  } else {
-    await disableNetwork(db);
-    networkBanner.textContent = "⚠️ You are offline. Changes will not be saved.";
-    networkBanner.style.backgroundColor = "#fee2e2"; // red-100
-    networkBanner.style.color = "#991b1b"; // red-800
-    networkBanner.style.display = 'block';
-    console.warn("App is offline.");
-  }
-}
-
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-
-// Initial check
-updateOnlineStatus();
 
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
