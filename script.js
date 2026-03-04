@@ -297,11 +297,11 @@ function renderExpenses(expenses) {
   if (expenses.length === 0) {
     expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`; return;
   }
-  expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words pl-6 py-3"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="pl-6 py-2"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {
-    minimumFractionDigits: 2, maximumFractionDigits: 2
-  })}</div></td><td class="pl-6 py-4"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', {
+  expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words pl-6 py-2"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="pl-4 py-2"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  })}</div></td><td class="pl-4 py-2"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', {
     timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
-  })}</div></td><td class="px-6 py-4 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join('');
+  })}</div></td><td class="px-6 py-2 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join('');
   document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
   document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
 }
@@ -460,7 +460,7 @@ function updateSummaries(expenses) {
     0);
   finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN',
     {
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 0,
       maximumFractionDigits: 2
     })}`;
   const materialTotals = expenses.reduce((acc, exp) => {
@@ -473,7 +473,7 @@ function updateSummaries(expenses) {
   }
   materialSummaryEl.innerHTML = sorted.map(key => {
     const total = materialTotals[key]; const displayName = key.charAt(0).toUpperCase() + key.slice(1); return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
+      minimumFractionDigits: 0, maximumFractionDigits: 2
     })}</span></div>`;
   }).join('');
 }
@@ -481,6 +481,85 @@ function updateSummaries(expenses) {
 const escapeHTML = (str) => {
   const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML;
 };
+
+
+// --- Admin Configuration Listener ---
+let globalConfigUnsubscribe = null;
+const ADMIN_EMAILS = ["roni9101862699@gmail.com"]; // REPLACE WITH YOUR ADMIN EMAIL
+
+function listenForAppConfig() {
+  if (globalConfigUnsubscribe) return; // Prevent duplicate listeners
+  
+  const configRef = doc(db, "artifacts/construction-expenses/config/appConfig");
+  globalConfigUnsubscribe = onSnapshot(configRef, (snapshot) => {
+    if (snapshot.exists()) {
+      applyGlobalConfig(snapshot.data());
+    }
+  });
+}
+
+function applyGlobalConfig(config) {
+  // 1. Maintenance Mode Enforcement
+  const isUserAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+  if (config.maintenanceMode && !isUserAdmin) {
+    document.getElementById('maintenance-view').classList.remove('hidden');
+    document.getElementById('maintenance-view').classList.add('flex');
+    // Hide main app views
+    ['auth-view', 'app-view', 'splash-view'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.classList.remove('active');
+    });
+  } else {
+    document.getElementById('maintenance-view').classList.add('hidden');
+    document.getElementById('maintenance-view').classList.remove('flex');
+    // If auth state is already resolved, ensure app view is visible if they were locked out
+    if (currentUser && document.getElementById('maintenance-view').classList.contains('hidden') === false) {
+      showView('app');
+    }
+  }
+
+  // 2. App Name Dynamic Override
+  if (config.appName) {
+    document.querySelectorAll('.dynamic-app-name').forEach(el => el.textContent = config.appName);
+    document.title = config.appName;
+  }
+
+  // 3. Theming (Primary Color)
+  if (config.primaryColor) {
+    // Injecting CSS variable for custom styles
+    document.documentElement.style.setProperty('--dynamic-primary', config.primaryColor);
+    
+    // Optional: Force Tailwind classes to use the new color via inline styles
+    // Targeting specific known elements like the main primary buttons
+    document.querySelectorAll('.bg-indigo-600').forEach(el => {
+      el.style.backgroundColor = config.primaryColor;
+    });
+    document.querySelectorAll('.text-indigo-600').forEach(el => {
+      el.style.color = config.primaryColor;
+    });
+  }
+
+  // 4. Global Notification Banner
+  const notifEl = document.getElementById('global-notification');
+  const notifText = document.getElementById('notification-text');
+  
+  if (config.globalNotification && config.globalNotification.trim() !== "") {
+    notifText.textContent = config.globalNotification;
+    notifEl.classList.remove('hidden');
+  } else {
+    notifEl.classList.add('hidden');
+  }
+}
+
+// Notification close button logic
+document.getElementById('close-notification')?.addEventListener('click', () => {
+  document.getElementById('global-notification').classList.add('hidden');
+});
+
+// Start listener immediately (doesn't require auth to read if Firestore rules allow)
+listenForAppConfig();
+
+
 
 // --- Service Worker ---
 if ("serviceWorker" in navigator) {

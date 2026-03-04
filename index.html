@@ -19,6 +19,17 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="global-notification" class="hidden w-full text-white text-center py-2 px-4 text-sm font-semibold z-50 relative transition-all" style="background-color: var(--dynamic-primary, #4f46e5);">
+    <span id="notification-text"></span>
+    <button id="close-notification" class="absolute right-4 top-2 text-white/80 hover:text-white font-bold">✕</button>
+  </div>
+
+  <div id="maintenance-view" class="view hidden fixed inset-0 bg-slate-900 z-[100] flex-col items-center justify-center text-white px-6 text-center">
+    <svg class="w-24 h-24 mb-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+    <h1 class="text-3xl md:text-5xl font-bold mb-4">Under Maintenance</h1>
+    <p class="text-slate-400 text-lg max-w-md">We are currently upgrading the system to improve your experience. Please check back shortly.</p>
+  </div>
+
   <!-- Splash Screen View -->
   <div id="splash-view" class="view active h-screen w-screen flex-col p-8">
     <div class="flex-grow flex flex-col items-center justify-center text-left">
