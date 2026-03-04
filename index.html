@@ -27,7 +27,9 @@
   <div id="maintenance-view" class="view hidden fixed inset-0 bg-slate-900 z-[100] flex-col items-center justify-center text-white px-6 text-center">
     <svg class="w-24 h-24 mb-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
     <h1 class="text-3xl md:text-5xl font-bold mb-4">Under Maintenance</h1>
-    <p class="text-slate-400 text-lg max-w-md">We are currently upgrading the system to improve your experience. Please check back shortly.</p>
+    <p class="text-slate-400 text-lg max-w-md">
+      We are currently upgrading the system to improve your experience. Please check back shortly.
+    </p>
   </div>
 
   <!-- Splash Screen View -->
@@ -57,7 +59,6 @@
         <form id="email-form" class="space-y-4">
           <h1 id="auth-title" class="text-slate-600 font-bold text-center h-4"></h1>
           <input type="email" id="email-input" placeholder="Email Address" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
-          <input type="text" id="name-input" placeholder="Name" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
           <input type="password" id="password-input" placeholder="Password (min. 6 characters)" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
           <p id="auth-error" class="text-red-500 text-xs text-center h-4"></p>
           <button type="submit" id="email-action-btn" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200">Log In</button>
