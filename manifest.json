@@ -1,7 +1,7 @@
 {
   "name": "Money Tracker",
   "short_name": "Money Tracker",
-  "start_url": "/",
+  "start_url": "/expenses",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

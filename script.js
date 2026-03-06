@@ -50,10 +50,11 @@ const views = {
   auth: document.getElementById('auth-view'),
   app: document.getElementById('app-view')
 };
+const userNameDisplay = document.getElementById('user-display-name');
 const authTitle = document.getElementById('auth-title'), emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), authError = document.getElementById('auth-error'), emailActionBtn = document.getElementById('email-action-btn'), authToggleLink = document.getElementById('auth-toggle-link'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
 const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
 const userProfileDesktop = document.getElementById('user-profile-desktop'), userProfileMobile = document.getElementById('user-profile-mobile');
-const hamburgerBtn = document.getElementById('hamburger-btn'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
+const hamburgerBtn = document.getElementById('user-profile-desktop'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
 const editModal = document.getElementById('edit-modal'), editExpenseForm = document.getElementById('edit-expense-form'), cancelEditBtn = document.getElementById('cancel-edit-btn');
 const searchInput = document.getElementById('search-input'), startDateInput = document.getElementById('start-date-input'), endDateInput = document.getElementById('end-date-input');
 const sidebarProjectList = document.getElementById('sidebar-project-list'), sidebarAddProjectBtn = document.getElementById('sidebar-add-project-btn');
@@ -135,11 +136,22 @@ forgotPasswordLink.addEventListener('click', async e => {
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
   const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
+  
   userProfileDesktop.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
   userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
+  
+  // --- Initialize Status UI based on current network state ---
+  if (navigator.onLine) {
+    updateStatusUI('welcome');
+  } else {
+    updateStatusUI('offline');
+  }
+
   const dateInput = document.getElementById('date');
   if (dateInput) dateInput.valueAsDate = new Date();
 }
+
+
 const openMenu = () => {
   mobileMenuBackdrop.classList.remove('pointer-events-none', 'opacity-0'); mobileMenu.classList.remove('-translate-x-full');
 };
@@ -489,7 +501,7 @@ const ADMIN_EMAILS = ["roni9101862699@gmail.com"]; // REPLACE WITH YOUR ADMIN EM
 
 function listenForAppConfig() {
   if (globalConfigUnsubscribe) return; // Prevent duplicate listeners
-  
+
   const configRef = doc(db, "artifacts/construction-expenses/config/appConfig");
   globalConfigUnsubscribe = onSnapshot(configRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -505,10 +517,12 @@ function applyGlobalConfig(config) {
     document.getElementById('maintenance-view').classList.remove('hidden');
     document.getElementById('maintenance-view').classList.add('flex');
     // Hide main app views
-    ['auth-view', 'app-view', 'splash-view'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.classList.remove('active');
-    });
+    ['auth-view',
+      'app-view',
+      'splash-view'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
   } else {
     document.getElementById('maintenance-view').classList.add('hidden');
     document.getElementById('maintenance-view').classList.remove('flex');
@@ -528,7 +542,7 @@ function applyGlobalConfig(config) {
   if (config.primaryColor) {
     // Injecting CSS variable for custom styles
     document.documentElement.style.setProperty('--dynamic-primary', config.primaryColor);
-    
+
     // Optional: Force Tailwind classes to use the new color via inline styles
     // Targeting specific known elements like the main primary buttons
     document.querySelectorAll('.bg-indigo-600').forEach(el => {
@@ -542,7 +556,7 @@ function applyGlobalConfig(config) {
   // 4. Global Notification Banner
   const notifEl = document.getElementById('global-notification');
   const notifText = document.getElementById('notification-text');
-  
+
   if (config.globalNotification && config.globalNotification.trim() !== "") {
     notifText.textContent = config.globalNotification;
     notifEl.classList.remove('hidden');
@@ -578,6 +592,65 @@ window.installApp = async () => {
 window.addEventListener("appinstalled", () => {
   if (installBtn) installBtn.classList.add("hidden");
 });
+
+const userStatusDisplay = document.getElementById('user-status-display');
+let statusTimeout; // Used to clear the timer if network state changes quickly
+
+// Function to handle the UI state changes
+function updateStatusUI(state) {
+  if (!userStatusDisplay) return;
+  
+  // Fade out before changing content
+  userStatusDisplay.classList.add('opacity-0');
+  
+  setTimeout(() => {
+    if (state === 'offline') {
+      userStatusDisplay.innerHTML = `
+        <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+        <span class="text-sm font-semibold">Offline</span>
+      `;
+    } else if (state === 'online') {
+      userStatusDisplay.innerHTML = `
+        <span class="relative flex size-3">
+  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+  <span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+</span>
+        <span class="text-sm font-semibold">Back Online</span>
+      `;
+      // Start 3-second timer to revert back to the welcome message
+      statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
+      
+    } else if (state === 'welcome') {
+      const name = currentUser?.displayName || 'User';
+      userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
+    }
+    
+    // Fade back in
+    userStatusDisplay.classList.remove('opacity-0');
+  }, 300); // Wait 300ms for the fade-out transition to finish
+}
+
+// Global Event Listeners for Network Changes
+window.addEventListener('offline', () => {
+  clearTimeout(statusTimeout);
+  updateStatusUI('offline');
+});
+
+window.addEventListener('online', () => {
+  clearTimeout(statusTimeout);
+  updateStatusUI('online');
+});
+
+// Analytics redirect 
+document.getElementById('go-to-analytics-btn')?.addEventListener('click', () => {
+  if (!activeProjectId) {
+    alert("Please select a project first.");
+    return;
+  }
+  // Redirect to the new page with the project ID
+  window.location.href = `analytics.html?projectId=${activeProjectId}`;
+});
+
 
 // App configuration
 const APP_VERSION = "1.4";

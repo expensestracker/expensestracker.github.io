@@ -85,15 +85,28 @@
   </div>
   <!-- Main Application View -->
   <main id="app-view" class="view flex-col md:ml-72 bg-slate-50 min-h-screen">
-    <header id="app-header" class="md:hidden sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <img src="logo-512.webp" style="width: 1.8rem" class="Xanimate-bounce">
-        <span class="font-bold">Money Tracker</span>
+    <header id="app-header" class="md:hidden sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-2 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+
+        <!-- Logo -->
+        <img src="logo-192.webp" class="h-10">
+
+        <!-- App Name + Status -->
+        <div class="flex flex-col leading-tight">
+          <span class="text-m font-black">Money Tracker</span>
+
+          <!-- Online / Offline Status -->
+          <div class="flex items-center gap-1 text-sm text-gray-500">
+            <div id="user-status-display" class="flex items-center space-x-2 text-sm font-medium transition-opacity duration-300 ease-in-out">
+            </div>
+          </div>
+        </div>
+
       </div>
-      <button id="hamburger-btn" class="p-2 hover:bg-slate-100 rounded-xl">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-      </button>
-      <div id="user-profile-desktop" class="hidden md:flex items-center"></div>
+      <!--<button id="hamburger-btn" class="p-2 hover:bg-slate-100 rounded-xl">
+                                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                    </button>-->
+      <div id="user-profile-desktop" class="md:flex items-center"></div>
     </header>
     <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
       <div id="mobile-menu" class="fixed top-0 left-0 h-full w-72 bg-white shadow-xl p-5 transform -translate-x-full flex flex-col">
@@ -215,14 +228,49 @@
       <div id="expense-dashboard" class="space-y-8 animate-[fadeIn_0.5s_ease-out]">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            
             <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
-              <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full transition-transform group-hover:scale-110"></div>
-              <h3 class="text-indigo-100 text-sm font-medium mb-1">Total Project Budget</h3>
-              <h2 id="project-summary-title" class="text-xl font-bold opacity-80 mb-4">Project</h2>
-              <p id="final-expenses" class="text-4xl font-black">
-                ₹0.00
-              </p>
-            </div>
+  <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full transition-transform duration-500 group-hover:scale-110 z-0"></div>
+  
+  <div class="flex justify-between items-start mb-6 relative z-10">
+    <h2 id="project-summary-title" class="text-2xl font-black opacity-90 tracking-tight">Project</h2>
+    
+    <button id="go-to-analytics-btn" class="group relative overflow-hidden bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 text-sm border border-white/25 shadow-sm hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0">
+  
+  <svg class="w-5 h-5 text-indigo-100 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 20h18" stroke-width="1.5" stroke-linecap="round" class="opacity-40" />
+    
+    <path d="M3 16 L9 9 L14 12 L21 4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="28" stroke-dashoffset="28">
+      <animate attributeName="stroke-dashoffset" values="28;0;0" keyTimes="0; 0.7; 1" dur="2.5s" repeatCount="indefinite" />
+    </path>
+    
+    <circle cx="9" cy="9" r="2.5" fill="white" stroke="none" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.2; 0.3; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.4; 0.5; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="21" cy="4" r="2.5" fill="white" stroke="none" opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.6; 0.7; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+    </circle>
+  </svg>
+  
+  <span class="relative z-10 font-bold">View Analytics</span>
+  
+  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+</button>
+
+  </div>
+
+  <div class="relative z-10 mt-2">
+    <h3 class="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">Total Budget</h3>
+    <p id="final-expenses" class="text-5xl font-black tracking-tight">
+      ₹0.00
+    </p>
+  </div>
+</div>
+
 
             <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
               <h2 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -335,6 +383,7 @@
         <p id="app-copyright"></p>
       </div>
     </footer>
+
   </main>
 
   <!-- Modals -->
