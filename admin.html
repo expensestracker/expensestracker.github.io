@@ -5,85 +5,136 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - System Control</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  
   <style>
-    body { font-family: 'Inter', sans-serif; }
+    /* Consistent custom shadows */
+    .shadow-soft { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+    .shadow-purple { box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3); }
+    
     .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800">
+<body class="bg-[#f8f9fa] text-gray-800 font-sans min-h-screen pb-10">
 
-  <div id="auth-overlay" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+  <div id="auth-overlay" class="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
     <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mb-4"></div>
-    <h2 id="auth-message" class="text-xl font-bold text-slate-600">Verifying Admin Access...</h2>
+    <h2 id="auth-message" class="text-xl font-bold text-slate-800 tracking-tight">Verifying Admin Access...</h2>
   </div>
 
-  <main id="admin-content" class="max-w-4xl mx-auto p-6 md:p-12 hidden">
-    <header class="flex justify-between items-center mb-8 pb-4 border-b border-slate-200">
-      <div>
-        <h1 class="text-3xl font-bold text-slate-900">Admin Control Panel</h1>
-        <p class="text-slate-500 text-sm mt-1">Manage global application settings</p>
+  <header class="bg-white shadow-sm sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <a href="index.html" class="p-1 text-gray-600 hover:text-indigo-600 transition bg-gray-50 rounded-full">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+        </a>
+        <div class="flex items-center space-x-2">
+           <div class="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 font-bold text-lg">
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+           </div>
+           <div>
+             <h1 class="text-lg font-bold text-gray-900 leading-tight">System Control</h1>
+             <p class="text-xs text-gray-500">Admin Dashboard</p>
+           </div>
+        </div>
       </div>
-      <button id="logout-btn" class="px-4 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 transition-colors">Sign Out</button>
-    </header>
+      <button id="logout-btn" class="text-sm px-4 py-2 bg-red-50 text-red-600 font-bold rounded-full hover:bg-red-100 transition-colors">Sign Out</button>
+    </div>
+  </header>
 
-    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-8 relative">
-      <div id="save-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 hidden flex-col items-center justify-center rounded-[2rem]">
-         <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8 mb-2"></div>
-         <p class="font-bold text-indigo-600">Saving Configuration...</p>
+  <main id="admin-content" class="max-w-4xl mx-auto px-4 mt-6 hidden relative">
+
+    <div id="save-overlay" class="fixed inset-0 bg-white/60 backdrop-blur-sm z-40 hidden flex-col items-center justify-center">
+       <div class="bg-white p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
+         <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8"></div>
+         <p class="font-bold text-indigo-600 text-lg">Publishing Changes...</p>
+       </div>
+    </div>
+
+    <div class="bg-indigo-600 text-white p-6 rounded-[2rem] shadow-purple relative overflow-hidden mb-6">
+      <div class="absolute -right-12 -top-12 w-48 h-48 bg-white opacity-10 rounded-full pointer-events-none"></div>
+      <div class="relative z-10">
+        <h3 class="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-wider">Configuration</h3>
+        <h2 class="text-3xl font-bold text-white tracking-tight">Global Settings</h2>
       </div>
+    </div>
 
-      <section>
-        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-          <span class="w-1.5 h-5 bg-indigo-500 rounded-full"></span> Branding
-        </h3>
+    <div class="space-y-6">
+      
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
+        <div class="flex items-center mb-5">
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
+          <h3 class="text-base font-semibold text-gray-800">Branding</h3>
+        </div>
         <div>
           <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Application Name</label>
           <input type="text" id="app-name-input" placeholder="e.g., Money Tracker" class="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all">
         </div>
-      </section>
+      </div>
 
-      <section>
-        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-          <span class="w-1.5 h-5 bg-indigo-500 rounded-full"></span> Theming
-        </h3>
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
+        <div class="flex items-center mb-5">
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
+          <h3 class="text-base font-semibold text-gray-800">Theming</h3>
+        </div>
         <div>
           <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Primary Color (Hex)</label>
           <div class="flex gap-4 items-center">
-            <input type="color" id="color-picker" class="h-12 w-12 rounded cursor-pointer border-0 p-0">
-            <input type="text" id="color-hex-input" placeholder="#4f46e5" class="flex-grow bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all">
+            <input type="color" id="color-picker" class="h-12 w-12 rounded-xl cursor-pointer border-0 p-0 shadow-sm">
+            <input type="text" id="color-hex-input" placeholder="#4f46e5" class="flex-grow bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all font-mono">
           </div>
-          <p class="text-xs text-slate-500 mt-2">Changes the primary accent color across the app.</p>
+          <p class="text-xs text-slate-500 mt-3">Changes the primary accent color across the app.</p>
         </div>
-      </section>
+      </div>
 
-      <section>
-        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-          <span class="w-1.5 h-5 bg-indigo-500 rounded-full"></span> Communications
-        </h3>
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
+        <div class="flex items-center mb-5">
+          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
+          <h3 class="text-base font-semibold text-gray-800">Communications</h3>
+        </div>
         <div>
           <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Global Notification Banner</label>
-          <textarea id="notification-input" rows="2" placeholder="Leave blank to disable banner..." class="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all"></textarea>
+          <textarea id="notification-input" rows="3" placeholder="Leave blank to disable banner..." class="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all resize-none"></textarea>
         </div>
-      </section>
+      </div>
 
-      <section class="p-6 bg-red-50 rounded-2xl border border-red-100">
+      <div class="bg-red-50 p-6 rounded-[2rem] border border-red-100 shadow-soft">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-lg font-bold text-red-800">Maintenance Mode</h3>
-            <p class="text-sm text-red-600 mt-1">Immediately restrict access for all non-admin users.</p>
+            <div class="flex items-center mb-1">
+              <div class="w-1.5 h-5 bg-red-500 rounded-full mr-3"></div>
+              <h3 class="text-base font-bold text-red-800">Maintenance Mode</h3>
+            </div>
+            <p class="text-sm text-red-600 mt-1 ml-4.5">Restrict access for all non-admin users.</p>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="maintenance-toggle" class="sr-only peer">
             <div class="w-14 h-7 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600 shadow-inner"></div>
           </label>
         </div>
-      </section>
+      </div>
 
-      <button id="save-config-btn" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200">
+      <button id="save-config-btn" class="group relative overflow-hidden w-full bg-slate-900 text-white font-bold py-4 rounded-[1.5rem] hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg shadow-slate-300 flex items-center justify-center gap-2">
+        <svg class="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
         Publish Changes
       </button>
+
     </div>
   </main>
 

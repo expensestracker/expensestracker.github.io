@@ -54,6 +54,7 @@ async function fetchAndRenderAnalytics(uid, projectId) {
     const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
     document.getElementById('loading-indicator').classList.add('hidden');
+    document.getElementById('back-btn').classList.remove('hidden');
     document.getElementById('analytics-content').classList.remove('hidden');
     
     processAnalyticsData(expenses);

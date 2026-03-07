@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Light mode -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <!-- Dark mode -->
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics - Money Tracker</title>
+  <title>Money Tracker</title>
+  <meta name="description" content="Track expenses easily">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Custom utility for the exact card shadows seen in the screenshot */
@@ -17,51 +29,60 @@
   </style>
 </head>
 <body class="bg-[#f8f9fa] text-gray-800 font-sans min-h-screen pb-10">
+  <header id="app-header" class="md:hidden sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-2 flex justify-between items-center">
+    <div class="flex items-center gap-3">
 
-  <header class="bg-white shadow-sm sticky top-0 z-30">
-    <div class="max-w-6xl mx-auto px-4 py-2 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
+      <!-- Logo -->
+      <img src="logo-192.webp" class="h-10">
 
-        <div class="flex items-center space-x-2">
-          <img src="logo-192.webp" class="h-10">
+      <!-- App Name + Status -->
+      <div class="flex flex-col leading-tight">
+        <span class="text-m font-black">Money Tracker</span>
 
-          <div>
-            <h1 class="text-m font-black leading-tight">Money Tracker</h1>
-            <p class="text-s text-gray-600">
-              Analytics
-            </p>
-          </div>
+        <!-- Online / Offline Status -->
+        <div class="flex items-center gap-1 text-sm text-gray-500">
+          Analytics
         </div>
       </div>
 
-      <div id="loading-indicator" class="">
-        <div class="flex items-center justify-center space-x-2">
-
-          <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_infinite]"></div>
-
-          <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.2s_infinite]"></div>
-
-          <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.4s_infinite]"></div>
-
-        </div>
-
-        <style>
-          @keyframes dot {
-            0%, 80%, 100% {
-              transform: scale(0);
-              opacity: 0.4;
-            }
-            40% {
-              transform: scale(1);
-              opacity: 1;
-            }
-          }
-        </style>
-      </div>
-      <a href="index.html" class="text-m p-1 text-gray-400 hover:text-indigo-600 transition bg-gray-50 rounded-full">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-      </a>
     </div>
+    <!-- From Uiverse.io by dovatgabriel --> 
+<div id="loading-indicator" class="three-body p-4">
+<div class="three-body__dot"></div>
+<div class="three-body__dot"></div>
+<div class="three-body__dot"></div>
+</div>
+    <!--<button id="hamburger-btn" class="p-2 hover:bg-slate-100 rounded-xl">
+                                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                            </button>
+    <div  class="">
+      <div class="flex items-center justify-center space-x-2">
+
+        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_infinite]"></div>
+
+        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.2s_infinite]"></div>
+
+        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.4s_infinite]"></div>
+
+      </div>
+
+      <style>
+        @keyframes dot {
+          0%, 80%, 100% {
+            transform: scale(0);
+            opacity: 0.4;
+          }
+          40% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      </style>
+    </div> -->
+    <a id="back-btn" href="index.html" class="text-m p-1 text-gray-400 hover:text-indigo-600 transition bg-gray-50 rounded-full hidden">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+    </a>
+
   </header>
 
   <main class="max-w-6xl mx-auto px-4 mt-6 hidden" id="analytics-content">

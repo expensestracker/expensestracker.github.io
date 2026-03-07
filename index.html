@@ -13,8 +13,10 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ffffff">
   <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Tailwind -->
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -104,8 +106,8 @@
 
       </div>
       <!--<button id="hamburger-btn" class="p-2 hover:bg-slate-100 rounded-xl">
-                                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                                    </button>-->
+                                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                                      </button>-->
       <div id="user-profile-desktop" class="md:flex items-center"></div>
     </header>
     <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
@@ -150,6 +152,8 @@
         <div class="mt-auto">
           <button id="mobile-sign-out-btn" class="w-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Sign Out</button>
         </div>
+        <p class="px-2 py-4 text-center text-sm text-slate-400" id="app-version"></p>
+
       </div>
     </div>
     <div id="mobile-menu-backdrop" class="fixed inset-0 backdrop-blur-sm z-30 opacity-0 pointer-events-none md:hidden">
@@ -188,6 +192,7 @@
                 <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                 </svg>Contact Us </a>
+
             </div>
           </div>
         </nav>
@@ -228,48 +233,48 @@
       <div id="expense-dashboard" class="space-y-8 animate-[fadeIn_0.5s_ease-out]">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-            
-            
+
+
             <div class="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-xl shadow-indigo-200 relative overflow-hidden group">
-  <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full transition-transform duration-500 group-hover:scale-110 z-0"></div>
-  
-  <div class="flex justify-between items-start mb-6 relative z-10">
-    <h2 id="project-summary-title" class="text-2xl font-black opacity-90 tracking-tight">Project</h2>
-    
-    <button id="go-to-analytics-btn" class="group relative overflow-hidden bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 text-sm border border-white/25 shadow-sm hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0">
-  
-  <svg class="w-5 h-5 text-indigo-100 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 20h18" stroke-width="1.5" stroke-linecap="round" class="opacity-40" />
-    
-    <path d="M3 16 L9 9 L14 12 L21 4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="28" stroke-dashoffset="28">
-      <animate attributeName="stroke-dashoffset" values="28;0;0" keyTimes="0; 0.7; 1" dur="2.5s" repeatCount="indefinite" />
-    </path>
-    
-    <circle cx="9" cy="9" r="2.5" fill="white" stroke="none" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.2; 0.3; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
-    </circle>
-    <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.4; 0.5; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
-    </circle>
-    <circle cx="21" cy="4" r="2.5" fill="white" stroke="none" opacity="0">
-      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.6; 0.7; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
-    </circle>
-  </svg>
-  
-  <span class="relative z-10 font-bold">View Analytics</span>
-  
-  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
-</button>
+              <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full transition-transform duration-500 group-hover:scale-110 z-0"></div>
 
-  </div>
+              <div class="flex justify-between items-start mb-6 relative z-10">
+                <h2 id="project-summary-title" class="text-2xl font-black opacity-90 tracking-tight">Project</h2>
 
-  <div class="relative z-10 mt-2">
-    <h3 class="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">Total Budget</h3>
-    <p id="final-expenses" class="text-5xl font-black tracking-tight">
-      ₹0.00
-    </p>
-  </div>
-</div>
+                <button id="go-to-analytics-btn" class="group relative overflow-hidden bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full font-medium transition-all duration-300 flex items-center gap-2 text-sm border border-white/25 shadow-sm hover:shadow-indigo-500/30 hover:-translate-y-0.5 active:translate-y-0">
+
+                  <svg class="w-5 h-5 text-indigo-100 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 20h18" stroke-width="1.5" stroke-linecap="round" class="opacity-40" />
+
+                    <path d="M3 16 L9 9 L14 12 L21 4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="28" stroke-dashoffset="28">
+                      <animate attributeName="stroke-dashoffset" values="28;0;0" keyTimes="0; 0.7; 1" dur="2.5s" repeatCount="indefinite" />
+                    </path>
+
+                    <circle cx="9" cy="9" r="2.5" fill="white" stroke="none" opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.2; 0.3; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="14" cy="12" r="2.5" fill="white" stroke="none" opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.4; 0.5; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="21" cy="4" r="2.5" fill="white" stroke="none" opacity="0">
+                      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0; 0.6; 0.7; 0.8; 1" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                  </svg>
+
+                  <span class="relative z-10 font-bold">View Analytics</span>
+
+                  <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+                </button>
+
+              </div>
+
+              <div class="relative z-10 mt-2">
+                <h3 class="text-indigo-100 text-sm font-medium uppercase tracking-wider mb-1">Total Budget</h3>
+                <p id="final-expenses" class="text-5xl font-black tracking-tight">
+                  ₹0.00
+                </p>
+              </div>
+            </div>
 
 
             <div class="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
@@ -295,8 +300,18 @@
                   <input type="number" id="cost" required step="0.01" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
                 </div>
                 <div class="space-y-1">
-                  <label class="text-xs font-bold text-slate-400 uppercase">Date</label>
-                  <input type="date" id="date" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
+                  <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">Date</label>
+
+                    <div class="relative mt-1">
+                      <input id="date" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
+                      <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <button type="submit" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200">
@@ -326,7 +341,7 @@
                   <div class="w-1/2">
                     <label for="start-date-input" class="block text-xs font-medium mb-1">From</label>
                     <div class="relative">
-                      <input id="start-date-input" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
+                      <input id="start-date-input" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-2 py-1 transition-all">
                       <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -337,7 +352,7 @@
                   <div class="w-1/2 py-">
                     <label for="end-date-input" class="block text-xs font-medium mb-1">To</label>
                     <div class="relative">
-                      <input id="end-date-input" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all pr-10">
+                      <input id="end-date-input" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-2 py-1 transition-all">
                       <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                         <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -350,7 +365,7 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto max-h-80 overflow-y-auto">
+          <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse ">
               <thead>
                 <tr class="text-sm text-slate-400 bg-slhate-50/50">
@@ -377,12 +392,6 @@
         </p>
       </div>
     </div>
-    <footer class="border-t">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm text-slate-500">
-        <p id="app-version"></p>
-        <p id="app-copyright"></p>
-      </div>
-    </footer>
 
   </main>
 
@@ -404,9 +413,14 @@
             <label for="edit-cost" class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</label>
             <input type="number" id="edit-cost" required min="0" step="0.01" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
           </div>
-          <div class="space-y-1">
-            <label for="edit-date" class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Date</label>
-            <input type="date" id="edit-date" required class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 transition-all">
+          <div class="space-y-1 pr-0">
+            <div>
+  <label for="edit-date" class="text-xs font-bold text-slate-400 uppercase">Date</label>
+  <div class="relative mt-1">
+    <input id="edit-date" type="date" class="form-input w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl pl-4 pr-0 py-3 transition-all">
+  </div>
+</div>
+
           </div>
         </div>
 
