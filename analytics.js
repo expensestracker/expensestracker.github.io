@@ -56,6 +56,7 @@ async function fetchAndRenderAnalytics(uid, projectId) {
     document.getElementById('loading-indicator').classList.add('hidden');
     document.getElementById('back-btn').classList.remove('hidden');
     document.getElementById('analytics-content').classList.remove('hidden');
+    document.getElementById('skeleton-loader').classList.add('hidden');
     
     processAnalyticsData(expenses);
 

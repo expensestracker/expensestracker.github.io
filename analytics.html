@@ -29,7 +29,7 @@
   </style>
 </head>
 <body class="bg-[#f8f9fa] text-gray-800 font-sans min-h-screen pb-10">
-  <header id="app-header" class="md:hidden sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-2 flex justify-between items-center">
+  <header id="app-header" class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-2 flex justify-between items-center">
     <div class="flex items-center gap-3">
 
       <!-- Logo -->
@@ -40,50 +40,95 @@
         <span class="text-m font-black">Money Tracker</span>
 
         <!-- Online / Offline Status -->
-        <div class="flex items-center gap-1 text-sm text-gray-500">
+        <div class="flex items-center gap-1 text-sm text-gray-500 font-medium">
           Analytics
         </div>
       </div>
 
     </div>
-    <!-- From Uiverse.io by dovatgabriel --> 
-<div id="loading-indicator" class="three-body p-4">
-<div class="three-body__dot"></div>
-<div class="three-body__dot"></div>
-<div class="three-body__dot"></div>
-</div>
+    <!-- From Uiverse.io by dovatgabriel -->
+    <div id="loading-indicator" class="three-body p-4">
+      <div class="three-body__dot"></div>
+      <div class="three-body__dot"></div>
+      <div class="three-body__dot"></div>
+    </div>
     <!--<button id="hamburger-btn" class="p-2 hover:bg-slate-100 rounded-xl">
-                                              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                                            </button>
-    <div  class="">
-      <div class="flex items-center justify-center space-x-2">
+                                                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                                                    </button>
+            <div  class="">
+              <div class="flex items-center justify-center space-x-2">
 
-        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_infinite]"></div>
+                <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_infinite]"></div>
 
-        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.2s_infinite]"></div>
+                <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.2s_infinite]"></div>
 
-        <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.4s_infinite]"></div>
+                <div class="w-2.5 h-2.5 bg-blue-500 rounded-full animate-[dot_1.4s_0.4s_infinite]"></div>
 
-      </div>
+              </div>
 
-      <style>
-        @keyframes dot {
-          0%, 80%, 100% {
-            transform: scale(0);
-            opacity: 0.4;
-          }
-          40% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-      </style>
-    </div> -->
+              <style>
+                @keyframes dot {
+                  0%, 80%, 100% {
+                    transform: scale(0);
+                    opacity: 0.4;
+                  }
+                  40% {
+                    transform: scale(1);
+                    opacity: 1;
+                  }
+                }
+              </style>
+            </div> -->
     <a id="back-btn" href="index.html" class="text-m p-1 text-gray-400 hover:text-indigo-600 transition bg-gray-50 rounded-full hidden">
       <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
     </a>
 
   </header>
+  <main id="skeleton-loader" class="max-w-6xl mx-auto px-4 mt-6">
+    <div class="bg-indigo-600/50 p-6 rounded-[2rem] shadow-purple relative overflow-hidden mb-6 animate-pulse">
+      <div class="relative z-10">
+        <div class="h-5 bg-indigo-300/50 rounded-full w-32 mb-4"></div>
+        <div class="h-12 bg-indigo-200/50 rounded-lg w-48 mb-6"></div>
+        <div class="h-px bg-indigo-400 w-full mb-4 opacity-60"></div>
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="h-3 bg-indigo-300/50 rounded-full w-24 mb-2"></div>
+            <div class="h-8 bg-indigo-200/50 rounded-lg w-24"></div>
+          </div>
+          <div class="text-right flex flex-col items-end">
+            <div class="h-3 bg-indigo-300/50 rounded-full w-20 mb-2"></div>
+            <div class="h-8 bg-indigo-200/50 rounded-lg w-20"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft animate-pulse">
+        <div class="flex items-center mb-4">
+          <div class="w-1.5 h-5 bg-gray-200 rounded-full mr-3"></div>
+          <div class="h-5 bg-gray-200 rounded-full w-28"></div>
+        </div>
+        <div class="h-64 bg-gray-100 rounded-xl w-full"></div>
+      </div>
+
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft animate-pulse">
+        <div class="flex items-center mb-4">
+          <div class="w-1.5 h-5 bg-gray-200 rounded-full mr-3"></div>
+          <div class="h-5 bg-gray-200 rounded-full w-40"></div>
+        </div>
+        <div class="h-64 bg-gray-100 rounded-xl w-full md:w-2/3 mx-auto"></div>
+      </div>
+
+      <div class="bg-white p-6 rounded-[2rem] shadow-soft animate-pulse">
+        <div class="flex items-center mb-4">
+          <div class="w-1.5 h-5 bg-gray-200 rounded-full mr-3"></div>
+          <div class="h-5 bg-gray-200 rounded-full w-36"></div>
+        </div>
+        <div class="h-64 bg-gray-100 rounded-xl w-full"></div>
+      </div>
+    </div>
+  </main>
 
   <main class="max-w-6xl mx-auto px-4 mt-6 hidden" id="analytics-content">
 
