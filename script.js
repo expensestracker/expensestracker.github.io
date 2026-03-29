@@ -23,7 +23,7 @@ import {
   getDocs,
   writeBatch,
   runTransaction,
-  setDoc 
+  setDoc
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -114,49 +114,66 @@ function showToast(message, type = 'error') {
 }
 
 // --- Custom Native-Feel Confirmation Modal ---
+// --- Custom Native-Feel Confirmation Modal ---
 function showConfirm(title, message) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center opacity-0 transition-opacity duration-300';
+    // Align to bottom using 'items-end'
+    overlay.className = 'fixed inset-0 bg-transparent backdrop-blur-sm z-[100] flex items-end justify-center opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-white p-6 rounded-[2rem] shadow-2xl w-[90%] max-w-sm text-center transform scale-95 transition-transform duration-300';
+    // Bottom-sheet styling: rounded-t-3xl, w-full, border-t, pb-12, and initial state translate-y-full (pushed off screen)
+    modal.className = 'bg-white p-6 pb-12 border-t-2 border-red-200 s rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] w-full md:max-w-md text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
-    <div class="w-14 h-14 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center mb-4">
-    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-slate-800 pr-4">${escapeHTML(title)}</h3>
+      <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+      </div>
     </div>
-    <h3 class="text-xl font-bold text-slate-800 mb-2">${escapeHTML(title)}</h3>
+    
     <p class="text-sm text-slate-500 mb-8 leading-relaxed">${escapeHTML(message)}</p>
+    
     <div class="flex gap-3">
-    <button id="confirm-cancel-btn" class="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-    <button id="confirm-delete-btn" class="flex-1 px-4 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
+      <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+      <button id="confirm-delete-btn" class="flex-1 px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
     </div>
     `;
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
+    // Lock scroll
+    document.body.classList.add('overflow-hidden');
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         overlay.classList.remove('opacity-0');
-        modal.classList.remove('scale-95');
+        // Remove translate-y-full to trigger the slide-up animation
+        modal.classList.remove('translate-y-full');
       });
     });
 
     const closeAndResolve = (result) => {
       overlay.classList.add('opacity-0');
-      modal.classList.add('scale-95');
+      // Add translate-y-full back to trigger the slide-down animation
+      modal.classList.add('translate-y-full');
+
+      // Unlock scroll
+      document.body.classList.remove('overflow-hidden');
+
       setTimeout(() => {
         overlay.remove();
         resolve(result);
-      }, 300);
+      }, 300); // Matches the duration-300 Tailwind class
     };
 
     modal.querySelector('#confirm-cancel-btn').addEventListener('click', () => closeAndResolve(false));
     modal.querySelector('#confirm-delete-btn').addEventListener('click', () => closeAndResolve(true));
   });
 }
+
 
 // --- View Management ---
 const showView = (viewName) => {
@@ -172,7 +189,7 @@ let isInitialLoad = true;
 
 onAuthStateChanged(auth, user => {
   currentUser = user;
-  
+
   const routeUser = () => {
     if (user) {
       showView('app');
@@ -192,14 +209,14 @@ onAuthStateChanged(auth, user => {
     setTimeout(routeUser, 1000);
   } else {
     // Immediate routing for subsequent logouts/logins
-    routeUser(); 
+    routeUser();
   }
 });
 
 // Helper functions for password input visuals
 function setInputStatus(status) {
-  if(!passwordInput) return;
-  
+  if (!passwordInput) return;
+
   // Clear previous status classes
   passwordInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-green-500', 'ring-green-500', 'focus:ring-indigo-500', 'border-slate-200', 'focus:border-indigo-500');
 
@@ -218,7 +235,7 @@ function setInputStatus(status) {
 // Manage UI state of the Submit button
 function setAuthButtonLoading(isLoading) {
   if (!emailActionBtn || !btnText || !btnSpinner) return;
-  
+
   if (isLoading) {
     btnText.classList.add('opacity-0');
     btnSpinner.classList.remove('opacity-0');
@@ -232,16 +249,16 @@ function setAuthButtonLoading(isLoading) {
 
 // Resets border visuals when typing
 passwordInput?.addEventListener('input', () => {
-  setInputStatus('default'); 
+  setInputStatus('default');
 });
 
 // Password Visibility Toggle Logic
 togglePasswordBtn?.addEventListener('click', () => {
   if (!passwordInput || !eyeIcon || !eyeSlashIcon) return;
-  
+
   const isPassword = passwordInput.getAttribute('type') === 'password';
-  passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
-  
+  passwordInput.setAttribute('type', isPassword ? 'text': 'password');
+
   if (isPassword) {
     eyeIcon.classList.add('hidden');
     eyeSlashIcon.classList.remove('hidden');
@@ -298,7 +315,7 @@ emailForm?.addEventListener('submit', async e => {
     } catch (signupError) {
       setInputStatus('error');
       setAuthButtonLoading(false);
-      
+
       // 4. Transform Firebase Error codes into normal language Toast alerts
       let friendlyMessage = "Something went wrong. Please try again.";
       const errCode = signupError.code || loginError.code;
@@ -324,7 +341,7 @@ emailForm?.addEventListener('submit', async e => {
           friendlyMessage = "Too many failed attempts. Try again later.";
           break;
       }
-      
+
       showToast(friendlyMessage, 'error');
     }
   }
@@ -344,7 +361,7 @@ forgotPasswordLink?.addEventListener('click', async e => {
   e.preventDefault();
   const email = emailInput.value;
   if (!email) {
-    showToast('Please enter your email address first.', 'error'); 
+    showToast('Please enter your email address first.', 'error');
     return;
   }
   try {
@@ -352,8 +369,8 @@ forgotPasswordLink?.addEventListener('click', async e => {
     showToast('Password reset email sent!', 'success');
   } catch (error) {
     let msg = "Failed to send reset email.";
-    if(error.code === 'auth/invalid-email') msg = "Please enter a valid email.";
-    if(error.code === 'auth/user-not-found') msg = "No account found with this email.";
+    if (error.code === 'auth/invalid-email') msg = "Please enter a valid email.";
+    if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
     showToast(msg, 'error');
   }
 });
@@ -378,10 +395,12 @@ function setupUIForUser(user) {
 const openMenu = () => {
   mobileMenuBackdrop?.classList.remove('pointer-events-none', 'opacity-0');
   mobileMenu?.classList.remove('-translate-x-full');
+  document.body.classList.add('overflow-hidden'); // Lock scroll
 };
 const closeMenu = () => {
   mobileMenuBackdrop?.classList.add('pointer-events-none', 'opacity-0');
   mobileMenu?.classList.add('-translate-x-full');
+  document.body.classList.remove('overflow-hidden'); // Unlock scroll
 };
 hamburgerBtn?.addEventListener('click', openMenu);
 closeMenuBtn?.addEventListener('click', closeMenu);
@@ -402,461 +421,487 @@ function listenForProjects(uid) {
 
       projects = snapshot.docs.map(doc => ({
         id: doc.id, ...doc.data()
-      }));
+    }));
 
-      if (projects.length === 0 && navigator.onLine) {
-        const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
-        await runTransaction(db, async (t) => {
-          t.set(newProjectRef, {
-            name: "General"
-          });
+    if (projects.length === 0 && navigator.onLine) {
+      const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
+      await runTransaction(db, async (t) => {
+        t.set(newProjectRef, {
+          name: "General"
         });
-        return;
-      }
-      populateSidebarProjects(projects);
-      
-      // Load saved project ID if available
-      const savedProjectId = localStorage.getItem('lastActiveProjectId');
-      
-      if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
-        activeProjectId = savedProjectId;
-      } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
-        activeProjectId = projects[0]?.id;
-      }
-      
-      if (activeProjectId) {
-        localStorage.setItem('lastActiveProjectId', activeProjectId);
-        updateActiveProject();
-      }
-    });
+      });
+      return;
+    }
+    populateSidebarProjects(projects);
+
+    // Load saved project ID if available
+    const savedProjectId = localStorage.getItem('lastActiveProjectId');
+
+    if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
+      activeProjectId = savedProjectId;
+    } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+      activeProjectId = projects[0]?.id;
+    }
+
+    if (activeProjectId) {
+      localStorage.setItem('lastActiveProjectId', activeProjectId);
+      updateActiveProject();
+    }
+  });
 }
 
 function updateActiveProject() {
-  const activeProject = projects.find(p => p.id === activeProjectId);
-  if (activeProject && projectSummaryTitle) projectSummaryTitle.textContent = `${activeProject.name}`;
-  updateSidebarSelection();
-  toggleDashboardVisibility(true);
-  listenForExpenses(currentUser.uid, activeProjectId);
+const activeProject = projects.find(p => p.id === activeProjectId);
+if (activeProject && projectSummaryTitle) projectSummaryTitle.textContent = `${activeProject.name}`;
+updateSidebarSelection();
+toggleDashboardVisibility(true);
+listenForExpenses(currentUser.uid, activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', () => {
-  addProjectModal.classList.remove('hidden');
-  document.getElementById('new-project-name-modal').focus();
-  closeMenu();
+addProjectModal.classList.remove('hidden');
+document.body.classList.add('overflow-hidden'); // Lock scroll
+document.getElementById('new-project-name-modal').focus();
+closeMenu();
 });
 
 addProjectFormModal?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!navigator.onLine) {
-    showToast("Please connect to internet", "error");
-    return;
-  }
-  const projectName = document.getElementById('new-project-name-modal').value.trim();
-  if (projectName && currentUser) {
-    const appId = "construction-expenses";
-    const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
-    try {
-      await runTransaction(db, async (t) => {
-        t.set(newProjRef, {
-          name: projectName
-        });
-      });
-      addProjectFormModal.reset();
-      addProjectModal.classList.add('hidden');
+e.preventDefault();
+if (!navigator.onLine) {
+showToast("Please connect to internet", "error");
+return;
+}
+const projectName = document.getElementById('new-project-name-modal').value.trim();
+if (projectName && currentUser) {
+const appId = "construction-expenses";
+const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
+try {
+await runTransaction(db, async (t) => {
+t.set(newProjRef, {
+name: projectName
+});
+});
+addProjectFormModal.reset();
+addProjectModal.classList.add('hidden');
+document.body.classList.remove('overflow-hidden'); // Unlock scroll
 
-      showToast(`Project "${projectName}" created!`, "success");
+showToast(`Project "${projectName}" created!`, "success");
 
-    } catch (err) {
-      showToast("Transaction failed: Check your connection.", "error");
-    }
-  }
+} catch (err) {
+showToast("Transaction failed: Check your connection.", "error");
+}
+}
 });
 
 
 function populateSidebarProjects(projects) {
-  if (!sidebarProjectList) return;
-  sidebarProjectList.innerHTML = projects.map(p => {
-    const isGeneral = p.name === "General";
-    const buttonsHTML = isGeneral ? '': `<div class="flex items-center space-x-2 opacity-50 group-hover:opacity-100 transition-opacity"><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1 text-gray-400 hover:text-indigo-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1 text-gray-400 hover:text-red-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
-    return `<div class="flex justify-between items-center group rounded"><a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 text-sm flex-grow truncate rounded">${escapeHTML(p.name)}</a>${buttonsHTML}</div>`;
-  }).join('');
+if (!sidebarProjectList) return;
+sidebarProjectList.innerHTML = projects.map(p => {
+const isGeneral = p.name === "General";
+const buttonsHTML = isGeneral ? '': `<div class="flex items-center space-x-2 opacity-50 group-hover:opacity-100 transition-opacity"><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1 text-gray-400 hover:text-indigo-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1 text-gray-400 hover:text-red-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
+return `<div class="flex justify-between items-center group rounded"><a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 text-sm flex-grow truncate rounded">${escapeHTML(p.name)}</a>${buttonsHTML}</div>`;
+}).join('');
 
-  document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => {
-    e.preventDefault();
-    activeProjectId = e.target.dataset.projectId;
-    
-    // Save the selected project to local storage
-    localStorage.setItem('lastActiveProjectId', activeProjectId);
+document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => {
+e.preventDefault();
+activeProjectId = e.target.dataset.projectId;
 
-    // Reset view all state when changing projects
-    showAllExpenses = false; 
-    if(viewAllBtn) viewAllBtn.style.display = 'block';
+// Save the selected project to local storage
+localStorage.setItem('lastActiveProjectId', activeProjectId);
 
-    updateActiveProject();
-    closeMenu();
-  }));
-  document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click', handleEditProject));
-  document.querySelectorAll('.delete-project-btn').forEach(btn => btn.addEventListener('click', handleDeleteProject));
+// Reset view all state when changing projects
+showAllExpenses = false;
+if (viewAllBtn) viewAllBtn.style.display = 'block';
+
+updateActiveProject();
+closeMenu();
+}));
+document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click',
+handleEditProject));
+document.querySelectorAll('.delete-project-btn').forEach(btn => btn.addEventListener('click',
+handleDeleteProject));
 }
 
 function updateSidebarSelection() {
-  document.querySelectorAll('.sidebar-project-link').forEach(link => {
-    link.classList.toggle('active', link.dataset.projectId === activeProjectId);
-  });
+document.querySelectorAll('.sidebar-project-link').forEach(link => {
+link.classList.toggle('active',
+link.dataset.projectId === activeProjectId);
+});
 }
 
 const toggleDashboardVisibility = (hasProjects) => {
-  if (expenseDashboard) expenseDashboard.style.display = hasProjects ? 'block': 'none';
-  if (noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none': 'block';
+if (expenseDashboard) expenseDashboard.style.display = hasProjects ? 'block': 'none';
+if (noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none': 'block';
 };
 
 // --- View All Logic ---
 viewAllBtn?.addEventListener('click', () => {
-    showAllExpenses = true;
-    applyFilters();
-    // Optional: Hide the button once activated
-    if(viewAllBtn) viewAllBtn.style.display = 'none';
+showAllExpenses = true;
+applyFilters();
+// Optional: Hide the button once activated
+if (viewAllBtn) viewAllBtn.style.display = 'none';
 });
 
 // --- Expenses ---
 function listenForExpenses(uid, projectId) {
-  if (expensesUnsubscribe) expensesUnsubscribe();
-  if (!uid || !projectId) {
-    allExpensesForProject = [];
-    applyFilters();
-    updateSummaries([]);
-    return;
-  };
-  const appId = "construction-expenses";
-  const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-  const q = query(expensesRef, where("projectId", "==", projectId));
+if (expensesUnsubscribe) expensesUnsubscribe();
+if (!uid || !projectId) {
+allExpensesForProject = [];
+applyFilters();
+updateSummaries([]);
+return;
+};
+const appId = "construction-expenses";
+const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
+const q = query(expensesRef, where("projectId", "==", projectId));
 
-  expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.metadata.fromCache) return;
+expensesUnsubscribe = onSnapshot(q, (snapshot) => {
+if (snapshot.metadata.fromCache) return;
 
-    allExpensesForProject = snapshot.docs.map(doc => ({
-      id: doc.id, ...doc.data()
-    }));
-    allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
-    applyFilters();
-    updateSummaries(allExpensesForProject);
-  });
+allExpensesForProject = snapshot.docs.map(doc => ({
+id: doc.id, ...doc.data()
+}));
+allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
+applyFilters();
+updateSummaries(allExpensesForProject);
+});
 }
 
 const applyFilters = () => {
-  if (!searchInput) return;
-  const searchTerm = searchInput.value.toLowerCase();
-  const startDate = startDateInput.value;
-  const endDate = endDateInput.value;
+if (!searchInput) return;
+const searchTerm = searchInput.value.toLowerCase();
+const startDate = startDateInput.value;
+const endDate = endDateInput.value;
 
-  const isFiltering = searchTerm !== '' || startDate !== '' || endDate !== '';
-  let filtered = allExpensesForProject;
+const isFiltering = searchTerm !== '' || startDate !== '' || endDate !== '';
+let filtered = allExpensesForProject;
 
-  if (isFiltering) {
-    filtered = allExpensesForProject.filter(exp =>
-      (exp.material.toLowerCase().includes(searchTerm)) &&
-      (!startDate || exp.date >= startDate) &&
-      (!endDate || exp.date <= endDate)
-    );
-  } else {
-    // Rely on new View All State
-    filtered = showAllExpenses ? allExpensesForProject : allExpensesForProject.slice(0, 10);
-  }
+if (isFiltering) {
+filtered = allExpensesForProject.filter(exp =>
+(exp.material.toLowerCase().includes(searchTerm)) &&
+(!startDate || exp.date >= startDate) &&
+(!endDate || exp.date <= endDate)
+);
+} else {
+// Rely on new View All State
+filtered = showAllExpenses ? allExpensesForProject: allExpensesForProject.slice(0, 10);
+}
 
-  // Hide or show the View All button based on list length
-  if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 10) {
-    if(viewAllBtn) viewAllBtn.style.display = 'block';
-  } else {
-    if(viewAllBtn) viewAllBtn.style.display = 'none';
-  }
+// Hide or show the View All button based on list length
+if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 10) {
+if (viewAllBtn) viewAllBtn.style.display = 'block';
+} else {
+if (viewAllBtn) viewAllBtn.style.display = 'none';
+}
 
-  renderExpenses(filtered);
+renderExpenses(filtered);
 };
 
 [searchInput, startDateInput, endDateInput].forEach(el => el?.addEventListener('input', applyFilters));
 
 expenseForm?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!currentUser || !activeProjectId || !navigator.onLine) {
-    if (!navigator.onLine) showToast("Please connect to internet", "error");
-    return;
-  }
-  const material = document.getElementById('material-name').value.trim();
-  const cost = parseFloat(document.getElementById('cost').value);
-  const date = document.getElementById('date').value;
+e.preventDefault();
+if (!currentUser || !activeProjectId || !navigator.onLine) {
+if (!navigator.onLine) showToast("Please connect to internet", "error");
+return;
+}
+const material = document.getElementById('material-name').value.trim();
+const cost = parseFloat(document.getElementById('cost').value);
+const date = document.getElementById('date').value;
 
-  if (material && !isNaN(cost) && date) {
-    const appId = "construction-expenses";
-    const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
-    try {
-      await runTransaction(db, async (t) => {
-        t.set(newRef, {
-          material, cost, date, projectId: activeProjectId
-        });
-      });
-      expenseForm.reset();
-      document.getElementById('date').valueAsDate = new Date();
+if (material && !isNaN(cost) && date) {
+const appId = "construction-expenses";
+const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
+try {
+await runTransaction(db, async (t) => {
+t.set(newRef, {
+material, cost, date, projectId: activeProjectId
+});
+});
+expenseForm.reset();
+document.getElementById('date').valueAsDate = new Date();
 
-      showToast("Expense added successfully!", "success");
+showToast("Expense added successfully!", "success");
 
-    } catch (err) {
-      showToast("Network Error: Data not saved.", "error");
-    }
-  }
+} catch (err) {
+showToast("Network Error: Data not saved.", "error");
+}
+}
 });
 
 
 // --- Render, CRUD, Utils ---
 function renderExpenses(expenses) {
-  if (!expenseList) return;
-  if (expenses.length === 0) {
-    expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
-    return;
-  }
-  expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words pl-6 py-2"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="pl-4 py-2"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {
-    minimumFractionDigits: 0, maximumFractionDigits: 2
-  })}</div></td><td class="pl-4 py-2"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', {
-    timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
-  })}</div></td><td class="px-6 py-2 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join('');
+if (!expenseList) return;
+if (expenses.length === 0) {
+expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
+return;
+}
+expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words pl-6 py-2"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="pl-4 py-2"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {
+minimumFractionDigits: 0, maximumFractionDigits: 2
+})}</div></td><td class="pl-4 py-2"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', {
+timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
+})}</div></td><td class="px-6 py-2 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join('');
 
-  document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
-  document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
+document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
+document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
 }
 
 async function handleDelete(event) {
-  const id = event.target.dataset.id;
+const id = event.target.dataset.id;
 
-  if (!navigator.onLine) {
-    showToast("Please connect to internet", "error");
-    return;
-  }
-  if (!id) return;
+if (!navigator.onLine) {
+showToast("Please connect to internet", "error");
+return;
+}
+if (!id) return;
 
-  const isConfirmed = await showConfirm("Delete Expense", "Are you sure you want to delete this expense? This action cannot be undone.");
+const isConfirmed = await showConfirm("Delete Expense", "Are you sure you want to delete this expense? This action cannot be undone.");
 
-  if (isConfirmed) {
-    if (!navigator.onLine) {
-      showToast("Cannot delete while offline.", "error");
-      return;
-    }
+if (isConfirmed) {
+if (!navigator.onLine) {
+showToast("Cannot delete while offline.", "error");
+return;
+}
 
-    const appId = "construction-expenses";
-    const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
-    try {
-      await runTransaction(db, async (t) => {
-        t.delete(docRef);
-      });
-      showToast("Expense deleted", "success");
-    } catch (err) {
-      showToast("Delete failed: Network error.", "error");
-    }
-  }
+const appId = "construction-expenses";
+const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
+try {
+await runTransaction(db, async (t) => {
+t.delete(docRef);
+});
+showToast("Expense deleted", "success");
+} catch (err) {
+showToast("Delete failed: Network error.", "error");
+}
+}
 }
 
 function handleEdit(event) {
-  const id = event.target.dataset.id;
-  const expense = allExpensesForProject.find(e => e.id === id);
-  if (!expense) return;
-  document.getElementById('edit-expense-id').value = expense.id;
-  document.getElementById('edit-material-name').value = expense.material;
-  document.getElementById('edit-cost').value = expense.cost;
-  document.getElementById('edit-date').value = expense.date;
-  editModal.classList.remove('hidden');
+const id = event.target.dataset.id;
+const expense = allExpensesForProject.find(e => e.id === id);
+if (!expense) return;
+document.getElementById('edit-expense-id').value = expense.id;
+document.getElementById('edit-material-name').value = expense.material;
+document.getElementById('edit-cost').value = expense.cost;
+document.getElementById('edit-date').value = expense.date;
+
+editModal.classList.remove('hidden');
+document.body.classList.add('overflow-hidden'); // Lock scroll
 }
 
 editExpenseForm?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!navigator.onLine) {
-    showToast("Offline: Cannot update.", "error"); return;
-  }
-  const id = document.getElementById('edit-expense-id').value;
-  const updatedData = {
-    material: document.getElementById('edit-material-name').value.trim(),
-    cost: parseFloat(document.getElementById('edit-cost').value),
-    date: document.getElementById('edit-date').value
-  };
-  if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
-    const appId = "construction-expenses";
-    const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
-    try {
-      await runTransaction(db, async (t) => {
-        t.update(docRef, updatedData);
-      });
-      closeEditModal();
+e.preventDefault();
+if (!navigator.onLine) {
+showToast("Offline: Cannot update.", "error"); return;
+}
+const id = document.getElementById('edit-expense-id').value;
+const updatedData = {
+material: document.getElementById('edit-material-name').value.trim(),
+cost: parseFloat(document.getElementById('edit-cost').value),
+date: document.getElementById('edit-date').value
+};
+if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+const appId = "construction-expenses";
+const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
+try {
+await runTransaction(db, async (t) => {
+t.update(docRef, updatedData);
+});
+closeEditModal();
 
-      showToast("Expense updated successfully!", "success");
+showToast("Expense updated successfully!", "success");
 
-    } catch (err) {
-      showToast("Update failed: Check connection.", "error");
-    }
-  }
+} catch (err) {
+showToast("Update failed: Check connection.", "error");
+}
+}
 });
 
 
 function handleEditProject(e) {
-  const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
-  document.getElementById('edit-project-id').value = projectId;
-  document.getElementById('edit-project-name').value = projectName;
-  editProjectModal.classList.remove('hidden');
+const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
+document.getElementById('edit-project-id').value = projectId;
+document.getElementById('edit-project-name').value = projectName;
+
+editProjectModal.classList.remove('hidden');
+document.body.classList.add('overflow-hidden'); // Lock scroll
 }
 
 async function handleDeleteProject(e) {
-  const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
+const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
 
-  if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); return;
-  }
-  if (!projectId) return;
+if (!navigator.onLine) {
+showToast("Please connect to internet", "error"); return;
+}
+if (!projectId) return;
 
-  const isConfirmed = await showConfirm("Delete Project", `Are you sure? All expenses in "${projectName}" will be permanently deleted.`);
+const isConfirmed = await showConfirm("Delete Project", `Are you sure? All expenses in "${projectName}" will be permanently deleted.`);
 
-  if (isConfirmed) {
-    if (!navigator.onLine) {
-      showToast("Cannot delete while offline.", "error");
-      return;
-    }
+if (isConfirmed) {
+if (!navigator.onLine) {
+showToast("Cannot delete while offline.", "error");
+return;
+}
 
-    const appId = "construction-expenses";
-    const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-    const q = query(expensesRef, where("projectId", "==", projectId));
+const appId = "construction-expenses";
+const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+const q = query(expensesRef, where("projectId", "==", projectId));
 
-    try {
-      const snapshot = await getDocs(q);
-      const batch = writeBatch(db);
-      snapshot.forEach(d => batch.delete(d.ref));
-      batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
-      await batch.commit();
+try {
+const snapshot = await getDocs(q);
+const batch = writeBatch(db);
+snapshot.forEach(d => batch.delete(d.ref));
+batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
+await batch.commit();
 
-      showToast("Project deleted", "success");
+showToast("Project deleted", "success");
 
-      // Handle updating or clearing active project info when deleted
-      if (activeProjectId === projectId) {
-        const generalProject = projects.find(p => p.name === 'General') || projects[0];
-        if (generalProject) {
-          activeProjectId = generalProject.id; 
-          localStorage.setItem('lastActiveProjectId', activeProjectId);
-          updateActiveProject();
-        } else {
-          activeProjectId = null;
-          localStorage.removeItem('lastActiveProjectId');
-        }
-      }
-    } catch (error) {
-      showToast("Delete failed: Network error.", "error");
-    }
-  }
+// Handle updating or clearing active project info when deleted
+if (activeProjectId === projectId) {
+const generalProject = projects.find(p => p.name === 'General') || projects[0];
+if (generalProject) {
+activeProjectId = generalProject.id;
+localStorage.setItem('lastActiveProjectId', activeProjectId);
+updateActiveProject();
+} else {
+activeProjectId = null;
+localStorage.removeItem('lastActiveProjectId');
+}
+}
+} catch (error) {
+showToast("Delete failed: Network error.", "error");
+}
+}
 }
 
 editProjectForm?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); return;
-  }
-  const projectId = document.getElementById('edit-project-id').value,
-  newName = document.getElementById('edit-project-name').value.trim();
+e.preventDefault();
+if (!navigator.onLine) {
+showToast("Please connect to internet", "error"); return;
+}
+const projectId = document.getElementById('edit-project-id').value,
+newName = document.getElementById('edit-project-name').value.trim();
 
-  if (newName && projectId) {
-    const appId = "construction-expenses";
-    const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
-    try {
-      await runTransaction(db, async (t) => {
-        t.update(projectRef, {
-          name: newName
-        });
-      });
-      closeEditProjectModal();
+if (newName && projectId) {
+const appId = "construction-expenses";
+const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
+try {
+await runTransaction(db, async (t) => {
+t.update(projectRef, {
+name: newName
+});
+});
+closeEditProjectModal();
 
-      showToast("Project renamed successfully!", "success");
+showToast("Project renamed successfully!", "success");
 
-    } catch (err) {
-      showToast("Rename failed.", "error");
-    }
-  }
+} catch (err) {
+showToast("Rename failed.", "error");
+}
+}
 });
 
 
-// Modal Closers
-const closeEditModal = () => editModal?.classList.add('hidden');
+// --- Modal Closers ---
+const closeEditModal = () => {
+editModal?.classList.add('hidden');
+document.body.classList.remove('overflow-hidden'); // Unlock scroll
+};
 cancelEditBtn?.addEventListener('click', closeEditModal);
 editModal?.addEventListener('click', e => {
-  if (e.target === editModal) closeEditModal();
+if (e.target === editModal) closeEditModal();
 });
 
-const closeEditProjectModal = () => editProjectModal?.classList.add('hidden');
+const closeEditProjectModal = () => {
+editProjectModal?.classList.add('hidden');
+document.body.classList.remove('overflow-hidden'); // Unlock scroll
+};
 cancelEditProjectBtn?.addEventListener('click', closeEditProjectModal);
 editProjectModal?.addEventListener('click', e => {
-  if (e.target === editProjectModal) closeEditProjectModal();
+if (e.target === editProjectModal) closeEditProjectModal();
 });
 
-const closeAddProjectModal = () => addProjectModal?.classList.add('hidden');
+const closeAddProjectModal = () => {
+addProjectModal?.classList.add('hidden');
+document.body.classList.remove('overflow-hidden'); // Unlock scroll
+};
 cancelAddProjectBtn?.addEventListener('click', closeAddProjectModal);
 addProjectModal?.addEventListener('click', e => {
-  if (e.target === addProjectModal) closeAddProjectModal();
+if (e.target === addProjectModal) closeAddProjectModal();
 });
 
 // --- Info Modals ---
 const infoContent = {
-  'about-link': {
-    title: 'About Us', content: 'Track materials and project costs with ease.'
-  },
-  'privacy-link': {
-    title: 'Privacy Policy', content: 'Your data is secure with Firebase.'
-  },
-  'contact-link': {
-    title: 'Contact Us', content: 'Email: support@expensetracker.app'
-  }
+'about-link': {
+title: 'About Us', content: 'Track materials and project costs with ease.'
+},
+'privacy-link': {
+title: 'Privacy Policy', content: 'Your data is secure with Firebase.'
+},
+'contact-link': {
+title: 'Contact Us', content: 'Email: support@expensetracker.app'
+}
 };
 
 document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(link => {
-  link.addEventListener('click', e => {
-    e.preventDefault();
-    const {
-      title, content
-    } = infoContent[e.currentTarget.id];
-    if (infoModalTitle) infoModalTitle.textContent = title;
-    if (infoModalContent) infoModalContent.innerHTML = content;
-    infoModal?.classList.remove('hidden');
-  });
+link.addEventListener('click', e => {
+e.preventDefault();
+const {
+title, content
+} = infoContent[e.currentTarget.id];
+if (infoModalTitle) infoModalTitle.textContent = title;
+if (infoModalContent) infoModalContent.innerHTML = content;
+
+infoModal?.classList.remove('hidden');
+document.body.classList.add('overflow-hidden'); // Lock scroll
 });
-closeInfoModalBtn?.addEventListener('click', () => infoModal?.classList.add('hidden'));
+});
+
+const closeInfoModal = () => {
+infoModal?.classList.add('hidden');
+document.body.classList.remove('overflow-hidden'); // Unlock scroll
+};
+
+closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => {
-  if (e.target === infoModal) infoModal.classList.add('hidden');
+if (e.target === infoModal) closeInfoModal();
 });
 
 // --- Summaries ---
 function updateSummaries(expenses) {
-  if (!finalExpensesEl) return;
+if (!finalExpensesEl) return;
 
-  const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
-  finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', {
-    minimumFractionDigits: 0, maximumFractionDigits: 2
-  })}`;
+const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
+finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', {
+minimumFractionDigits: 0, maximumFractionDigits: 2
+})}`;
 
-  const materialTotals = expenses.reduce((acc, exp) => {
-    const key = exp.material.trim().toLowerCase();
-    acc[key] = (acc[key] || 0) + exp.cost;
-    return acc;
-  }, {});
+const materialTotals = expenses.reduce((acc, exp) => {
+const key = exp.material.trim().toLowerCase();
+acc[key] = (acc[key] || 0) + exp.cost;
+return acc;
+}, {});
 
-  const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
-  if (sorted.length === 0) {
-    if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
-    return;
-  }
+const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
+if (sorted.length === 0) {
+if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
+return;
+}
 
-  if (materialSummaryEl) {
-    materialSummaryEl.innerHTML = sorted.map(key => {
-      const total = materialTotals[key];
-      const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-      return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', {
-        minimumFractionDigits: 0, maximumFractionDigits: 2
-      })}</span></div>`;
-    }).join('');
-  }
+if (materialSummaryEl) {
+materialSummaryEl.innerHTML = sorted.map(key => {
+const total = materialTotals[key];
+const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', {
+minimumFractionDigits: 0, maximumFractionDigits: 2
+})}</span></div>`;
+}).join('');
+}
 }
 
 const escapeHTML = (str) => {
-  const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML;
+const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML;
 };
 
 // --- Admin Configuration Listener ---
@@ -864,137 +909,137 @@ let globalConfigUnsubscribe = null;
 const ADMIN_EMAILS = ["roni9101862699@gmail.com"]; // REPLACE WITH YOUR ADMIN EMAIL
 
 function listenForAppConfig() {
-  if (globalConfigUnsubscribe) return;
+if (globalConfigUnsubscribe) return;
 
-  const configRef = doc(db, "artifacts/construction-expenses/config/appConfig");
-  globalConfigUnsubscribe = onSnapshot(configRef, (snapshot) => {
-    if (snapshot.exists()) {
-      applyGlobalConfig(snapshot.data());
-    }
-  });
+const configRef = doc(db, "artifacts/construction-expenses/config/appConfig");
+globalConfigUnsubscribe = onSnapshot(configRef, (snapshot) => {
+if (snapshot.exists()) {
+applyGlobalConfig(snapshot.data());
+}
+});
 }
 
 function applyGlobalConfig(config) {
-  const isUserAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
-  const maintenanceView = document.getElementById('maintenance-view');
+const isUserAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
+const maintenanceView = document.getElementById('maintenance-view');
 
-  if (config.maintenanceMode && !isUserAdmin) {
-    maintenanceView?.classList.remove('hidden');
-    maintenanceView?.classList.add('flex');
-    ['auth-view',
-      'app-view',
-      'splash-view'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.remove('active');
-      });
-  } else {
-    maintenanceView?.classList.add('hidden');
-    maintenanceView?.classList.remove('flex');
-    if (currentUser && maintenanceView?.classList.contains('hidden') === false) {
-      showView('app');
-    }
-  }
+if (config.maintenanceMode && !isUserAdmin) {
+maintenanceView?.classList.remove('hidden');
+maintenanceView?.classList.add('flex');
+['auth-view',
+'app-view',
+'splash-view'].forEach(id => {
+const el = document.getElementById(id);
+if (el) el.classList.remove('active');
+});
+} else {
+maintenanceView?.classList.add('hidden');
+maintenanceView?.classList.remove('flex');
+if (currentUser && maintenanceView?.classList.contains('hidden') === false) {
+showView('app');
+}
+}
 
-  if (config.appName) {
-    document.querySelectorAll('.dynamic-app-name').forEach(el => el.textContent = config.appName);
-    document.title = config.appName;
-  }
+if (config.appName) {
+document.querySelectorAll('.dynamic-app-name').forEach(el => el.textContent = config.appName);
+document.title = config.appName;
+}
 
-  if (config.primaryColor) {
-    document.documentElement.style.setProperty('--dynamic-primary', config.primaryColor);
-    document.querySelectorAll('.bg-indigo-600').forEach(el => {
-      el.style.backgroundColor = config.primaryColor;
-    });
-    document.querySelectorAll('.text-indigo-600').forEach(el => {
-      el.style.color = config.primaryColor;
-    });
-  }
+if (config.primaryColor) {
+document.documentElement.style.setProperty('--dynamic-primary', config.primaryColor);
+document.querySelectorAll('.bg-indigo-600').forEach(el => {
+el.style.backgroundColor = config.primaryColor;
+});
+document.querySelectorAll('.text-indigo-600').forEach(el => {
+el.style.color = config.primaryColor;
+});
+}
 
-  const notifEl = document.getElementById('global-notification');
-  const notifText = document.getElementById('notification-text');
+const notifEl = document.getElementById('global-notification');
+const notifText = document.getElementById('notification-text');
 
-  if (config.globalNotification && config.globalNotification.trim() !== "") {
-    if (notifText) notifText.textContent = config.globalNotification;
-    notifEl?.classList.remove('hidden');
-  } else {
-    notifEl?.classList.add('hidden');
-  }
+if (config.globalNotification && config.globalNotification.trim() !== "") {
+if (notifText) notifText.textContent = config.globalNotification;
+notifEl?.classList.remove('hidden');
+} else {
+notifEl?.classList.add('hidden');
+}
 }
 
 document.getElementById('close-notification')?.addEventListener('click', () => {
-  document.getElementById('global-notification').classList.add('hidden');
+document.getElementById('global-notification').classList.add('hidden');
 });
 
 listenForAppConfig();
 
 // --- Service Worker ---
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js");
-  });
+window.addEventListener("load", () => {
+navigator.serviceWorker.register("/service-worker.js");
+});
 }
 let deferredPrompt;
 const installBtn = document.getElementById("ibtn");
 window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault(); deferredPrompt = e; if (installBtn) installBtn.classList.remove("hidden");
+e.preventDefault(); deferredPrompt = e; if (installBtn) installBtn.classList.remove("hidden");
 });
 window.installApp = async () => {
-  if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; if (installBtn) installBtn.classList.add("hidden");
+if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt = null; if (installBtn) installBtn.classList.add("hidden");
 };
 window.addEventListener("appinstalled", () => {
-  if (installBtn) installBtn.classList.add("hidden");
+if (installBtn) installBtn.classList.add("hidden");
 });
 
 const userStatusDisplay = document.getElementById('user-status-display');
 let statusTimeout;
 
 function updateStatusUI(state) {
-  if (!userStatusDisplay) return;
+if (!userStatusDisplay) return;
 
-  userStatusDisplay.classList.add('opacity-0');
+userStatusDisplay.classList.add('opacity-0');
 
-  setTimeout(() => {
-    if (state === 'offline') {
-      userStatusDisplay.innerHTML = `
-      <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-      <span class="text-sm font-semibold">Offline</span>
-      `;
-    } else if (state === 'online') {
-      userStatusDisplay.innerHTML = `
-      <span class="relative flex size-3">
-      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
-      <span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
-      </span>
-      <span class="text-sm font-semibold">Back Online</span>
-      `;
-      statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
+setTimeout(() => {
+if (state === 'offline') {
+userStatusDisplay.innerHTML = `
+<span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+<span class="text-sm font-semibold">Offline</span>
+`;
+} else if (state === 'online') {
+userStatusDisplay.innerHTML = `
+<span class="relative flex size-3">
+<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+<span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+</span>
+<span class="text-sm font-semibold">Back Online</span>
+`;
+statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
 
-    } else if (state === 'welcome') {
-      const name = currentUser?.displayName || 'User';
-      userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
-    }
+} else if (state === 'welcome') {
+const name = currentUser?.displayName || 'User';
+userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
+}
 
-    userStatusDisplay.classList.remove('opacity-0');
-  },
-    300);
+userStatusDisplay.classList.remove('opacity-0');
+},
+300);
 }
 
 window.addEventListener('offline', () => {
-  clearTimeout(statusTimeout);
-  updateStatusUI('offline');
+clearTimeout(statusTimeout);
+updateStatusUI('offline');
 });
 
 window.addEventListener('online', () => {
-  clearTimeout(statusTimeout);
-  updateStatusUI('online');
+clearTimeout(statusTimeout);
+updateStatusUI('online');
 });
 
 document.getElementById('go-to-analytics-btn')?.addEventListener('click', () => {
-  if (!activeProjectId) {
-    showToast("Please select a project first.", "error");
-    return;
-  }
-  window.location.href = `analytics.html?projectId=${activeProjectId}`;
+if (!activeProjectId) {
+showToast("Please select a project first.", "error");
+return;
+}
+window.location.href = `analytics.html?projectId=${activeProjectId}`;
 });
 
 // App configuration

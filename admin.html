@@ -5,135 +5,106 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - System Control</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  
+
   <style>
-    /* Consistent custom shadows */
-    .shadow-soft { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
-    .shadow-purple { box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3); }
+    /* Custom loader */
+    .loader {
+      border-top-color: #3b82f6;
+      animation: spinner 1s linear infinite;
+    }
+    @keyframes spinner {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     
-    .loader { border-top-color: #4f46e5; animation: spinner 1.5s linear infinite; }
-    @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Clean up native color picker */
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.25rem; }
   </style>
 </head>
-<body class="bg-[#f8f9fa] text-gray-800 font-sans min-h-screen pb-10">
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
 
-  <div id="auth-overlay" class="fixed inset-0 bg-white/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-    <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-12 w-12 mb-4"></div>
-    <h2 id="auth-message" class="text-xl font-bold text-slate-800 tracking-tight">Verifying Admin Access...</h2>
+  <div id="auth-overlay" class="fixed inset-0 bg-white/90 z-50 flex flex-col items-center justify-center">
+    <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-10 w-10 mb-4"></div>
+    <h2 id="auth-message" class="text-lg font-semibold text-slate-800">Verifying Access...</h2>
   </div>
 
-  <header class="bg-white shadow-sm sticky top-0 z-30">
-    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+  <div id="save-overlay" class="fixed inset-0 bg-slate-900/20 z-40 hidden flex-col items-center justify-center">
+    <div class="bg-white p-4 rounded-md shadow-lg flex items-center gap-3">
+      <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-5 w-5"></div>
+      <p class="font-medium text-slate-700 text-sm">Publishing...</p>
+    </div>
+  </div>
+
+  <header class="bg-white border-b border-slate-300 sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex justify-between items-center">
       <div class="flex items-center space-x-3">
-        <a href="index.html" class="p-1 text-gray-600 hover:text-indigo-600 transition bg-gray-50 rounded-full">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+        <a href="index.html" class="text-slate-500 hover:text-blue-600 transition-colors" title="Back to App">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
         </a>
-        <div class="flex items-center space-x-2">
-           <div class="w-8 h-8 bg-indigo-50 rounded flex items-center justify-center text-indigo-600 font-bold text-lg">
-             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-           </div>
-           <div>
-             <h1 class="text-lg font-bold text-gray-900 leading-tight">System Control</h1>
-             <p class="text-xs text-gray-500">Admin Dashboard</p>
-           </div>
-        </div>
+        <div class="h-5 w-px bg-slate-300"></div>
+        <span class="font-semibold text-slate-800">System Control</span>
       </div>
-      <button id="logout-btn" class="text-sm px-4 py-2 bg-red-50 text-red-600 font-bold rounded-full hover:bg-red-100 transition-colors">Sign Out</button>
+      <button id="logout-btn" class="text-sm px-3 py-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors">
+        Sign Out
+      </button>
     </div>
   </header>
 
-  <main id="admin-content" class="max-w-4xl mx-auto px-4 mt-6 hidden relative">
-
-    <div id="save-overlay" class="fixed inset-0 bg-white/60 backdrop-blur-sm z-40 hidden flex-col items-center justify-center">
-       <div class="bg-white p-6 rounded-[2rem] shadow-xl flex items-center gap-4">
-         <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8"></div>
-         <p class="font-bold text-indigo-600 text-lg">Publishing Changes...</p>
-       </div>
+  <main id="admin-content" class="max-w-5xl mx-auto px-4 py-6 hidden">
+    
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-xl font-bold text-slate-900">Global Settings</h1>
+      <button id="save-config-btn" class="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded hover:bg-blue-700 transition-colors shadow-sm">
+        Save Changes
+      </button>
     </div>
 
-    <div class="bg-indigo-600 text-white p-6 rounded-[2rem] shadow-purple relative overflow-hidden mb-6">
-      <div class="absolute -right-12 -top-12 w-48 h-48 bg-white opacity-10 rounded-full pointer-events-none"></div>
-      <div class="relative z-10">
-        <h3 class="text-indigo-200 text-sm font-medium mb-1 uppercase tracking-wider">Configuration</h3>
-        <h2 class="text-3xl font-bold text-white tracking-tight">Global Settings</h2>
-      </div>
-    </div>
-
-    <div class="space-y-6">
+    <div class="bg-white border border-slate-300 rounded shadow-sm">
       
-      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
-        <div class="flex items-center mb-5">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
-          <h3 class="text-base font-semibold text-gray-800">Branding</h3>
+      <div class="flex flex-col sm:flex-row border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+        <div class="sm:w-1/3 mb-2 sm:mb-0">
+          <label for="app-name-input" class="text-sm font-semibold text-slate-800 block">Application Name</label>
+          <span class="text-xs text-slate-500">Appears in browser tab and navigation.</span>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Application Name</label>
-          <input type="text" id="app-name-input" placeholder="e.g., Money Tracker" class="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all">
-        </div>
-      </div>
-
-      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
-        <div class="flex items-center mb-5">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
-          <h3 class="text-base font-semibold text-gray-800">Theming</h3>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Primary Color (Hex)</label>
-          <div class="flex gap-4 items-center">
-            <input type="color" id="color-picker" class="h-12 w-12 rounded-xl cursor-pointer border-0 p-0 shadow-sm">
-            <input type="text" id="color-hex-input" placeholder="#4f46e5" class="flex-grow bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all font-mono">
-          </div>
-          <p class="text-xs text-slate-500 mt-3">Changes the primary accent color across the app.</p>
+        <div class="sm:w-2/3">
+          <input type="text" id="app-name-input" placeholder="e.g., FinTrack" class="w-full sm:max-w-md bg-white border border-slate-300 text-sm rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
         </div>
       </div>
 
-      <div class="bg-white p-6 rounded-[2rem] shadow-soft">
-        <div class="flex items-center mb-5">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
-          <h3 class="text-base font-semibold text-gray-800">Communications</h3>
+      <div class="flex flex-col sm:flex-row border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+        <div class="sm:w-1/3 mb-2 sm:mb-0">
+          <label for="notification-input" class="text-sm font-semibold text-slate-800 block">Global Banner</label>
+          <span class="text-xs text-slate-500">Visible to all users. Leave blank to disable.</span>
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Global Notification Banner</label>
-          <textarea id="notification-input" rows="3" placeholder="Leave blank to disable banner..." class="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent rounded-xl px-4 py-3 outline-none transition-all resize-none"></textarea>
+        <div class="sm:w-2/3">
+          <textarea id="notification-input" rows="2" placeholder="Enter announcement text..." class="w-full sm:max-w-md bg-white border border-slate-300 text-sm rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y"></textarea>
         </div>
       </div>
 
-      <div class="bg-red-50 p-6 rounded-[2rem] border border-red-100 shadow-soft">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center mb-1">
-              <div class="w-1.5 h-5 bg-red-500 rounded-full mr-3"></div>
-              <h3 class="text-base font-bold text-red-800">Maintenance Mode</h3>
-            </div>
-            <p class="text-sm text-red-600 mt-1 ml-4.5">Restrict access for all non-admin users.</p>
-          </div>
+      <div class="flex flex-col sm:flex-row border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+        <div class="sm:w-1/3 mb-2 sm:mb-0">
+          <label class="text-sm font-semibold text-slate-800 block">Primary Brand Color</label>
+          <span class="text-xs text-slate-500">Main accent color across the app.</span>
+        </div>
+        <div class="sm:w-2/3 flex items-center gap-3">
+          <input type="color" id="color-picker" class="h-9 w-12 cursor-pointer bg-transparent">
+          <input type="text" id="color-hex-input" placeholder="#3b82f6" class="w-28 uppercase font-mono bg-white border border-slate-300 text-sm rounded px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row p-4 bg-red-50/30 hover:bg-red-50/60 transition-colors rounded-b">
+        <div class="sm:w-1/3 mb-2 sm:mb-0">
+          <label class="text-sm font-semibold text-red-700 block">Maintenance Mode</label>
+          <span class="text-xs text-red-500">Lock out all non-admin users.</span>
+        </div>
+        <div class="sm:w-2/3 flex items-center">
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="maintenance-toggle" class="sr-only peer">
-            <div class="w-14 h-7 bg-red-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-red-600 shadow-inner"></div>
+            <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
           </label>
         </div>
       </div>
-
-      <button id="save-config-btn" class="group relative overflow-hidden w-full bg-slate-900 text-white font-bold py-4 rounded-[1.5rem] hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg shadow-slate-300 flex items-center justify-center gap-2">
-        <svg class="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-        Publish Changes
-      </button>
 
     </div>
   </main>

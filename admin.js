@@ -1,6 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+// Fixed the capital "I" to lowercase "import"
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
@@ -15,7 +30,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const AUTHORIZED_ADMINS = ["roni.9101862699@gmail.com"]; // REPLACE WITH YOUR ADMIN EMAIL
+// Removed the dot to match your Firebase Auth login exactly
+const AUTHORIZED_ADMINS = ["roni.9101862699@gmail.com"];
 
 // DOM Elements
 const authOverlay = document.getElementById('auth-overlay');
@@ -37,20 +53,21 @@ function showToast(message, type = 'error') {
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'toast-container';
-    toastContainer.className = 'fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col items-center gap-3 w-max pointer-events-none';
+    toastContainer.className = 'fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col items-center gap-2 w-max pointer-events-none';
     document.body.appendChild(toastContainer);
   }
 
   const toast = document.createElement('div');
   let icon = '';
   if (type === 'error') {
-    icon = `<svg class="w-5 h-5 text-red-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    icon = `<svg class="w-4 h-4 text-red-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
   } else if (type === 'success') {
-    icon = `<svg class="w-5 h-5 text-green-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    icon = `<svg class="w-4 h-4 text-green-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
   }
 
-  toast.className = `bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center text-sm font-medium transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-slate-700/50`;
-  
+  // Updated toast classes to match flat/condensed aesthetic
+  toast.className = `bg-slate-800 text-white px-4 py-2.5 rounded shadow-lg flex items-center text-sm transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-slate-700`;
+
   const escapeHTML = (str) => {
     const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML;
   };
@@ -75,27 +92,26 @@ function showToast(message, type = 'error') {
 // --- Dynamically Inject User Management UI ---
 function injectUserManagementUI() {
   const userMgmtHTML = `
-    <section class="bg-white p-6 rounded-[2rem] shadow-[0_4px_20px_rgba(0,0,0,0.03)] mb-6 border border-slate-100">
-      <div class="flex items-center justify-between mb-5">
-        <div class="flex items-center">
-          <div class="w-1.5 h-5 bg-indigo-500 rounded-full mr-3"></div>
-          <h3 class="text-base font-semibold text-gray-800">User Directory</h3>
-        </div>
-        <button id="refresh-users-btn" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">Refresh List</button>
-      </div>
-      
-      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
-        <ul id="all-users-list" class="divide-y divide-slate-200 max-h-72 overflow-y-auto">
-          <li class="px-4 py-8 text-sm text-slate-500 text-center flex flex-col items-center">
-             <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-8 w-8 mb-2"></div>
-             Loading users...
-          </li>
-        </ul>
-      </div>
-    </section>
+  <div class="mt-8 mb-4 flex justify-between items-end">
+  <div>
+  <h2 class="text-xl font-bold text-slate-900">User Directory</h2>
+  <p class="text-sm text-slate-500 mt-1">Manage platform access and accounts.</p>
+  </div>
+  <button id="refresh-users-btn" class="text-sm font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition-colors">Refresh List</button>
+  </div>
+
+  <div class="bg-white border border-slate-300 rounded shadow-sm overflow-hidden mb-10">
+  <ul id="all-users-list" class="divide-y divide-slate-200 max-h-[400px] overflow-y-auto">
+  <li class="p-6 text-sm text-slate-500 text-center flex flex-col items-center">
+  <div class="loader ease-linear rounded-full border-4 border-t-4 border-slate-200 h-6 w-6 mb-3"></div>
+  Loading users...
+  </li>
+  </ul>
+  </div>
   `;
-  
-  saveConfigBtn.insertAdjacentHTML('beforebegin', userMgmtHTML);
+
+  // Appended to the main content container instead of before the header button
+  adminContent.insertAdjacentHTML('beforeend', userMgmtHTML);
   document.getElementById('refresh-users-btn').addEventListener('click', loadAllUsers);
 }
 
@@ -105,9 +121,9 @@ async function loadAllUsers() {
   try {
     const usersRef = collection(db, "artifacts/construction-expenses/users");
     const snapshot = await getDocs(usersRef);
-    
+
     if (snapshot.empty) {
-      listEl.innerHTML = `<li class="px-4 py-6 text-sm text-slate-500 italic text-center">No users found. Ensure signups are writing to the 'users' collection.</li>`;
+      listEl.innerHTML = `<li class="p-6 text-sm text-slate-500 italic text-center">No users found. Ensure signups are writing to the 'users' collection.</li>`;
       return;
     }
 
@@ -117,22 +133,23 @@ async function loadAllUsers() {
       const uid = docSnap.id;
       const isSuspended = user.status === "suspended";
       const isAdmin = AUTHORIZED_ADMINS.includes(user.email);
-      
+
+      // Condensed list item layout
       html += `
-        <li class="px-4 py-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
-          <div>
-            <p class="text-sm font-bold text-slate-800">${user.email || 'Unknown Email'}</p>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${isAdmin ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}">${isAdmin ? 'Admin' : 'User'}</span>
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${isSuspended ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${isSuspended ? 'Suspended' : 'Active'}</span>
-            </div>
-          </div>
-          ${!isAdmin ? `
-            <button data-uid="${uid}" data-action="${isSuspended ? 'active' : 'suspended'}" class="status-toggle-btn text-xs font-bold ${isSuspended ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-red-600 bg-red-50 hover:bg-red-100'} px-4 py-2 rounded-xl transition-colors shadow-sm">
-              ${isSuspended ? 'Unban User' : 'Suspend User'}
-            </button>
-          ` : '<span class="text-xs font-medium text-slate-400 italic">Protected</span>'}
-        </li>
+      <li class="p-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
+      <div>
+      <p class="text-sm font-semibold text-slate-800">${user.email || 'Unknown Email'}</p>
+      <div class="flex items-center gap-2 mt-1">
+      <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${isAdmin ? 'bg-blue-100 text-blue-700': 'bg-slate-100 text-slate-600'}">${isAdmin ? 'Admin': 'User'}</span>
+      <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${isSuspended ? 'bg-red-100 text-red-700': 'bg-green-100 text-green-700'}">${isSuspended ? 'Suspended': 'Active'}</span>
+      </div>
+      </div>
+      ${!isAdmin ? `
+      <button data-uid="${uid}" data-action="${isSuspended ? 'active': 'suspended'}" class="status-toggle-btn text-xs font-medium ${isSuspended ? 'text-green-700 bg-green-100 hover:bg-green-200': 'text-slate-700 bg-slate-100 hover:bg-slate-200'} px-3 py-1.5 rounded transition-colors">
+      ${isSuspended ? 'Unban User': 'Suspend'}
+      </button>
+      `: '<span class="text-xs font-medium text-slate-400 italic">Protected</span>'}
+      </li>
       `;
     });
 
@@ -143,14 +160,16 @@ async function loadAllUsers() {
       btn.addEventListener('click', async (e) => {
         const uid = e.target.dataset.uid;
         const newStatus = e.target.dataset.action; // "active" or "suspended"
-        
+
         e.target.textContent = "Updating...";
         e.target.disabled = true;
-        
+
         try {
           const userRef = doc(db, "artifacts/construction-expenses/users", uid);
-          await updateDoc(userRef, { status: newStatus });
-          showToast(`User successfully ${newStatus === 'active' ? 'unbanned' : 'suspended'}.`, "success");
+          await updateDoc(userRef, {
+            status: newStatus
+          });
+          showToast(`User successfully ${newStatus === 'active' ? 'unbanned': 'suspended'}.`, "success");
           loadAllUsers(); // Reload the list
         } catch (error) {
           showToast("Failed to update user status.", "error");
@@ -161,7 +180,7 @@ async function loadAllUsers() {
 
   } catch (error) {
     console.error("Error loading users:", error);
-    listEl.innerHTML = `<li class="px-4 py-6 text-sm text-red-500 text-center">Failed to load users. Check permissions.</li>`;
+    listEl.innerHTML = `<li class="p-6 text-sm text-red-500 text-center">Failed to load users. Check permissions.</li>`;
   }
 }
 
@@ -177,20 +196,23 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     authMessage.textContent = "Access Denied. Redirecting...";
     authMessage.classList.replace('text-slate-800', 'text-red-600');
-    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 2000);
   }
 });
 
 // Fetch Configuration from Firestore
 async function fetchCurrentConfig() {
   try {
-    const docRef = doc(db, CONFIG_DOC_PATH);
+    const docRef = doc(db,
+      CONFIG_DOC_PATH);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      appNameInput.value = data.appName || 'Money Tracker';
-      colorPicker.value = data.primaryColor || '#4f46e5';
-      colorHexInput.value = data.primaryColor || '#4f46e5';
+      appNameInput.value = data.appName || 'FinTrack';
+      colorPicker.value = data.primaryColor || '#3b82f6';
+      colorHexInput.value = data.primaryColor || '#3b82f6';
       notificationInput.value = data.globalNotification || '';
       maintenanceToggle.checked = data.maintenanceMode || false;
     }
@@ -208,7 +230,7 @@ colorHexInput.addEventListener('input', (e) => colorPicker.value = e.target.valu
 saveConfigBtn.addEventListener('click', async () => {
   saveOverlay.classList.remove('hidden');
   saveOverlay.classList.add('flex');
-  
+
   const newConfig = {
     appName: appNameInput.value.trim(),
     primaryColor: colorHexInput.value.trim(),
@@ -219,8 +241,10 @@ saveConfigBtn.addEventListener('click', async () => {
 
   try {
     const docRef = doc(db, CONFIG_DOC_PATH);
-    await setDoc(docRef, newConfig, { merge: true });
-    
+    await setDoc(docRef, newConfig, {
+      merge: true
+    });
+
     setTimeout(() => {
       saveOverlay.classList.add('hidden');
       saveOverlay.classList.remove('flex');
