@@ -458,12 +458,22 @@ toggleDashboardVisibility(true);
 listenForExpenses(currentUser.uid, activeProjectId);
 }
 
-sidebarAddProjectBtn?.addEventListener('click', () => {
-addProjectModal.classList.remove('hidden');
-document.body.classList.add('overflow-hidden'); // Lock scroll
-document.getElementById('new-project-name-modal').focus();
-closeMenu();
+sidebarAddProjectBtn?.addEventListener('click', (e) => {
+  // 1. Stop the page from jumping to the top
+  e.preventDefault(); 
+  
+  // 2. Open the modal
+  addProjectModal.classList.remove('hidden'); 
+  
+  // 3. Lock the background scroll for the modal
+  document.body.classList.add('overflow-hidden'); 
+  
+  // 4. Focus the input, but explicitly tell the browser NOT to scroll the page
+  setTimeout(() => {
+    document.getElementById('new-project-name-modal');
+  }, 100);
 });
+
 
 addProjectFormModal?.addEventListener('submit', async e => {
 e.preventDefault();
