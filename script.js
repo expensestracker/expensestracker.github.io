@@ -23,7 +23,7 @@ import {
   getDocs,
   writeBatch,
   runTransaction,
-  setDoc // <-- ADDED THIS HERE
+  setDoc 
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -41,6 +41,7 @@ const db = getFirestore(app);
 
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
+let showAllExpenses = false; // Added state for View All feature
 
 // --- DOM Elements ---
 const views = {
@@ -49,7 +50,19 @@ const views = {
   app: document.getElementById('app-view')
 };
 const userNameDisplay = document.getElementById('user-display-name');
-const authTitle = document.getElementById('auth-title'), emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), authError = document.getElementById('auth-error'), emailActionBtn = document.getElementById('email-action-btn'), authToggleLink = document.getElementById('auth-toggle-link'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
+const authTitle = document.getElementById('auth-title');
+const emailForm = document.getElementById('email-form');
+const emailInput = document.getElementById('email-input');
+const passwordInput = document.getElementById('password-input');
+const emailActionBtn = document.getElementById('email-action-btn');
+const btnText = document.getElementById('btn-text');
+const btnSpinner = document.getElementById('btn-spinner');
+const togglePasswordBtn = document.getElementById('toggle-password-btn');
+const eyeIcon = document.getElementById('eye-icon');
+const eyeSlashIcon = document.getElementById('eye-slash-icon');
+const forgotPasswordLink = document.getElementById('forgot-password-link');
+const googleSignInBtn = document.getElementById('google-signin-btn');
+
 const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
 const userProfileDesktop = document.getElementById('user-profile-desktop'), userProfileMobile = document.getElementById('user-profile-mobile');
 const hamburgerBtn = document.getElementById('user-profile-desktop'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
@@ -60,6 +73,8 @@ const editProjectModal = document.getElementById('edit-project-modal'), editProj
 const addProjectModal = document.getElementById('add-project-modal'), addProjectFormModal = document.getElementById('add-project-form-modal'), cancelAddProjectBtn = document.getElementById('cancel-add-project-btn');
 const infoModal = document.getElementById('info-modal'), infoModalTitle = document.getElementById('info-modal-title'), infoModalContent = document.getElementById('info-modal-content'), closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 const projectSummaryTitle = document.getElementById('project-summary-title');
+const viewAllBtn = document.getElementById('view-all');
+
 
 // --- Custom Native-Feel Toast Notification ---
 function showToast(message, type = 'error') {
@@ -103,32 +118,32 @@ function showConfirm(title, message) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center opacity-0 transition-opacity duration-300';
-    
+
     const modal = document.createElement('div');
     modal.className = 'bg-white p-6 rounded-[2rem] shadow-2xl w-[90%] max-w-sm text-center transform scale-95 transition-transform duration-300';
-    
+
     modal.innerHTML = `
-      <div class="w-14 h-14 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center mb-4">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-      </div>
-      <h3 class="text-xl font-bold text-slate-800 mb-2">${escapeHTML(title)}</h3>
-      <p class="text-sm text-slate-500 mb-8 leading-relaxed">${escapeHTML(message)}</p>
-      <div class="flex gap-3">
-        <button id="confirm-cancel-btn" class="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-        <button id="confirm-delete-btn" class="flex-1 px-4 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
-      </div>
+    <div class="w-14 h-14 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center mb-4">
+    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    </div>
+    <h3 class="text-xl font-bold text-slate-800 mb-2">${escapeHTML(title)}</h3>
+    <p class="text-sm text-slate-500 mb-8 leading-relaxed">${escapeHTML(message)}</p>
+    <div class="flex gap-3">
+    <button id="confirm-cancel-btn" class="flex-1 px-4 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+    <button id="confirm-delete-btn" class="flex-1 px-4 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
+    </div>
     `;
-    
+
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
-    
+
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         overlay.classList.remove('opacity-0');
         modal.classList.remove('scale-95');
       });
     });
-    
+
     const closeAndResolve = (result) => {
       overlay.classList.add('opacity-0');
       modal.classList.add('scale-95');
@@ -137,7 +152,7 @@ function showConfirm(title, message) {
         resolve(result);
       }, 300);
     };
-    
+
     modal.querySelector('#confirm-cancel-btn').addEventListener('click', () => closeAndResolve(false));
     modal.querySelector('#confirm-delete-btn').addEventListener('click', () => closeAndResolve(true));
   });
@@ -145,59 +160,130 @@ function showConfirm(title, message) {
 
 // --- View Management ---
 const showView = (viewName) => {
-  Object.values(views).forEach(v => v?.classList.remove('active')); 
+  Object.values(views).forEach(v => v?.classList.remove('active'));
   if (views[viewName]) views[viewName].classList.add('active');
 };
 
+// Explicitly show the splash screen on initial load to prevent FOUC (Flash of Unstyled Content/Auth screen)
+showView('splash');
+
 // --- Authentication ---
-setTimeout(() => {
-  if (!currentUser) showView('auth');
-}, 1500);
+let isInitialLoad = true;
 
 onAuthStateChanged(auth, user => {
   currentUser = user;
-  if (user) {
-    showView('app'); 
-    setupUIForUser(user); 
-    listenForProjects(user.uid);
+  
+  const routeUser = () => {
+    if (user) {
+      showView('app');
+      setupUIForUser(user);
+      listenForProjects(user.uid);
+    } else {
+      showView('auth');
+      if (projectsUnsubscribe) projectsUnsubscribe();
+      if (expensesUnsubscribe) expensesUnsubscribe();
+      activeProjectId = null;
+    }
+  };
+
+  if (isInitialLoad) {
+    isInitialLoad = false;
+    // Delay routing for 1 second just so the splash screen transition looks smooth on fast connections
+    setTimeout(routeUser, 1000);
   } else {
-    showView('auth'); 
-    if (projectsUnsubscribe) projectsUnsubscribe(); 
-    if (expensesUnsubscribe) expensesUnsubscribe(); 
-    activeProjectId = null;
+    // Immediate routing for subsequent logouts/logins
+    routeUser(); 
   }
 });
 
-authToggleLink?.addEventListener('click', e => {
-  e.preventDefault();
-  isSigningUp = !isSigningUp;
-  authTitle.textContent = isSigningUp ? 'Create Account': 'Welcome Back';
-  emailActionBtn.textContent = isSigningUp ? 'Sign Up': 'Log In';
-  authToggleLink.textContent = isSigningUp ? 'Have an account? Log In': 'Need an account? Sign Up';
-  authError.textContent = '';
-  if (isSigningUp) {
-    emailActionBtn.classList.replace('bg-indigo-600', 'bg-emerald-600');
-    emailActionBtn.classList.replace('hover:bg-indigo-700', 'hover:bg-emerald-700');
+// Helper functions for password input visuals
+function setInputStatus(status) {
+  if(!passwordInput) return;
+  
+  // Clear previous status classes
+  passwordInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-green-500', 'ring-green-500', 'focus:ring-indigo-500', 'border-slate-200', 'focus:border-indigo-500');
+
+  if (status === 'error') {
+    passwordInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+    // Vibrate device (supported on most modern Android devices)
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  } else if (status === 'success') {
+    passwordInput.classList.add('border-green-500', 'ring-1', 'ring-green-500');
   } else {
-    emailActionBtn.classList.replace('bg-emerald-600', 'bg-indigo-600');
-    emailActionBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-indigo-700');
+    // Reset to default
+    passwordInput.classList.add('border-slate-200', 'focus:ring-indigo-500', 'focus:border-indigo-500');
+  }
+}
+
+// Manage UI state of the Submit button
+function setAuthButtonLoading(isLoading) {
+  if (!emailActionBtn || !btnText || !btnSpinner) return;
+  
+  if (isLoading) {
+    btnText.classList.add('opacity-0');
+    btnSpinner.classList.remove('opacity-0');
+    emailActionBtn.disabled = true;
+  } else {
+    btnText.classList.remove('opacity-0');
+    btnSpinner.classList.add('opacity-0');
+    emailActionBtn.disabled = false;
+  }
+}
+
+// Resets border visuals when typing
+passwordInput?.addEventListener('input', () => {
+  setInputStatus('default'); 
+});
+
+// Password Visibility Toggle Logic
+togglePasswordBtn?.addEventListener('click', () => {
+  if (!passwordInput || !eyeIcon || !eyeSlashIcon) return;
+  
+  const isPassword = passwordInput.getAttribute('type') === 'password';
+  passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+  
+  if (isPassword) {
+    eyeIcon.classList.add('hidden');
+    eyeSlashIcon.classList.remove('hidden');
+  } else {
+    eyeIcon.classList.remove('hidden');
+    eyeSlashIcon.classList.add('hidden');
   }
 });
 
 emailForm?.addEventListener('submit', async e => {
   e.preventDefault();
+
   if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); 
+    showToast("Please connect to the internet", "error");
     return;
   }
-  const email = emailInput.value, password = passwordInput.value;
-  authError.textContent = '';
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!password) {
+    showToast('Please enter a password.', 'error');
+    setInputStatus('error');
+    return;
+  }
+
+  setAuthButtonLoading(true);
+
   try {
-    if (isSigningUp) {
-      // 1. Create the Auth account
+    // 2. Attempt to log in first
+    await signInWithEmailAndPassword(auth, email, password);
+
+    setInputStatus('success');
+    showToast("Login successful!", "success");
+    setAuthButtonLoading(false); // Reset on success just in case
+
+  } catch (loginError) {
+    // 3. If login fails, try creating a new account
+    try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 2. Add their profile to the users collection so the Admin Panel can see them
+
+      // Add profile to the users collection for the Admin Panel
       const appId = "construction-expenses";
       await setDoc(doc(db, `artifacts/${appId}/users`, userCredential.user.uid), {
         email: email,
@@ -205,44 +291,80 @@ emailForm?.addEventListener('submit', async e => {
         createdAt: new Date().toISOString()
       });
 
-    } else {
-      await signInWithEmailAndPassword(auth, email, password);
+      setInputStatus('success');
+      showToast("Account created successfully!", "success");
+      setAuthButtonLoading(false);
+
+    } catch (signupError) {
+      setInputStatus('error');
+      setAuthButtonLoading(false);
+      
+      // 4. Transform Firebase Error codes into normal language Toast alerts
+      let friendlyMessage = "Something went wrong. Please try again.";
+      const errCode = signupError.code || loginError.code;
+
+      switch (errCode) {
+        case 'auth/email-already-in-use':
+          friendlyMessage = "Incorrect password for this email.";
+          break;
+        case 'auth/invalid-credential':
+        case 'auth/wrong-password':
+          friendlyMessage = "Incorrect email or password.";
+          break;
+        case 'auth/invalid-email':
+          friendlyMessage = "Please enter a valid email address.";
+          break;
+        case 'auth/weak-password':
+          friendlyMessage = "Password should be at least 6 characters.";
+          break;
+        case 'auth/network-request-failed':
+          friendlyMessage = "Network error. Please check your connection.";
+          break;
+        case 'auth/too-many-requests':
+          friendlyMessage = "Too many failed attempts. Try again later.";
+          break;
+      }
+      
+      showToast(friendlyMessage, 'error');
     }
-  } catch (error) {
-    authError.textContent = error.message;
   }
 });
 
-
 googleSignInBtn?.addEventListener('click', () => {
   if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); 
+    showToast("Please connect to internet", "error");
     return;
   }
-  signInWithPopup(auth, new GoogleAuthProvider()).catch(error => authError.textContent = error.message);
+  signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
+    showToast("Google Sign-In failed or was cancelled.", "error");
+  });
 });
 
 forgotPasswordLink?.addEventListener('click', async e => {
   e.preventDefault();
   const email = emailInput.value;
   if (!email) {
-    authError.textContent = 'Please enter your email address first.'; return;
+    showToast('Please enter your email address first.', 'error'); 
+    return;
   }
   try {
-    await sendPasswordResetEmail(auth, email); 
+    await sendPasswordResetEmail(auth, email);
     showToast('Password reset email sent!', 'success');
   } catch (error) {
-    authError.textContent = error.message;
+    let msg = "Failed to send reset email.";
+    if(error.code === 'auth/invalid-email') msg = "Please enter a valid email.";
+    if(error.code === 'auth/user-not-found') msg = "No account found with this email.";
+    showToast(msg, 'error');
   }
 });
 
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
   const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'U')}&background=E2E8F0&color=4A5568`;
-  
-  if(userProfileDesktop) userProfileDesktop.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
-  if(userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
-  
+
+  if (userProfileDesktop) userProfileDesktop.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-gray-500 truncate">${escapeHTML(user.email)}</p></div></div>`;
+
   if (navigator.onLine) {
     updateStatusUI('welcome');
   } else {
@@ -254,11 +376,11 @@ function setupUIForUser(user) {
 }
 
 const openMenu = () => {
-  mobileMenuBackdrop?.classList.remove('pointer-events-none', 'opacity-0'); 
+  mobileMenuBackdrop?.classList.remove('pointer-events-none', 'opacity-0');
   mobileMenu?.classList.remove('-translate-x-full');
 };
 const closeMenu = () => {
-  mobileMenuBackdrop?.classList.add('pointer-events-none', 'opacity-0'); 
+  mobileMenuBackdrop?.classList.add('pointer-events-none', 'opacity-0');
   mobileMenu?.classList.add('-translate-x-full');
 };
 hamburgerBtn?.addEventListener('click', openMenu);
@@ -271,24 +393,41 @@ mobileSignOutBtn?.addEventListener('click', () => signOut(auth));
 // --- Projects ---
 function listenForProjects(uid) {
   const appId = "construction-expenses";
-  const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
-  
+  const projectsRef = collection(db,
+    `artifacts/${appId}/users/${uid}/projects`);
+
   projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")),
     async (snapshot) => {
       if (snapshot.metadata.fromCache) return;
 
-      projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+      projects = snapshot.docs.map(doc => ({
+        id: doc.id, ...doc.data()
+      }));
+
       if (projects.length === 0 && navigator.onLine) {
         const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
         await runTransaction(db, async (t) => {
-          t.set(newProjectRef, { name: "General" });
+          t.set(newProjectRef, {
+            name: "General"
+          });
         });
         return;
       }
       populateSidebarProjects(projects);
-      if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) activeProjectId = projects[0]?.id;
-      if (activeProjectId) updateActiveProject();
+      
+      // Load saved project ID if available
+      const savedProjectId = localStorage.getItem('lastActiveProjectId');
+      
+      if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
+        activeProjectId = savedProjectId;
+      } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+        activeProjectId = projects[0]?.id;
+      }
+      
+      if (activeProjectId) {
+        localStorage.setItem('lastActiveProjectId', activeProjectId);
+        updateActiveProject();
+      }
     });
 }
 
@@ -301,15 +440,15 @@ function updateActiveProject() {
 }
 
 sidebarAddProjectBtn?.addEventListener('click', () => {
-  addProjectModal.classList.remove('hidden'); 
-  document.getElementById('new-project-name-modal').focus(); 
+  addProjectModal.classList.remove('hidden');
+  document.getElementById('new-project-name-modal').focus();
   closeMenu();
 });
 
 addProjectFormModal?.addEventListener('submit', async e => {
   e.preventDefault();
   if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); 
+    showToast("Please connect to internet", "error");
     return;
   }
   const projectName = document.getElementById('new-project-name-modal').value.trim();
@@ -318,14 +457,15 @@ addProjectFormModal?.addEventListener('submit', async e => {
     const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
     try {
       await runTransaction(db, async (t) => {
-        t.set(newProjRef, { name: projectName });
+        t.set(newProjRef, {
+          name: projectName
+        });
       });
       addProjectFormModal.reset();
       addProjectModal.classList.add('hidden');
-      
-      // NEW: Success Toast
-      showToast(`Project "${projectName}" created!`, "success"); 
-      
+
+      showToast(`Project "${projectName}" created!`, "success");
+
     } catch (err) {
       showToast("Transaction failed: Check your connection.", "error");
     }
@@ -334,17 +474,25 @@ addProjectFormModal?.addEventListener('submit', async e => {
 
 
 function populateSidebarProjects(projects) {
-  if(!sidebarProjectList) return;
+  if (!sidebarProjectList) return;
   sidebarProjectList.innerHTML = projects.map(p => {
     const isGeneral = p.name === "General";
     const buttonsHTML = isGeneral ? '': `<div class="flex items-center space-x-2 opacity-50 group-hover:opacity-100 transition-opacity"><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1 text-gray-400 hover:text-indigo-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button><button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1 text-gray-400 hover:text-red-600"><svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div>`;
     return `<div class="flex justify-between items-center group rounded"><a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2 px-4 text-sm flex-grow truncate rounded">${escapeHTML(p.name)}</a>${buttonsHTML}</div>`;
   }).join('');
-  
+
   document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => {
-    e.preventDefault(); 
-    activeProjectId = e.target.dataset.projectId; 
-    updateActiveProject(); 
+    e.preventDefault();
+    activeProjectId = e.target.dataset.projectId;
+    
+    // Save the selected project to local storage
+    localStorage.setItem('lastActiveProjectId', activeProjectId);
+
+    // Reset view all state when changing projects
+    showAllExpenses = false; 
+    if(viewAllBtn) viewAllBtn.style.display = 'block';
+
+    updateActiveProject();
     closeMenu();
   }));
   document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click', handleEditProject));
@@ -358,27 +506,37 @@ function updateSidebarSelection() {
 }
 
 const toggleDashboardVisibility = (hasProjects) => {
-  if(expenseDashboard) expenseDashboard.style.display = hasProjects ? 'block': 'none'; 
-  if(noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none': 'block';
+  if (expenseDashboard) expenseDashboard.style.display = hasProjects ? 'block': 'none';
+  if (noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none': 'block';
 };
+
+// --- View All Logic ---
+viewAllBtn?.addEventListener('click', () => {
+    showAllExpenses = true;
+    applyFilters();
+    // Optional: Hide the button once activated
+    if(viewAllBtn) viewAllBtn.style.display = 'none';
+});
 
 // --- Expenses ---
 function listenForExpenses(uid, projectId) {
   if (expensesUnsubscribe) expensesUnsubscribe();
   if (!uid || !projectId) {
-    allExpensesForProject = []; 
-    applyFilters(); 
-    updateSummaries([]); 
+    allExpensesForProject = [];
+    applyFilters();
+    updateSummaries([]);
     return;
   };
   const appId = "construction-expenses";
   const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
   const q = query(expensesRef, where("projectId", "==", projectId));
-  
+
   expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-    if (snapshot.metadata.fromCache) return; 
-    
-    allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (snapshot.metadata.fromCache) return;
+
+    allExpensesForProject = snapshot.docs.map(doc => ({
+      id: doc.id, ...doc.data()
+    }));
     allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
     applyFilters();
     updateSummaries(allExpensesForProject);
@@ -386,7 +544,7 @@ function listenForExpenses(uid, projectId) {
 }
 
 const applyFilters = () => {
-  if(!searchInput) return;
+  if (!searchInput) return;
   const searchTerm = searchInput.value.toLowerCase();
   const startDate = startDateInput.value;
   const endDate = endDateInput.value;
@@ -395,13 +553,21 @@ const applyFilters = () => {
   let filtered = allExpensesForProject;
 
   if (isFiltering) {
-    filtered = allExpensesForProject.filter(exp => 
-      (exp.material.toLowerCase().includes(searchTerm)) && 
-      (!startDate || exp.date >= startDate) && 
+    filtered = allExpensesForProject.filter(exp =>
+      (exp.material.toLowerCase().includes(searchTerm)) &&
+      (!startDate || exp.date >= startDate) &&
       (!endDate || exp.date <= endDate)
     );
   } else {
-    filtered = allExpensesForProject.slice(0, 20);
+    // Rely on new View All State
+    filtered = showAllExpenses ? allExpensesForProject : allExpensesForProject.slice(0, 10);
+  }
+
+  // Hide or show the View All button based on list length
+  if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 10) {
+    if(viewAllBtn) viewAllBtn.style.display = 'block';
+  } else {
+    if(viewAllBtn) viewAllBtn.style.display = 'none';
   }
 
   renderExpenses(filtered);
@@ -418,20 +584,21 @@ expenseForm?.addEventListener('submit', async e => {
   const material = document.getElementById('material-name').value.trim();
   const cost = parseFloat(document.getElementById('cost').value);
   const date = document.getElementById('date').value;
-  
+
   if (material && !isNaN(cost) && date) {
     const appId = "construction-expenses";
     const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
     try {
       await runTransaction(db, async (t) => {
-        t.set(newRef, { material, cost, date, projectId: activeProjectId });
+        t.set(newRef, {
+          material, cost, date, projectId: activeProjectId
+        });
       });
       expenseForm.reset();
       document.getElementById('date').valueAsDate = new Date();
-      
-      // NEW: Success Toast
+
       showToast("Expense added successfully!", "success");
-      
+
     } catch (err) {
       showToast("Network Error: Data not saved.", "error");
     }
@@ -441,9 +608,9 @@ expenseForm?.addEventListener('submit', async e => {
 
 // --- Render, CRUD, Utils ---
 function renderExpenses(expenses) {
-  if(!expenseList) return;
+  if (!expenseList) return;
   if (expenses.length === 0) {
-    expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`; 
+    expenseList.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No expenses found.</td></tr>`;
     return;
   }
   expenseList.innerHTML = expenses.map(expense => `<tr><td class="whitespace-normal break-words pl-6 py-2"><div class="text-sm font-medium">${escapeHTML(expense.material)}</div></td><td class="pl-4 py-2"><div class="text-sm">₹${expense.cost.toLocaleString('en-IN', {
@@ -451,26 +618,26 @@ function renderExpenses(expenses) {
   })}</div></td><td class="pl-4 py-2"><div class="text-sm">${new Date(expense.date).toLocaleDateString('en-IN', {
     timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric'
   })}</div></td><td class="px-6 py-2 text-right text-sm font-medium space-x-4"><button data-id="${expense.id}" class="edit-btn text-indigo-600 hover:text-indigo-900">Edit</button><br><button data-id="${expense.id}" class="delete-btn text-red-600 hover:text-red-900">Delete</button></td></tr>`).join('');
-  
+
   document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
   document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
 }
 
 async function handleDelete(event) {
   const id = event.target.dataset.id;
-  
+
   if (!navigator.onLine) {
-    showToast("Please connect to internet", "error"); 
+    showToast("Please connect to internet", "error");
     return;
   }
   if (!id) return;
 
   const isConfirmed = await showConfirm("Delete Expense", "Are you sure you want to delete this expense? This action cannot be undone.");
-  
+
   if (isConfirmed) {
     if (!navigator.onLine) {
-      showToast("Cannot delete while offline.", "error"); 
-      return; 
+      showToast("Cannot delete while offline.", "error");
+      return;
     }
 
     const appId = "construction-expenses";
@@ -516,10 +683,9 @@ editExpenseForm?.addEventListener('submit', async e => {
         t.update(docRef, updatedData);
       });
       closeEditModal();
-      
-      // NEW: Success Toast
+
       showToast("Expense updated successfully!", "success");
-      
+
     } catch (err) {
       showToast("Update failed: Check connection.", "error");
     }
@@ -528,26 +694,26 @@ editExpenseForm?.addEventListener('submit', async e => {
 
 
 function handleEditProject(e) {
-  const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName; 
-  document.getElementById('edit-project-id').value = projectId; 
-  document.getElementById('edit-project-name').value = projectName; 
+  const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
+  document.getElementById('edit-project-id').value = projectId;
+  document.getElementById('edit-project-name').value = projectName;
   editProjectModal.classList.remove('hidden');
 }
 
 async function handleDeleteProject(e) {
   const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
-  
+
   if (!navigator.onLine) {
     showToast("Please connect to internet", "error"); return;
   }
   if (!projectId) return;
 
   const isConfirmed = await showConfirm("Delete Project", `Are you sure? All expenses in "${projectName}" will be permanently deleted.`);
-  
+
   if (isConfirmed) {
     if (!navigator.onLine) {
-      showToast("Cannot delete while offline.", "error"); 
-      return; 
+      showToast("Cannot delete while offline.", "error");
+      return;
     }
 
     const appId = "construction-expenses";
@@ -560,13 +726,19 @@ async function handleDeleteProject(e) {
       snapshot.forEach(d => batch.delete(d.ref));
       batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
       await batch.commit();
-      
+
       showToast("Project deleted", "success");
-      
+
+      // Handle updating or clearing active project info when deleted
       if (activeProjectId === projectId) {
         const generalProject = projects.find(p => p.name === 'General') || projects[0];
         if (generalProject) {
-          activeProjectId = generalProject.id; updateActiveProject();
+          activeProjectId = generalProject.id; 
+          localStorage.setItem('lastActiveProjectId', activeProjectId);
+          updateActiveProject();
+        } else {
+          activeProjectId = null;
+          localStorage.removeItem('lastActiveProjectId');
         }
       }
     } catch (error) {
@@ -582,19 +754,20 @@ editProjectForm?.addEventListener('submit', async e => {
   }
   const projectId = document.getElementById('edit-project-id').value,
   newName = document.getElementById('edit-project-name').value.trim();
-  
+
   if (newName && projectId) {
     const appId = "construction-expenses";
     const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
     try {
       await runTransaction(db, async (t) => {
-        t.update(projectRef, { name: newName });
+        t.update(projectRef, {
+          name: newName
+        });
       });
       closeEditProjectModal();
-      
-      // NEW: Success Toast
+
       showToast("Project renamed successfully!", "success");
-      
+
     } catch (err) {
       showToast("Rename failed.", "error");
     }
@@ -605,59 +778,79 @@ editProjectForm?.addEventListener('submit', async e => {
 // Modal Closers
 const closeEditModal = () => editModal?.classList.add('hidden');
 cancelEditBtn?.addEventListener('click', closeEditModal);
-editModal?.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
+editModal?.addEventListener('click', e => {
+  if (e.target === editModal) closeEditModal();
+});
 
 const closeEditProjectModal = () => editProjectModal?.classList.add('hidden');
 cancelEditProjectBtn?.addEventListener('click', closeEditProjectModal);
-editProjectModal?.addEventListener('click', e => { if (e.target === editProjectModal) closeEditProjectModal(); });
+editProjectModal?.addEventListener('click', e => {
+  if (e.target === editProjectModal) closeEditProjectModal();
+});
 
 const closeAddProjectModal = () => addProjectModal?.classList.add('hidden');
 cancelAddProjectBtn?.addEventListener('click', closeAddProjectModal);
-addProjectModal?.addEventListener('click', e => { if (e.target === addProjectModal) closeAddProjectModal(); });
+addProjectModal?.addEventListener('click', e => {
+  if (e.target === addProjectModal) closeAddProjectModal();
+});
 
 // --- Info Modals ---
 const infoContent = {
-  'about-link': { title: 'About Us', content: 'Track materials and project costs with ease.' }, 
-  'privacy-link': { title: 'Privacy Policy', content: 'Your data is secure with Firebase.' }, 
-  'contact-link': { title: 'Contact Us', content: 'Email: support@expensetracker.app' }
+  'about-link': {
+    title: 'About Us', content: 'Track materials and project costs with ease.'
+  },
+  'privacy-link': {
+    title: 'Privacy Policy', content: 'Your data is secure with Firebase.'
+  },
+  'contact-link': {
+    title: 'Contact Us', content: 'Email: support@expensetracker.app'
+  }
 };
 
 document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(link => {
   link.addEventListener('click', e => {
-    e.preventDefault(); 
-    const { title, content } = infoContent[e.currentTarget.id]; 
-    if(infoModalTitle) infoModalTitle.textContent = title; 
-    if(infoModalContent) infoModalContent.innerHTML = content; 
+    e.preventDefault();
+    const {
+      title, content
+    } = infoContent[e.currentTarget.id];
+    if (infoModalTitle) infoModalTitle.textContent = title;
+    if (infoModalContent) infoModalContent.innerHTML = content;
     infoModal?.classList.remove('hidden');
   });
 });
 closeInfoModalBtn?.addEventListener('click', () => infoModal?.classList.add('hidden'));
-infoModal?.addEventListener('click', e => { if (e.target === infoModal) infoModal.classList.add('hidden'); });
+infoModal?.addEventListener('click', e => {
+  if (e.target === infoModal) infoModal.classList.add('hidden');
+});
 
 // --- Summaries ---
 function updateSummaries(expenses) {
-  if(!finalExpensesEl) return;
-  
+  if (!finalExpensesEl) return;
+
   const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
-  finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-  
+  finalExpensesEl.textContent = `₹${total.toLocaleString('en-IN', {
+    minimumFractionDigits: 0, maximumFractionDigits: 2
+  })}`;
+
   const materialTotals = expenses.reduce((acc, exp) => {
-    const key = exp.material.trim().toLowerCase(); 
-    acc[key] = (acc[key] || 0) + exp.cost; 
+    const key = exp.material.trim().toLowerCase();
+    acc[key] = (acc[key] || 0) + exp.cost;
     return acc;
   }, {});
-  
+
   const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
   if (sorted.length === 0) {
-    if(materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`; 
+    if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-gray-500">No expenses to summarize.</p>`;
     return;
   }
-  
-  if(materialSummaryEl){
-     materialSummaryEl.innerHTML = sorted.map(key => {
-      const total = materialTotals[key]; 
-      const displayName = key.charAt(0).toUpperCase() + key.slice(1); 
-      return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+
+  if (materialSummaryEl) {
+    materialSummaryEl.innerHTML = sorted.map(key => {
+      const total = materialTotals[key];
+      const displayName = key.charAt(0).toUpperCase() + key.slice(1);
+      return `<div class="flex justify-between items-center text-sm"><span class="font-medium">${escapeHTML(displayName)}</span><span>₹${total.toLocaleString('en-IN', {
+        minimumFractionDigits: 0, maximumFractionDigits: 2
+      })}</span></div>`;
     }).join('');
   }
 }
@@ -671,7 +864,7 @@ let globalConfigUnsubscribe = null;
 const ADMIN_EMAILS = ["roni9101862699@gmail.com"]; // REPLACE WITH YOUR ADMIN EMAIL
 
 function listenForAppConfig() {
-  if (globalConfigUnsubscribe) return; 
+  if (globalConfigUnsubscribe) return;
 
   const configRef = doc(db, "artifacts/construction-expenses/config/appConfig");
   globalConfigUnsubscribe = onSnapshot(configRef, (snapshot) => {
@@ -684,14 +877,16 @@ function listenForAppConfig() {
 function applyGlobalConfig(config) {
   const isUserAdmin = currentUser && ADMIN_EMAILS.includes(currentUser.email);
   const maintenanceView = document.getElementById('maintenance-view');
-  
+
   if (config.maintenanceMode && !isUserAdmin) {
     maintenanceView?.classList.remove('hidden');
     maintenanceView?.classList.add('flex');
-    ['auth-view', 'app-view', 'splash-view'].forEach(id => {
+    ['auth-view',
+      'app-view',
+      'splash-view'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.remove('active');
-    });
+      });
   } else {
     maintenanceView?.classList.add('hidden');
     maintenanceView?.classList.remove('flex');
@@ -707,15 +902,19 @@ function applyGlobalConfig(config) {
 
   if (config.primaryColor) {
     document.documentElement.style.setProperty('--dynamic-primary', config.primaryColor);
-    document.querySelectorAll('.bg-indigo-600').forEach(el => { el.style.backgroundColor = config.primaryColor; });
-    document.querySelectorAll('.text-indigo-600').forEach(el => { el.style.color = config.primaryColor; });
+    document.querySelectorAll('.bg-indigo-600').forEach(el => {
+      el.style.backgroundColor = config.primaryColor;
+    });
+    document.querySelectorAll('.text-indigo-600').forEach(el => {
+      el.style.color = config.primaryColor;
+    });
   }
 
   const notifEl = document.getElementById('global-notification');
   const notifText = document.getElementById('notification-text');
 
   if (config.globalNotification && config.globalNotification.trim() !== "") {
-    if(notifText) notifText.textContent = config.globalNotification;
+    if (notifText) notifText.textContent = config.globalNotification;
     notifEl?.classList.remove('hidden');
   } else {
     notifEl?.classList.add('hidden');
@@ -747,36 +946,37 @@ window.addEventListener("appinstalled", () => {
 });
 
 const userStatusDisplay = document.getElementById('user-status-display');
-let statusTimeout; 
+let statusTimeout;
 
 function updateStatusUI(state) {
   if (!userStatusDisplay) return;
-  
+
   userStatusDisplay.classList.add('opacity-0');
-  
+
   setTimeout(() => {
     if (state === 'offline') {
       userStatusDisplay.innerHTML = `
-        <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-        <span class="text-sm font-semibold">Offline</span>
+      <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+      <span class="text-sm font-semibold">Offline</span>
       `;
     } else if (state === 'online') {
       userStatusDisplay.innerHTML = `
-        <span class="relative flex size-3">
-          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
-          <span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
-        </span>
-        <span class="text-sm font-semibold">Back Online</span>
+      <span class="relative flex size-3">
+      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+      <span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+      </span>
+      <span class="text-sm font-semibold">Back Online</span>
       `;
       statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
-      
+
     } else if (state === 'welcome') {
       const name = currentUser?.displayName || 'User';
       userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
     }
-    
+
     userStatusDisplay.classList.remove('opacity-0');
-  }, 300); 
+  },
+    300);
 }
 
 window.addEventListener('offline', () => {
@@ -805,5 +1005,5 @@ const currentYear = new Date().getFullYear();
 const appVersionEl = document.getElementById("app-version");
 const appCopyrightEl = document.getElementById("app-copyright");
 
-if(appVersionEl) appVersionEl.textContent = `Version-${APP_VERSION}`;
-if(appCopyrightEl) appCopyrightEl.textContent = `© ${currentYear} ${APP_NAME}. All Rights Reserved.`;
+if (appVersionEl) appVersionEl.textContent = `Version-${APP_VERSION}`;
+if (appCopyrightEl) appCopyrightEl.textContent = `© ${currentYear} ${APP_NAME}. All Rights Reserved.`;
