@@ -127,17 +127,17 @@ function showConfirm(title, message) {
 
     modal.innerHTML = `
     <div class="flex justify-between items-center mb-4">
-      <h3 class="text-xl font-bold text-slate-800 pr-4">${escapeHTML(title)}</h3>
-      <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-      </div>
+    <h3 class="text-xl font-bold text-slate-800 pr-4">${escapeHTML(title)}</h3>
+    <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    </div>
     </div>
 
     <p class="text-sm text-slate-500 mb-8 leading-relaxed">${escapeHTML(message)}</p>
-    
+
     <div class="flex gap-3">
-      <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-      <button id="confirm-delete-btn" class="flex-1 px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
+    <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+    <button id="confirm-delete-btn" class="flex-1 px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
     </div>
     `;
 
@@ -459,19 +459,19 @@ listenForExpenses(currentUser.uid, activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
-  // 1. Stop the page from jumping to the top
-  e.preventDefault(); 
-  
-  // 2. Open the modal
-  addProjectModal.classList.remove('hidden'); 
-  
-  // 3. Lock the background scroll for the modal
-  document.body.classList.add('overflow-hidden'); 
-  
-  // 4. Focus the input, but explicitly tell the browser NOT to scroll the page
-  setTimeout(() => {
-    document.getElementById('new-project-name-modal');
-  }, 100);
+// 1. Stop the page from jumping to the top
+e.preventDefault();
+
+// 2. Open the modal
+addProjectModal.classList.remove('hidden');
+
+// 3. Lock the background scroll for the modal
+document.body.classList.add('overflow-hidden');
+
+// 4. Focus the input, but explicitly tell the browser NOT to scroll the page
+setTimeout(() => {
+document.getElementById('new-project-name-modal');
+}, 100);
 });
 
 
@@ -594,11 +594,11 @@ filtered = allExpensesForProject.filter(exp =>
 );
 } else {
 // Rely on new View All State
-filtered = showAllExpenses ? allExpensesForProject: allExpensesForProject.slice(0, 10);
+filtered = showAllExpenses ? allExpensesForProject: allExpensesForProject.slice(0, 5);
 }
 
 // Hide or show the View All button based on list length
-if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 10) {
+if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 5) {
 if (viewAllBtn) viewAllBtn.style.display = 'block';
 } else {
 if (viewAllBtn) viewAllBtn.style.display = 'none';
@@ -608,6 +608,53 @@ renderExpenses(filtered);
 };
 
 [searchInput, startDateInput, endDateInput].forEach(el => el?.addEventListener('input', applyFilters));
+
+// Helper function to format dates as YYYY-MM-DD (required for standard date inputs)
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Function to calculate and set the date range
+const setDateFilter = (timeframe) => {
+  const endDate = new Date();
+  const startDate = new Date();
+
+  // Adjust the start date based on the clicked button
+  switch (timeframe) {
+    case 'last-week':
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case 'last-month':
+      startDate.setMonth(startDate.getMonth() - 1);
+      break;
+    case 'last-year':
+      startDate.setFullYear(startDate.getFullYear() - 1);
+      break;
+  }
+
+  // Update the input fields so the user sees the active date range
+  if (startDateInput) startDateInput.value = formatDate(startDate);
+  if (endDateInput) endDateInput.value = formatDate(endDate);
+
+  // Trigger your existing filter function
+  applyFilters();
+};
+
+// Grab the buttons from the DOM
+const btnLastWeek = document.getElementById('last-week');
+const btnLastMonth = document.getElementById('last-month');
+const btnLastYear = document.getElementById('last-year');
+
+// Attach click event listeners
+btnLastWeek?.addEventListener('click', () => setDateFilter('last-week'));
+btnLastMonth?.addEventListener('click', () => setDateFilter('last-month'));
+btnLastYear?.addEventListener('click', () => setDateFilter('last-year'));
+
+
+
 
 expenseForm?.addEventListener('submit', async e => {
 e.preventDefault();
@@ -843,66 +890,66 @@ if (e.target === addProjectModal) closeAddProjectModal();
 
 // --- Info Modals ---
 const infoContent = {
-  'about-link': {
-    title: 'About Us',
-    content: `
-      <div class="space-y-4 font-sans">
-        <p class="leading-relaxed text-gray-600">
-          Welcome to <strong>FinTrack</strong>, your ultimate solution to track materials and project costs with ease.
-        </p>
-        <p class="leading-relaxed text-gray-600">
-          Our mission is to simplify financial tracking for individuals, freelancers, and project managers. By providing real-time insights into your spending and budget allocation, we help you make informed financial decisions. 
-        </p>
-        <p class="leading-relaxed text-gray-600">
-          Built with speed and reliability in mind, FinTrack takes the headache out of expense management so you can focus on what matters most.
-        </p>
-      </div>
-    `
-  },
-  'privacy-link': {
-    title: 'Privacy Policy',
-    content: `
-      <div class="space-y-4 font-sans text-sm text-gray-600">
-        <section>
-          <h3 class="font-semibold text-gray-800">1. Introduction</h3>
-          <p>We are committed to protecting your personal data when you use FinTrack.</p>
-        </section>
+'about-link': {
+title: 'About Us',
+content: `
+<div class="space-y-4 font-sans">
+<p class="leading-relaxed text-gray-600">
+Welcome to <strong>FinTrack</strong>, your ultimate solution to track materials and project costs with ease.
+</p>
+<p class="leading-relaxed text-gray-600">
+Our mission is to simplify financial tracking for individuals, freelancers, and project managers. By providing real-time insights into your spending and budget allocation, we help you make informed financial decisions.
+</p>
+<p class="leading-relaxed text-gray-600">
+Built with speed and reliability in mind, FinTrack takes the headache out of expense management so you can focus on what matters most.
+</p>
+</div>
+`
+},
+'privacy-link': {
+title: 'Privacy Policy',
+content: `
+<div class="space-y-4 font-sans text-sm text-gray-600">
+<section>
+<h3 class="font-semibold text-gray-800">1. Introduction</h3>
+<p>We are committed to protecting your personal data when you use FinTrack.</p>
+</section>
 
-        <section>
-          <h3 class="font-semibold text-gray-800">2. Data We Collect</h3>
-          <p>We collect basic <strong>Identity Data</strong> (email, profile) and <strong>Financial Data</strong> (expenses, incomes, budgets, transactions) to provide our service.</p>
-        </section>
+<section>
+<h3 class="font-semibold text-gray-800">2. Data We Collect</h3>
+<p>We collect basic <strong>Identity Data</strong> (email, profile) and <strong>Financial Data</strong> (expenses, incomes, budgets, transactions) to provide our service.</p>
+</section>
 
-        <section>
-          <h3 class="font-semibold text-gray-800">3. Storage & Security</h3>
-          <p>Your data is authenticated and securely stored using <strong>Google Firebase</strong>. We rely on Firebase's robust encryption and strict security rules to ensure your financial information remains completely private and accessible only by you.</p>
-        </section>
-      </div>
-    `
-  },
+<section>
+<h3 class="font-semibold text-gray-800">3. Storage & Security</h3>
+<p>Your data is authenticated and securely stored using <strong>Google Firebase</strong>. We rely on Firebase's robust encryption and strict security rules to ensure your financial information remains completely private and accessible only by you.</p>
+</section>
+</div>
+`
+},
 
-  'contact-link': {
-    title: 'Contact Us',
-    content: `
-      <div class="space-y-5 font-sans">
-        <p class="leading-relaxed text-gray-600">
-          We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback, feel free to reach out to our team.
-        </p>
-        
-        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
-          <h3 class="text-gray-900 font-semibold mb-1 flex items-center">
-            <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-            Email Support
-          </h3>
-          <p class="text-gray-600 mb-2">Drop us a line and we'll get back to you as soon as possible.</p>
-          <a href="mailto:support@fintrack.app" class="no-underline text-blue-600 hover:text-blue-800 font-medium underline transition-colors">
-            support@expensetracker.app
-          </a>
-          <p class="text-xs text-gray-400 mt-3">We aim to respond to all inquiries within 24-48 hours.</p>
-        </div>
-      </div>
-    `
-  }
+'contact-link': {
+title: 'Contact Us',
+content: `
+<div class="space-y-5 font-sans">
+<p class="leading-relaxed text-gray-600">
+We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback, feel free to reach out to our team.
+</p>
+
+<div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+<h3 class="text-gray-900 font-semibold mb-1 flex items-center">
+<svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+Email Support
+</h3>
+<p class="text-gray-600 mb-2">Drop us a line and we'll get back to you as soon as possible.</p>
+<a href="mailto:support@fintrack.app" class="no-underline text-blue-600 hover:text-blue-800 font-medium underline transition-colors">
+support@expensetracker.app
+</a>
+<p class="text-xs text-gray-400 mt-3">We aim to respond to all inquiries within 24-48 hours.</p>
+</div>
+</div>
+`
+}
 };
 
 
@@ -910,27 +957,29 @@ const infoContent = {
 const navButtons = document.querySelectorAll('.nav-btn');
 
 navButtons.forEach(button => {
-  button.addEventListener('click', (e) => {
-    // Get the ID of the clicked button (e.g., 'about-link')
-    const linkId = e.target.id;
-    
-    // Look up the corresponding data in the object
-    const sectionData = infoContent[linkId];
+button.addEventListener('click', (e) => {
+// Get the ID of the clicked button (e.g., 'about-link')
+const linkId = e.target.id;
 
-    // If data exists, update the DOM
-    if (sectionData) {
-      document.getElementById('display-title').innerHTML = sectionData.title;
-      document.getElementById('display-content').innerHTML = sectionData.content;
-    }
-  });
+// Look up the corresponding data in the object
+const sectionData = infoContent[linkId];
+
+// If data exists, update the DOM
+if (sectionData) {
+document.getElementById('display-title').innerHTML = sectionData.title;
+document.getElementById('display-content').innerHTML = sectionData.content;
+}
+});
 });
 
 
 document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(link => {
-link.addEventListener('click', e => {
+link.addEventListener('click',
+e => {
 e.preventDefault();
 const {
-title, content
+title,
+content
 } = infoContent[e.currentTarget.id];
 if (infoModalTitle) infoModalTitle.textContent = title;
 if (infoModalContent) infoModalContent.innerHTML = content;
@@ -1124,9 +1173,47 @@ return;
 window.location.href = `analytics.html?projectId=${activeProjectId}`;
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+const shareButton = document.getElementById('shareFinTrackBtn');
+
+// Your requested text
+const finTrackShareText = "I’ve been using FinTrack to manage my expenses and get clear insights into my spending.\nIt’s simple, effective, and actually helps me stay on top of my finances. \n\nYou should give it a try 👍";
+
+// The URL of your app (Optional: you can change this to your actual GitHub Pages/Firebase URL)
+const appUrl = window.location.origin;
+
+shareButton.addEventListener('click', async () => {
+// Check if the browser supports the native Web Share API
+if (navigator.share) {
+try {
+await navigator.share({
+title: 'Check out FinTrack',
+text: finTrackShareText,
+url: appUrl
+});
+console.log('Successfully shared FinTrack');
+} catch (error) {
+console.error('Error sharing:', error);
+}
+} else {
+// Fallback for browsers that don't support Web Share API (copies to clipboard)
+const fullTextToCopy = `${finTrackShareText}${appUrl}`;
+
+navigator.clipboard.writeText(fullTextToCopy).then(() => {
+// You can replace this alert with a nicer toast notification in your app
+alert("Share message copied to clipboard!");
+}).catch(err => {
+console.error("Failed to copy text: ", err);
+});
+}
+});
+});
+
+
+
 // App configuration
-const APP_VERSION = "1.4";
-const APP_NAME = "Expense Tracker";
+const APP_VERSION = "1.2";
+const APP_NAME = "FinTrack";
 const currentYear = new Date().getFullYear();
 
 const appVersionEl = document.getElementById("app-version");

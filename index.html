@@ -233,7 +233,7 @@
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto p-4 md:p-10 pb-8 mt-2">
+    <div class="max-w-6xl mx-auto p-4 md:p-10 pb-4 mt-2">
       <div id="expense-dashboard" class="space-y-8 animate-[fadeIn_0.5s_ease-out]">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -355,9 +355,9 @@
             <div class="pb-2 pt-2 flex flex-col md:flex-row gap-4">
               <div class="flex-1">
                 <div class="pb-2 flex flex-wrap gap-2">
-                  <button class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">Last Week</button>
-                  <button class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">Last Month</button>
-                  <button class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">This Year</button>
+                  <button id="last-week" class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">Last Week</button>
+                  <button id="last-month" class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">Last Month</button>
+                  <button id="last-year" class="text-xs font-medium px-3 py-1.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 rounded-lg transition-all shadow-sm">This Year</button>
                 </div>
               </div>
               <div class="flex-1">
@@ -388,7 +388,7 @@
               <tbody id="expense-list" class="divide-y divide-slate-100 text-sm">
               </tbody>
             </table>
-            <button id="view-all" class="w-full bg-slate-50 text-slate-600 font-bold py-2 transition-all hover:bg-slate-100 active:bg-slate-200 border-t border-slate-100 text-sm">View all expenses</button>
+            <button id="view-all" class="w-full bg-slate-200 text-slate-600 font-bold py-2 transition-all hover:bg-slate-100 active:bg-slate-400 border-t border-slate-100">View all</button>
           </div>
         </div>
 
@@ -424,26 +424,45 @@
         </p>
       </div>
     </div>
-
+    <button id="shareFinTrackBtn" class="flex items-center justify-center gap-2 w-full pt-4 pb-8 px-4 text-slate-600 font-semibold transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-500">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      Share FinTrack
+    </button>
   </main>
 
   <style>
     @keyframes slideUp {
       0% {
         transform: translateY(100%);
-        opacity: 0;
       }
       100% {
         transform: translateY(0);
-        opacity: 1;
       }
     }
     .animate-slide-up {
-      animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.4s ease forwards;
     }
   </style>
 
-  <div id="edit-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden transition-opacity duration-300">
+  <div id="edit-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden animate-fade-in">
     <div class="modal-container animate-slide-up relative w-full md:max-w-md p-6 pb-12 border-t-2 border-indigo-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] rounded-t-3xl bg-white mt-10">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold text-slate-800 pr-4">Edit Expense</h3>
@@ -490,7 +509,7 @@
     </div>
   </div>
 
-  <div id="edit-project-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden transition-opacity duration-300">
+  <div id="edit-project-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden animate-fade-in">
     <div class="modal-container animate-slide-up relative w-full md:max-w-md p-6 pb-12 border-t-2 border-indigo-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] rounded-t-3xl bg-white mt-10">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold text-slate-800 pr-4">Edit Project</h3>
@@ -521,7 +540,7 @@
     </div>
   </div>
 
-  <div id="add-project-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden transition-opacity duration-300">
+  <div id="add-project-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden animate-fade-in">
     <div class="modal-container animate-slide-up relative w-full md:max-w-md p-6 pb-12 border-t-2 border-indigo-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] rounded-t-3xl bg-white mt-10">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-xl font-bold text-slate-800 pr-4">Add Project</h3>
@@ -550,7 +569,7 @@
     </div>
   </div>
 
-  <div id="info-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden transition-opacity duration-300">
+  <div id="info-modal" class="fixed inset-0 bg-transparent backdrop-blur-sm flex items-end justify-center z-50 hidden animate-fade-in">
     <div class="modal-container animate-slide-up relative w-full md:max-w-md p-6 pb-12 border-t-2 border-indigo-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] rounded-t-3xl bg-white mt-10">
       <div class="flex justify-between items-center mb-4">
         <h3 id="info-modal-title" class="text-xl font-bold text-slate-800 pr-4">Add Project</h3>
