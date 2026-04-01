@@ -123,7 +123,7 @@ function showConfirm(title, message) {
 
     const modal = document.createElement('div');
     // Bottom-sheet styling: rounded-t-3xl, w-full, border-t, pb-12, and initial state translate-y-full (pushed off screen)
-    modal.className = 'bg-white p-6 pb-12 border-t-2 border-red-200 s rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] w-full md:max-w-md text-left transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-white p-6 pb-12 border-t-2 border-red-200 s rounded-t-3xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.15)] w-full md:max-w-md text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
     <div class="flex justify-between items-center mb-4">
@@ -132,7 +132,7 @@ function showConfirm(title, message) {
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
       </div>
     </div>
-    
+
     <p class="text-sm text-slate-500 mb-8 leading-relaxed">${escapeHTML(message)}</p>
     
     <div class="flex gap-3">
@@ -843,16 +843,88 @@ if (e.target === addProjectModal) closeAddProjectModal();
 
 // --- Info Modals ---
 const infoContent = {
-'about-link': {
-title: 'About Us', content: 'Track materials and project costs with ease.'
-},
-'privacy-link': {
-title: 'Privacy Policy', content: 'Your data is secure with Firebase.'
-},
-'contact-link': {
-title: 'Contact Us', content: 'Email: support@expensetracker.app'
-}
+  'about-link': {
+    title: 'About Us',
+    content: `
+      <div class="space-y-4 font-sans">
+        <p class="leading-relaxed text-gray-600">
+          Welcome to <strong>FinTrack</strong>, your ultimate solution to track materials and project costs with ease.
+        </p>
+        <p class="leading-relaxed text-gray-600">
+          Our mission is to simplify financial tracking for individuals, freelancers, and project managers. By providing real-time insights into your spending and budget allocation, we help you make informed financial decisions. 
+        </p>
+        <p class="leading-relaxed text-gray-600">
+          Built with speed and reliability in mind, FinTrack takes the headache out of expense management so you can focus on what matters most.
+        </p>
+      </div>
+    `
+  },
+  'privacy-link': {
+    title: 'Privacy Policy',
+    content: `
+      <div class="space-y-4 font-sans text-sm text-gray-600">
+        <section>
+          <h3 class="font-semibold text-gray-800">1. Introduction</h3>
+          <p>We are committed to protecting your personal data when you use FinTrack.</p>
+        </section>
+
+        <section>
+          <h3 class="font-semibold text-gray-800">2. Data We Collect</h3>
+          <p>We collect basic <strong>Identity Data</strong> (email, profile) and <strong>Financial Data</strong> (expenses, incomes, budgets, transactions) to provide our service.</p>
+        </section>
+
+        <section>
+          <h3 class="font-semibold text-gray-800">3. Storage & Security</h3>
+          <p>Your data is authenticated and securely stored using <strong>Google Firebase</strong>. We rely on Firebase's robust encryption and strict security rules to ensure your financial information remains completely private and accessible only by you.</p>
+        </section>
+      </div>
+    `
+  },
+
+  'contact-link': {
+    title: 'Contact Us',
+    content: `
+      <div class="space-y-5 font-sans">
+        <p class="leading-relaxed text-gray-600">
+          We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback, feel free to reach out to our team.
+        </p>
+        
+        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+          <h3 class="text-gray-900 font-semibold mb-1 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            Email Support
+          </h3>
+          <p class="text-gray-600 mb-2">Drop us a line and we'll get back to you as soon as possible.</p>
+          <a href="mailto:support@fintrack.app" class="no-underline text-blue-600 hover:text-blue-800 font-medium underline transition-colors">
+            support@expensetracker.app
+          </a>
+          <p class="text-xs text-gray-400 mt-3">We aim to respond to all inquiries within 24-48 hours.</p>
+        </div>
+      </div>
+    `
+  }
 };
+
+
+// Select all buttons with the 'nav-btn' class
+const navButtons = document.querySelectorAll('.nav-btn');
+
+navButtons.forEach(button => {
+  button.addEventListener('click', (e) => {
+    // Get the ID of the clicked button (e.g., 'about-link')
+    const linkId = e.target.id;
+    
+    // Look up the corresponding data in the object
+    const sectionData = infoContent[linkId];
+
+    // If data exists, update the DOM
+    if (sectionData) {
+      document.getElementById('display-title').innerHTML = sectionData.title;
+      document.getElementById('display-content').innerHTML = sectionData.content;
+    }
+  });
+});
+
 
 document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(link => {
 link.addEventListener('click', e => {
