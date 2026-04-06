@@ -12,8 +12,37 @@
   <link rel="preload" href="sans-display.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
+  <style>
+    @font-face {
+      font-family: 'Google Sans Text';
+      src: url('./GoogleSansText-Regular.woff2') format('woff2');
+      font-weight: 400; [cite_start]/* [cite: 72-78] */
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Google Sans Text';
+      src: url('./GoogleSansText-Bold.woff2') format('woff2');
+      font-weight: 700; [cite_start]/* [cite: 1-71] */
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Google Sans Text"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
+<body class="font-sans">
   <div id="global-notification" class="hidden bg-slate-50 flex items-start sm:items-center justify-between w-full text-slate-900 py-3 px-4 font-medium z-50 relative transition-all duration-300">
     <p id="notification-text" class="flex-1 mr-4">
     </p>
