@@ -27,6 +27,35 @@
       box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
     }
   </style>
+  <style>
+    @font-face {
+      font-family: 'Google Sans Text';
+      src: url('./GoogleSansText-Regular.woff2') format('woff2');
+      font-weight: 400; [cite_start]/* [cite: 72-78] */
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Google Sans Text';
+      src: url('./GoogleSansText-Bold.woff2') format('woff2');
+      font-weight: 700; [cite_start]/* [cite: 1-71] */
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Google Sans Text"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
 <body class="bg-[#f8f9fa] text-gray-800 font-sans min-h-screen pb-10">
   <header id="app-header" class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-slate-200 z-20 px-4 py-2 flex justify-between items-center">
