@@ -96,7 +96,7 @@ function showToast(message, type = 'error') {
       `<svg class="w-5 h-5 text-red-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : 
       `<svg class="w-5 h-5 text-green-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
-  toast.className = `bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center text-xs font-bold tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-slate-700/50`;
+  toast.className = `bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center text-sm font-bold tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-slate-700/50`;
   toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
 
   toastContainer.appendChild(toast);
@@ -342,7 +342,7 @@ function setupUIForUser(user) {
   if (headerAvatar) headerAvatar.src = photo;
   if (headerUserName) headerUserName.textContent = escapeHTML(user.displayName || user.email.split('@')[0] || 'User');
   
-  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.displayName || 'User')}</p><p class="text-xs text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.displayName || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
 
   if (navigator.onLine) {
     updateStatusUI('welcome');
@@ -647,19 +647,19 @@ function renderExpenses(expenses) {
     expenseList.innerHTML = expenses.map(expense => `
         <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-all hover:border-indigo-100">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
+                <div class="w-10 h-10 rounded-xl bg-sky-50 text-slate-400 flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                 </div>
                 <div class="overflow-hidden">
-                    <h4 class="font-bold text-slate-800 truncate">${escapeHTML(expense.material)}</h4>
-                    <p class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mt-0.5">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <h4 class="font-bold text-slate-700 truncate">${escapeHTML(expense.material)}</h4>
+                    <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</p>
                 </div>
             </div>
             <div class="text-right shrink-0 ml-2">
-                <p class="font-bold text-rose-600">-₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                <p class="font-bold text-slate-700">₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                 <div class="flex gap-4 mt-1 justify-end">
-                    <button data-id="${expense.id}" class="edit-btn text-[12px] text-indigo-500 hover:text-indigo-700 uppercase font-bold tracking-wider">Edit</button>
-                    <button data-id="${expense.id}" class="delete-btn text-[12px] text-rose-400 hover:text-rose-600 uppercase font-bold tracking-wider">Delete</button>
+                    <button data-id="${expense.id}" class="edit-btn text-sm text-indigo-600 hover:text-slate-700 font-bold tracking-wider">Edit</button>
+                    <button data-id="${expense.id}" class="delete-btn text-sm text-rose-600 hover:text-slate-600 font-bold tracking-wider">Delete</button>
                 </div>
             </div>
         </div>
@@ -798,11 +798,11 @@ addProjectModal?.addEventListener('click', e => { if (e.target === addProjectMod
 const infoContent = {
     'about-link': {
         title: 'About Us',
-        content: `<p class="mb-3">Welcome to <strong>FinTrack</strong>, your ultimate solution to track materials and project costs with ease.</p><p class="mb-3">Our mission is to simplify financial tracking for individuals, freelancers, and project managers. By providing real-time insights into your spending and budget allocation, we help you make informed financial decisions.</p><p>Built with speed and reliability in mind, FinTrack takes the headache out of expense management so you can focus on what matters most.</p>`
+        content: `<p class="mb-3">Welcome to <strong>HisapBook</strong>, your ultimate solution to track materials and project costs with ease.</p><p class="mb-3">Our mission is to simplify financial tracking for individuals, freelancers, and project managers. By providing real-time insights into your spending and budget allocation, we help you make informed financial decisions.</p><p>Built with speed and reliability in mind, HisapBook takes the headache out of expense management so you can focus on what matters most.</p>`
     },
     'privacy-link': {
         title: 'Privacy Policy',
-        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use FinTrack.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Google Firebase, accessible only by you.</p>`
+        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Google Firebase, accessible only by you.</p>`
     },
     'contact-link': {
         title: 'Contact Us',
@@ -1011,11 +1011,11 @@ window.addEventListener('online', () => {
 
 // Share App
 document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () => {
-    const finTrackShareText = "I’ve been using FinTrack to manage my expenses and get clear insights into my spending.\nIt’s simple, effective, and actually helps me stay on top of my finances.\n\nYou should give it a try 👍";
+    const finTrackShareText = "I’ve been using HisapBook to manage my expenses and get clear insights into my spending.\nIt’s simple, effective, and actually helps me stay on top of my finances.\n\nYou should give it a try 👍";
     const appUrl = window.location.origin;
     if (navigator.share) {
         try {
-            await navigator.share({ title: 'Check out FinTrack', text: finTrackShareText, url: appUrl });
+            await navigator.share({ title: 'Check out HisapBook', text: finTrackShareText, url: appUrl });
         } catch (error) { console.error('Error sharing:', error); }
     } else {
         navigator.clipboard.writeText(`${finTrackShareText}\n${appUrl}`).then(() => {
