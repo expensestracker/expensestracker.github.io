@@ -1,6 +1,6 @@
 {
-  "name": "FinTrack",
-  "short_name": "FinTrack",
+  "name": "HisapBook",
+  "short_name": "HisapBook",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f9fafc",
