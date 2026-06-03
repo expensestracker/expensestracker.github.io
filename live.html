@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro OBS Overlay</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f4f6f8;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --accent: #0f5bfa;
+      --danger: #dc3545;
+      --success: #28a745;
+      --border: #e0e0e0;
+      --warning: #ff9800;
+      --offline: #9e9e9e;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: transparent;
+      font-family: 'Arial Black', sans-serif;
+      color: #111;
+    }
+
+    /* Particle Canvas */
+    .particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      pointer-events: none;
+      display: none;
+    }
+
+    /* Top Right System Bar */
+    .global-bar {
+      position: absolute;
+      top: 30px;
+      right: 40px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+      background: var(--bg);
+      color: #222;
+      padding: 8px 20px;
+      border-radius: 30px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      z-index: 1000;
+    }
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--danger);
+      text-transform: capitalize;
+      letter-spacing: 2px;
+      transition: color 0.3s;
+    }
+    .live-dot {
+      width: 15px;
+      height: 15px;
+      background: var(--danger);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+      transition: background 0.3s;
+    }
+    .clock {
+      color: var(--text);
+      border-left: 1px solid #ccc;
+      padding-left: 20px;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Top Left Branding System */
+    .top-left-brand {
+      position: absolute;
+      top: 30px;
+      left: 40px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      z-index: 1000;
+    }
+    .brand-logo {
+      max-width: 45px;
+      max-height: 45px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .brand-texts {
+      display: flex;
+      flex-direction: column;
+    }
+    .brand-title {
+      font-family: 'Arial Black', sans-serif;
+      font-size: 24px;
+      color: var(--accent);
+      margin: 0;
+      padding: 0;
+      line-height: 1.1;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,1);
+    }
+    .brand-sub {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--bg);
+      margin: 0;
+      padding: 0;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,1);
+    }
+
+    .scene {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+      pointer-events: none;
+    }
+    .scene.active {
+      opacity: 1;
+    }
+
+    /* SCENE 1: Live Scoreboard */
+    .live-container {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      width: 90vw;
+      max-width: 1600px;
+      background: var(--bg);
+      z-index: 100;
+    }
+    .scoreboard {
+      display: flex;
+      align-items: stretch;
+      background: linear-gradient(to right, #ffffff, #f4f4f4);
+    }
+    .team {
+      background: var(--accent);
+      color: white;
+      padding: 15px 40px;
+      font-size: 36px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 25vw;
+      min-width: 200px;
+      justify-content: center;
+    }
+    .bat-icon {
+      font-size: 48px;
+      margin-left: 15px;
+      filter: drop-shadow(0px 2px 2px var(--text-muted));
+    }
+    .score-area {
+      flex-grow: 1;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      padding: 10px 30px;
+      background: var(--bg);
+      color: var(--text);
+      border-right: 1px solid #eee;
+    }
+    .runs-wickets {
+      font-size: 65px;
+      font-weight: bold;
+    }
+    .overs-text {
+      font-size: 30px;
+      font-weight: bold;
+      color: var(--text);
+      margin-left: 20px;
+    }
+    .vs-team {
+      padding: 15px 40px;
+      font-size: 36px;
+      color: var(--text);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      width: 25vw;
+      min-width: 200px;
+      justify-content: center;
+    }
+    .ball-icon {
+      font-size: 30px;
+      margin-right: 15px;
+      filter: drop-shadow(0px 2px 2px var(--text-muted));
+    }
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      padding: 12px 30px;
+      font-size: 28px;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+      border-top: 1px solid var(--border);
+    }
+    .stat-item {
+      margin-right: 50px;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .stat-val {
+      color: var(--accent);
+      font-size: 36px;
+      font-weight: bold;
+    }
+    #rrr {
+      color: var(--danger) !important;
+    }
+    .timeline {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: center;
+      padding-left: 30px;
+    }
+    .timeline .ball {
+      min-width: 44px;
+      height: 44px;
+      padding: 0 8px;
+      box-sizing: border-box;
+      background: #e0e0e0;
+      color: #000;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    /* Match Status Bar */
+    .status-bar {
+      background: var(--warning);
+      color: var(--text);
+      padding: 10px 20px;
+      font-size: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+      text-transform: capitalize;
+      text-align: center;
+    }
+
+    /* SCENE 2: Timer */
+    .timer-scene {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .timer-title {
+      font-size: 50px;
+      color: var(--accent);
+      letter-spacing: 3px;
+      font-weight: bold;
+    }
+    .countdown {
+      font-size: 140px;
+      font-weight: bold;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* SCENE 3: DECISION PENDING */
+    .decision-scene {
+      background: radial-gradient(circle, #dc3545, #8b0000);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      animation: heartbeat 2s infinite;
+    }
+    .decision-text {
+      font-size: 120px;
+      color: var(--bg);
+      letter-spacing: 8px;
+      text-shadow: 0 0 30px rgba(0,0,0,0.5);
+      padding: 20px 30px;
+    }
+    .decision-sub {
+      font-size: 58px;
+      font-weight: bold;
+      color: var(--bg);
+      letter-spacing: 3px;
+    }
+
+    /* SCENE 4: WINNER */
+    .winner-scene {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg);
+    }
+    .winner-content {
+      text-align: center;
+      animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: var(--surface);
+      padding: 60px 100px;
+      border-radius: 20px;
+      border: 4px solid var(--warning);
+      box-shadow: 0 10px 40px var(--border);
+    }
+    .trophy {
+      font-size: 140px;
+      margin-bottom: 10px;
+    }
+    .winner-text {
+      font-size: 80px;
+      color: #0056b3;
+      margin-bottom: 15px;
+    }
+    .winner-sub {
+      font-size: 36px;
+      color: #333;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+    }
+
+    /* SCENE 5: CUSTOM GRAPHIC */
+    .custom-scene {
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      text-align: center;
+      padding-bottom: 150px;
+    }
+    .custom-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 1;
+    }
+    .custom-title {
+      font-size: 90px;
+      color: var(--bg);
+      letter-spacing: 2px;
+      z-index: 2;
+      position: relative;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,1);
+    }
+    .custom-text {
+      font-size: 60px;
+      color: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+      max-width: 80%;
+      line-height: 1.4;
+      z-index: 2;
+      position: relative;
+      margin-bottom: 100px;
+      text-shadow: 0 5px 20px rgba(0,0,0,0.9), 0 2px 5px rgba(0,0,0,1);
+    }
+    
+    /* SCENE 5: CUSTOM HTML INJECTOR (SECURE SANDBOX) */
+    .custom-html-frame {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      z-index: 10;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    /* VISUAL EFFECTS */
+    .effect-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+      perspective: 1000px;
+    }
+    .effect-text {
+      font-size: clamp(100px, 15vw, 180px);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: -2px;
+      transform: scale(0.5);
+    }
+    .effect-layer.show { opacity: 1; }
+    .effect-layer.show .effect-text { animation: blast 2.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    .fx-four { color: var(--accent); text-shadow: 0 0 0px var(--accent), 0 15px 30px rgba(0,0,0,0.5); }
+    .fx-six { color: var(--warning); text-shadow: 0 0 20px var(--warning), 0 15px 30px rgba(0,0,0,0.5); }
+    .fx-out { color: var(--danger); }
+
+    @keyframes blast {
+      0% { transform: scale(0.2) translateY(50px) rotateX(-40deg) rotate(-10deg); opacity: 0; }
+      15% { transform: scale(1.15) translateY(-10px) rotateX(10deg) rotate(5deg); opacity: 1; }
+      25% { transform: scale(1) translateY(0) rotateX(0deg) rotate(0deg); opacity: 1; }
+      80% { transform: scale(1.05) translateY(-5px); opacity: 1; }
+      100% { transform: scale(1.4) translateY(-20px); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="particleCanvas" class="particle-canvas"></canvas>
+
+  <div class="global-bar">
+    <div class="live-indicator" id="liveIndicator">
+      <div class="live-dot" id="liveDot"></div>
+      <span id="liveText">LIVE</span>
+    </div>
+    <div class="clock" id="systemClock">
+      00:00:00
+    </div>
+  </div>
+
+  <div class="top-left-brand" id="brandingBox" style="display: none;">
+    <img id="brandLogoImg" src="" class="brand-logo" style="display: none;">
+    <div class="brand-texts">
+      <h1 class="brand-title" id="brandTitleText"></h1>
+      <h2 class="brand-sub" id="brandSubText"></h2>
+    </div>
+  </div>
+
+  <div class="scene active" id="scene-live">
+    <div class="live-container">
+      <div class="scoreboard">
+        <div class="team">
+          <span id="batTeam"></span> <span class="bat-icon">🏏</span>
+        </div>
+        <div class="score-area">
+          <div class="runs-wickets">
+            <span id="score">0</span>-<span id="wickets">0</span>
+          </div>
+          <div class="overs-text">
+            Overs <span id="overs">0.0</span>
+          </div>
+        </div>
+        <div class="vs-team">
+          <span class="ball-icon">⚾</span> <span id="bowlTeam" style="color: #111; font-weight:bold;"></span>
+        </div>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-item">
+          <span>CRR:</span> <span class="stat-val" id="crr"></span>
+        </div>
+        <div class="stat-item" id="projGroup">
+          <span>PROJ:</span> <span class="stat-val" id="proj"></span>
+        </div>
+        <div style="display:none; align-items:center;" id="targetGroup">
+          <span class="stat-item"><span>TARGET:</span> <span class="stat-val" id="target">0</span></span>
+          <span class="stat-item"><span>RRR:</span> <span class="stat-val" id="rrr">0.00</span></span>
+          <span class="stat-item" style="margin-right: 0;"><span>NEED:</span> <span class="stat-val" id="need">0</span></span>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="status-bar" id="statusBarDisplay">
+        Welcome to the match
+      </div>
+    </div>
+  </div>
+
+  <div class="scene timer-scene" id="scene-timer">
+    <div class="timer-title" id="timerTitle">
+      Starting in
+    </div>
+    <div class="countdown" id="countdownTimer">
+      00:00:00
+    </div>
+  </div>
+
+  <div class="scene decision-scene" id="scene-decision">
+    <div class="decision-text">
+      Decision Pending
+    </div>
+    <div class="decision-sub">
+      Review in Progress
+    </div>
+  </div>
+
+  <div class="scene winner-scene" id="scene-winner">
+    <div class="winner-content">
+      <div class="trophy">
+        🏆
+      </div>
+      <div class="winner-text" id="winnerText">
+        Team Wins
+      </div>
+      <div class="winner-sub" id="winSubText">
+        by 0 runs
+      </div>
+    </div>
+  </div>
+
+  <div class="scene custom-scene" id="scene-custom">
+    <img id="customGraphicImgDisplay" src="" class="custom-img" style="display:none;">
+    <div class="custom-title" id="customTitleText"></div>
+    <div class="custom-text" id="customSubText"></div>
+    
+    <iframe id="customHtmlFrame" class="custom-html-frame" sandbox="allow-scripts allow-same-origin" style="display:none;"></iframe>
+  </div>
+
+  <div class="effect-layer" id="effectLayer">
+    <div class="effect-text" id="effectText"></div>
+  </div>
+
+  <script type="module">
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      goOnline,
+      goOffline
+    } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmXewXcQQt97EJzbKceLbCoTTG_9aJlJI",
+      authDomain: "bhaskarjyoticlub.firebaseapp.com",
+      databaseURL: "https://bhaskarjyoticlub-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "bhaskarjyoticlub",
+      storageBucket: "bhaskarjyoticlub.firebasestorage.app",
+      messagingSenderId: "730168687443",
+      appId: "1:730168687443:web:479bedc258bd9dd06fffa6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const matchRef = ref(db, 'broadcast_state');
+    const connectedRef = ref(db, ".info/connected");
+
+    // --- PARTICLE ENGINE (DYNAMIC NETWORK DESIGN) ---
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let particlesArray = [];
+    let particlesEnabled = false;
+    let animationFrameId;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 1;
+        this.speedX = (Math.random() - 0.5) * 1.2;
+        this.speedY = (Math.random() - 0.5) * 1.2;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
+        if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
+      }
+      draw() {
+        ctx.fillStyle = '#0f5bfa';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      particlesArray = [];
+      for (let i = 0; i < 70; i++) {
+        particlesArray.push(new Particle());
+      }
+    }
+
+    function animateParticles() {
+      if (!particlesEnabled) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+        particlesArray[i].draw();
+
+        for (let j = i; j < particlesArray.length; j++) {
+          const dx = particlesArray[i].x - particlesArray[j].x;
+          const dy = particlesArray[i].y - particlesArray[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 130) {
+            ctx.beginPath();
+            const opacity = 1 - (distance / 130);
+            ctx.strokeStyle = `rgba(15, 91, 250, ${opacity * 0.5})`;
+            ctx.lineWidth = 4;
+            ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+            ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+            ctx.stroke();
+            ctx.closePath();
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(animateParticles);
+    }
+
+
+    // System Clock
+    setInterval(() => {
+      document.getElementById('systemClock').innerText = new Date().toLocaleTimeString('en-IN', {
+        hour12: true
+      });
+    }, 1000);
+
+    // --- CONNECTION HANDLING ---
+    let isConnected = false;
+
+    function evaluateConnection() {
+      const indicator = document.getElementById('liveIndicator');
+      const dot = document.getElementById('liveDot');
+      const text = document.getElementById('liveText');
+
+      if (!navigator.onLine) {
+        indicator.style.color = 'var(--offline)';
+        dot.style.background = 'var(--offline)';
+        dot.style.animation = 'none';
+        text.innerText = 'OFFLINE';
+      } else if (!isConnected) {
+        indicator.style.color = 'var(--accent)';
+        dot.style.background = 'var(--accent)';
+        dot.style.animation = 'none';
+        text.innerText = 'Connecting';
+      } else {
+        indicator.style.color = 'var(--danger)';
+        dot.style.background = 'var(--danger)';
+        dot.style.animation = 'pulse 1.5s infinite';
+        text.innerText = 'LIVE';
+      }
+    }
+
+    window.addEventListener('online', () => {
+      goOnline(db); evaluateConnection();
+    });
+    window.addEventListener('offline', () => {
+      goOffline(db); evaluateConnection();
+    });
+    onValue(connectedRef, (snap) => {
+      isConnected = snap.val() === true; evaluateConnection();
+    });
+
+    // --- MAIN DATA HANDLING ---
+    let lastEffectTime = 0;
+    let timerInterval = null;
+
+    onValue(matchRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      // Particle Control
+      if (data.showParticles && !particlesEnabled) {
+        particlesEnabled = true;
+        canvas.style.display = 'block';
+        initParticles();
+        animateParticles();
+      } else if (!data.showParticles && particlesEnabled) {
+        particlesEnabled = false;
+        canvas.style.display = 'none';
+        cancelAnimationFrame(animationFrameId);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Scenes
+      document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
+      const activeSceneEl = document.getElementById('scene-' + (data.activeScene || 'live'));
+      if (activeSceneEl) activeSceneEl.classList.add('active');
+
+      // Branding (Top Left)
+      const hasBranding = data.brandTitle || data.brandSub || data.brandLogo;
+      document.getElementById('brandingBox').style.display = hasBranding ? 'flex': 'none';
+      const logoEl = document.getElementById('brandLogoImg');
+      if (data.brandLogo) {
+        logoEl.src = data.brandLogo; logoEl.style.display = 'block';
+      } else {
+        logoEl.style.display = 'none';
+      }
+      document.getElementById('brandTitleText').innerText = data.brandTitle || "";
+      document.getElementById('brandSubText').innerText = data.brandSub || "";
+
+      // Custom Graphic Scene & Custom HTML Injector Processing
+      const customImgEl = document.getElementById('customGraphicImgDisplay');
+      if (data.customImg) {
+        customImgEl.src = data.customImg; customImgEl.style.display = 'block';
+      } else {
+        customImgEl.style.display = 'none';
+      }
+      document.getElementById('customTitleText').innerText = data.customTitle || "";
+      document.getElementById('customTitleText').style.display = data.customTitle ? 'block': 'none';
+      document.getElementById('customSubText').innerText = data.customText || "";
+      document.getElementById('customSubText').style.display = data.customText ? 'block': 'none';
+      
+      // Iframe Sandbox Injector for Custom Overrides (Zero Global Conflicts)
+      const customFrame = document.getElementById('customHtmlFrame');
+      if (data.customHtml && data.customHtml.trim() !== "") {
+        if (customFrame.srcdoc !== data.customHtml) {
+          customFrame.srcdoc = data.customHtml;
+        }
+        customFrame.style.display = 'block';
+      } else {
+        if (customFrame.srcdoc !== "") {
+          customFrame.srcdoc = "";
+        }
+        customFrame.style.display = 'none';
+      }
+
+      // Timer Logic
+      document.getElementById('timerTitle').innerText = data.timerMessage || "Starting in";
+      clearInterval(timerInterval);
+      if (data.timerTarget) {
+        timerInterval = setInterval(() => {
+          const diff = new Date(data.timerTarget).getTime() - new Date().getTime();
+          if (diff < 0) {
+            document.getElementById('countdownTimer').innerText = "00:00:00";
+          } else {
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            document.getElementById('countdownTimer').innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          }
+        },
+          1000);
+      } else {
+        document.getElementById('countdownTimer').innerText = "00:00:00";
+      }
+
+      // Winner Data
+      document.getElementById('winnerText').innerText = data.winText || "VICTORY!";
+      document.getElementById('winSubText').innerText = data.winSubText || "";
+
+      // Score Data
+      document.getElementById('statusBarDisplay').innerText = data.statusBar || "";
+      document.getElementById('batTeam').innerText = data.batTeam || "IND";
+      document.getElementById('score').innerText = data.runs || 0;
+      document.getElementById('wickets').innerText = data.wickets || 0;
+      document.getElementById('overs').innerText = Math.floor((data.totalBalls || 0) / 6) + "." + ((data.totalBalls || 0) % 6);
+      document.getElementById('bowlTeam').innerText = data.bowlTeam || "AUS";
+
+      const oversDec = (data.totalBalls || 0) / 6;
+      const crr = data.totalBalls > 0 ? ((data.runs || 0) / oversDec).toFixed(2): "0.00";
+      document.getElementById('crr').innerText = crr;
+
+      const targetGroup = document.getElementById('targetGroup');
+      const projGroup = document.getElementById('projGroup');
+
+      if (data.innings === 2) {
+        projGroup.style.display = "none"; targetGroup.style.display = "flex";
+        document.getElementById('target').innerText = data.target || 0;
+        const ballsLeft = ((data.maxOvers || 20) * 6) - (data.totalBalls || 0);
+        const runsNeeded = (data.target || 0) - (data.runs || 0);
+        document.getElementById('need').innerText = runsNeeded > 0 ? runsNeeded: 0;
+        document.getElementById('rrr').innerText = ballsLeft > 0 ? (runsNeeded / (ballsLeft / 6)).toFixed(2): "0.00";
+      } else {
+        targetGroup.style.display = "none"; projGroup.style.display = "flex";
+        document.getElementById('proj').innerText = Math.round(crr * (data.maxOvers || 20));
+      }
+
+      const timelineDiv = document.getElementById('timeline');
+      if (data.thisOver && data.thisOver.length > 0) {
+        timelineDiv.innerHTML = data.thisOver.map(ball => {
+          let bg = "#e0e0e0", color = "#000";
+          if (ball === 'W') {
+            bg = "#dc3545"; color = "#fff";
+          }
+          if (ball === '4') {
+            bg = "#0056b3"; color = "#fff";
+          }
+          if (ball === '6') {
+            bg = "#dc3545"; color = "#fff";
+          }
+          return `<div class="ball" style="background:${bg}; color:${color}">${ball}</div>`;
+        }).join('');
+      } else {
+        timelineDiv.innerHTML = "";
+      }
+
+      // Action Effects
+      if (data.effectTimestamp > lastEffectTime) {
+        lastEffectTime = data.effectTimestamp;
+        if (Date.now() - data.effectTimestamp < 4000) {
+          const fxLayer = document.getElementById('effectLayer');
+          const fxText = document.getElementById('effectText');
+          fxText.className = 'effect-text';
+          if (data.effectType === 'FOUR') {
+            fxText.innerText = "4"; fxText.classList.add('fx-four');
+          } else if (data.effectType === 'SIX') {
+            fxText.innerText = "6"; fxText.classList.add('fx-six');
+          } else if (data.effectType === 'OUT') {
+            fxText.innerText = "Wicket"; fxText.classList.add('fx-out');
+          }
+          fxLayer.classList.remove('show');
+          void fxLayer.offsetWidth;
+          fxLayer.classList.add('show');
+          setTimeout(() => fxLayer.classList.remove('show'), 3000);
+        }
+      }
+    });
+
+    evaluateConnection();
+  </script>
+</body>
+</html>

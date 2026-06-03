@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Schedule - Neon Overlay</title>
+  <style>
+    :root {
+      /* Glow & Neon Colors */
+      --cyan-glow: #00d2ff;
+      --cyan-shadow: rgba(0, 210, 255, 0.5);
+      
+      /* Orange Badge Colors */
+      --orange-top: #ffcf00;
+      --orange-bottom: #f57c00;
+      --orange-border: #ffecb3;
+      --orange-shadow: rgba(245, 124, 0, 0.6);
+      
+      /* Card Colors */
+      --card-bg-top: #ffffff;
+      --card-bg-bottom: #e6ebf0;
+      --text-dark: #111111;
+      --text-muted: #555555;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      /* Transparent background for OBS/Projector overlay */
+      background: transparent; 
+      font-family: 'Arial Black', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center; 
+      min-height: 100vh; 
+      padding: 0; 
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    .schedule-container {
+      width: 100%;
+      max-width: 90%; /* Adjusted to 90% per request */
+      display: flex;
+      flex-direction: column;
+      gap: 35px; /* Increased gap between match cards */
+    }
+
+    /* Individual Match Row with Staggered Entrance Animation */
+    .match-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      width: 100%;
+      opacity: 0;
+      animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    /* Entrance Animation Delays */
+    .match-row:nth-child(1) { animation-delay: 0.1s; }
+    .match-row:nth-child(2) { animation-delay: 0.25s; }
+    .match-row:nth-child(3) { animation-delay: 0.4s; }
+    .match-row:nth-child(4) { animation-delay: 0.55s; }
+
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* White Team Cards */
+    .team-card {
+      width: 48.5%;
+      background: linear-gradient(180deg, var(--card-bg-top) 0%, var(--card-bg-bottom) 100%);
+      border-radius: 20px;
+      border: 1px solid #ffffff;
+      border-bottom: 4px solid var(--text-muted);
+      padding: 28px 15px; /* Increased top/bottom padding to increase card height */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      animation: cyanGlow 3s infinite alternate ease-in-out; /* Continuous attention animation */
+    }
+
+    /* Padding adjustments so text is visually centered despite the overlapping central badge */
+    .team-card.left { padding-right: 70px; }
+    .team-card.right { padding-left: 70px; }
+
+    /* Team Typography - Enlarged & Uppercase removed */
+    .team-name {
+      font-size: 40px; /* Increased font size */
+      font-weight: 900;
+      color: var(--text-dark);
+      /* text-transform: uppercase; (Removed) */
+      letter-spacing: 0.5px;
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .team-address {
+      font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+      font-size: 24px; /* Increased font size */
+      font-weight: 800;
+      color: var(--text-muted);
+      margin-top: 6px;
+      /* text-transform: uppercase; (Removed) */
+      letter-spacing: 1px;
+      text-align: center;
+    }
+
+    /* Always-On Attention Animation: Center badge scaling & glowing heartbeat */
+    @keyframes badgePulse {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 6px 15px var(--orange-shadow), inset 0 2px 4px rgba(255,255,255,0.4);
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.05); /* Slight pop/scale */
+        box-shadow: 0 10px 30px var(--orange-bottom), inset 0 2px 8px rgba(255,255,255,0.6);
+      }
+    }
+
+    /* Central Orange Match Badge */
+    .match-badge {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 10;
+      
+      background: linear-gradient(180deg, var(--orange-top) 0%, var(--orange-bottom) 100%);
+      border: 2px solid var(--orange-border);
+      border-radius: 8px;
+      padding: 8px 15px; 
+      
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 110px; 
+      animation: badgePulse 2s infinite alternate ease-in-out; /* Continuous attention animation */
+    }
+
+    /* BIG Match Number */
+    .match-num {
+      font-size: 64px;
+      font-weight: 900;
+      color: var(--text-dark);
+      line-height: 1;
+      margin-bottom: 2px;
+      text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+    }
+
+    .match-time {
+      font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text-dark);
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="schedule-container">
+    
+    <!-- MATCH 1 -->
+    <div class="match-row">
+      <div class="team-card left">
+        <div class="team-name">Rising Stars</div>
+        <div class="team-address">Mumbai, MH</div>
+      </div>
+      
+      <div class="match-badge">
+        <div class="match-num">1</div>
+        <div class="match-time">8:00AM</div>
+      </div>
+      
+      <div class="team-card right">
+        <div class="team-name">Padupanambur Royals</div>
+        <div class="team-address">Mangaluru, KA</div>
+      </div>
+    </div>
+
+    <!-- MATCH 3 -->
+    <div class="match-row">
+      <div class="team-card left">
+        <div class="team-name">Coastal Cricketers</div>
+        <div class="team-address">Udupi, KA</div>
+      </div>
+      
+      <div class="match-badge">
+        <div class="match-num">3</div>
+        <div class="match-time">9:30AM</div>
+      </div>
+      
+      <div class="team-card right">
+        <div class="team-name">Apoorva Puttur</div>
+        <div class="team-address">Puttur, KA</div>
+      </div>
+    </div>
+
+    <!-- MATCH 5 -->
+    <div class="match-row">
+      <div class="team-card left">
+        <div class="team-name">EG Vikings</div>
+        <div class="team-address">Bengaluru, KA</div>
+      </div>
+      
+      <div class="match-badge">
+        <div class="match-num">3</div>
+        <div class="match-time">11:00AM</div>
+      </div>
+      
+      <div class="team-card right">
+        <div class="team-name">Rising Stars</div>
+        <div class="team-address">Mumbai, MH</div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

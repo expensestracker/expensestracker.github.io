@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Custom Graphics Studio</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #f4f6f8;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --accent: #0f5bfa;
+      --danger: #dc3545;
+      --success: #28a745;
+      --border: #e0e0e0;
+      --warning: #ff9800;
+      --offline: #9e9e9e;
+      --desktop-bg: #e9ecef;
+      --code-bg: #1e1e1e;
+      --code-text: #d4d4d4;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--desktop-bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 950px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px; 
+      flex-grow: 1;
+      padding: 15px;
+      box-sizing: border-box;
+    }
+
+    .panel {
+      background: var(--bg);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--surface);
+      padding-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Status Badge */
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--offline);
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--offline); }
+    .is-blinking { animation: blink 1.2s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Fix for Preview Viewport */
+    .preview-wrapper {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      position: relative;
+    }
+
+    #previewFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: transparent;
+    }
+
+    /* Template Builder UI */
+    .builder-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: #eef4ff;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .builder-section { display: none; }
+    .builder-section.active { display: block; }
+
+    /* FIXED: Input Overflow Logic */
+    .input-row { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 10px; 
+      flex-wrap: wrap; /* Allows stacking on extremely small screens */
+    }
+    .input-row input {
+      flex: 1;
+      min-width: 120px; /* Prevents inputs from crushing to zero width */
+      box-sizing: border-box; /* Crucial for preventing overflow */
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .full-width-input {
+      width: 100%;
+      box-sizing: border-box; /* Crucial for preventing overflow */
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .list-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      min-height: 50px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .list-item {
+      background: var(--bg);
+      padding: 8px 10px;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text);
+      font-weight: bold;
+    }
+
+    /* Editing Buttons */
+    .list-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .btn-tiny {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-tiny:hover { background: #e2e6ea; color: var(--text); }
+    .btn-tiny.danger:hover { background: #ffebee; color: var(--danger); border-color: #ffcdd2; }
+
+    .btn-add { background: var(--text); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 15px;}
+    .btn-gen { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+
+    /* Unified Code Editor */
+    textarea.code-input {
+      width: 100%;
+      min-height: 250px;
+      background: var(--code-bg);
+      color: var(--code-text);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      padding: 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      resize: vertical;
+      box-sizing: border-box;
+      line-height: 1.5;
+      margin-bottom: 15px;
+    }
+    textarea.code-input:focus { outline: none; border-color: var(--accent); }
+
+    /* Action Buttons (Forced Single Row) */
+    .action-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 10px;
+      width: 100%;
+    }
+    
+    .btn-action {
+      border: none;
+      padding: 16px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      flex: 1;
+      text-align: center;
+      color: white;
+      white-space: nowrap;
+      transition: 0.1s;
+    }
+    .btn-action:active { transform: scale(0.98); }
+    .btn-action:hover { filter: brightness(0.95); }
+    
+    .btn-test { background: var(--accent); }
+    .btn-pub { background: var(--success); }
+    .btn-clear { background: var(--danger); }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- 1. Generator Panel -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>Template Generators</span>
+        <div class="live-badge" id="topBadge">
+          <div class="dot" id="topBadgeDot"></div>
+          <span id="topBadgeText">WAIT</span>
+        </div>
+      </div>
+      
+      <div class="builder-tabs">
+        <div class="tab-btn active" onclick="switchTab('schedule')" id="tab-schedule">1. Match Schedule</div>
+        <div class="tab-btn" onclick="switchTab('slider')" id="tab-slider">2. Auto Slider Overlay</div>
+      </div>
+
+      <!-- Generator: Schedule -->
+      <div class="builder-section active" id="sec-schedule">
+        <div class="input-row">
+          <input type="text" id="sch-t1n" placeholder="Team 1 Name">
+          <input type="text" id="sch-t1a" placeholder="Team 1 Address">
+        </div>
+        <div class="input-row">
+          <input type="text" id="sch-t2n" placeholder="Team 2 Name">
+          <input type="text" id="sch-t2a" placeholder="Team 2 Address">
+        </div>
+        <div class="input-row">
+          <input type="text" id="sch-time" placeholder="Match Time (e.g. 8:00AM)">
+        </div>
+        <button class="btn-add" onclick="addMatch()">+ Add Match to List</button>
+        <div class="list-box" id="match-list">No matches added yet.</div>
+        <button class="btn-gen" onclick="generateSchedule()">Generate Schedule Code</button>
+      </div>
+
+      <!-- Generator: Slider -->
+      <div class="builder-section" id="sec-slider">
+        <input type="text" id="sl-img" class="full-width-input" placeholder="Background Image URL (Leave empty for centered text)">
+        <div class="input-row">
+          <input type="text" id="sl-head" placeholder="Main Heading">
+          <input type="text" id="sl-sub" placeholder="Sub Heading">
+        </div>
+        <button class="btn-add" onclick="addSlide()">+ Add Slide to List</button>
+        <div class="list-box" id="slide-list">No slides added yet.</div>
+        <button class="btn-gen" onclick="generateSlider()">Generate Slider Code</button>
+      </div>
+    </div>
+
+    <!-- 2. Code Editor Panel -->
+    <div class="panel">
+      <div class="panel-title"><span>Unified HTML/CSS/JS Editor</span></div>
+      <textarea id="unifiedCode" class="code-input" placeholder="<!-- Generated code will appear here, or write your own -->"></textarea>
+    </div>
+
+    <!-- 3. Preview Monitor Panel -->
+    <div class="panel">
+      <div class="panel-title"><span style="color: var(--accent);">Live Preview Monitor</span></div>
+      <div class="preview-wrapper">
+        <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
+      </div>
+    </div>
+
+    <!-- 4. One-Row Action Buttons -->
+    <div class="action-row">
+      <button class="btn-action btn-test" onclick="renderPreview()">Test Preview</button>
+      <button class="btn-action btn-pub" onclick="publishToLive()">Publish Live</button>
+      <button class="btn-action btn-clear" onclick="clearLiveView()">Clear Graphic</button>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+    import { getDatabase, ref, update, get, onValue, goOnline, goOffline } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmXewXcQQt97EJzbKceLbCoTTG_9aJlJI",
+      authDomain: "bhaskarjyoticlub.firebaseapp.com",
+      databaseURL: "https://bhaskarjyoticlub-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "bhaskarjyoticlub",
+      storageBucket: "bhaskarjyoticlub.firebasestorage.app",
+      messagingSenderId: "730168687443",
+      appId: "1:730168687443:web:479bedc258bd9dd06fffa6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const matchRef = ref(db, 'broadcast_state');
+    const connectedRef = ref(db, ".info/connected");
+
+    const unifiedInput = document.getElementById('unifiedCode');
+    const previewFrame = document.getElementById('previewFrame');
+    let isConnected = false;
+
+    // Connection Status
+    function updateBadge(text, color, blink) {
+      const badge = document.getElementById('topBadge');
+      if (!badge) return;
+      badge.style.color = color;
+      document.getElementById('topBadgeDot').style.backgroundColor = color;
+      document.getElementById('topBadgeText').innerText = text;
+      if (blink) badge.classList.add('is-blinking'); else badge.classList.remove('is-blinking');
+    }
+
+    onValue(connectedRef, (snap) => { 
+      isConnected = snap.val() === true; 
+      if (!isConnected) { updateBadge("OFFLINE", "var(--warning)", false); } 
+      else { updateBadge("CONNECTED", "var(--success)", true); fetchExistingCode(); }
+    });
+
+    window.renderPreview = () => { previewFrame.srcdoc = unifiedInput.value; };
+
+    let initialLoad = true;
+    function fetchExistingCode() {
+      if(!initialLoad) return;
+      get(matchRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          if (data.rawCustomCode && data.rawCustomCode.combined) {
+            unifiedInput.value = data.rawCustomCode.combined;
+            renderPreview();
+          }
+        }
+        initialLoad = false;
+      });
+    }
+
+    window.publishToLive = () => {
+      const code = unifiedInput.value;
+      update(matchRef, { 'customHtml': code, 'rawCustomCode/combined': code, 'lastUpdated': Date.now() })
+        .then(() => alert("✅ Graphic published to Live Overlay!"))
+        .catch((e) => alert("❌ Error: " + e.message));
+    };
+
+    window.clearLiveView = () => {
+      if(confirm("Clear graphic from Live Stream? (Code stays in editor).")) {
+        update(matchRef, { 'customHtml': "", 'lastUpdated': Date.now() })
+        .then(() => alert("🧹 Graphic cleared!"))
+        .catch((e) => alert("❌ Error: " + e.message));
+      }
+    };
+
+    // --- TEMPLATE GENERATOR LOGIC ---
+    let matches = [];
+    let slides = [];
+
+    window.switchTab = (tab) => {
+      document.getElementById('tab-schedule').classList.remove('active');
+      document.getElementById('tab-slider').classList.remove('active');
+      document.getElementById('sec-schedule').classList.remove('active');
+      document.getElementById('sec-slider').classList.remove('active');
+      
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      document.getElementById(`sec-${tab}`).classList.add('active');
+    }
+
+    // MATCH SCHEDULE GENERATOR
+    window.addMatch = () => {
+      const t1n = document.getElementById('sch-t1n').value;
+      const t1a = document.getElementById('sch-t1a').value;
+      const t2n = document.getElementById('sch-t2n').value;
+      const t2a = document.getElementById('sch-t2a').value;
+      const time = document.getElementById('sch-time').value;
+      
+      if(!t1n || !t2n) return alert("Enter team names");
+      matches.push({t1n, t1a, t2n, t2a, time});
+      renderMatchList();
+      
+      document.getElementById('sch-t1n').value = ''; document.getElementById('sch-t1a').value = '';
+      document.getElementById('sch-t2n').value = ''; document.getElementById('sch-t2a').value = '';
+      document.getElementById('sch-time').value = '';
+    }
+
+    window.deleteMatch = (index) => {
+      matches.splice(index, 1);
+      renderMatchList();
+    }
+
+    window.editMatch = (index) => {
+      const m = matches[index];
+      document.getElementById('sch-t1n').value = m.t1n;
+      document.getElementById('sch-t1a').value = m.t1a;
+      document.getElementById('sch-t2n').value = m.t2n;
+      document.getElementById('sch-t2a').value = m.t2a;
+      document.getElementById('sch-time').value = m.time;
+      deleteMatch(index); // Remove so it can be re-added
+    }
+
+    function renderMatchList() {
+      const box = document.getElementById('match-list');
+      if (matches.length === 0) { box.innerHTML = "No matches added yet."; return; }
+      
+      box.innerHTML = matches.map((m, i) => `
+        <div class="list-item">
+          <span>Match ${i+1}: ${m.t1n} vs ${m.t2n}</span>
+          <div class="list-actions">
+            <button class="btn-tiny" onclick="editMatch(${i})">Edit</button>
+            <button class="btn-tiny danger" onclick="deleteMatch(${i})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.generateSchedule = () => {
+      if(matches.length === 0) return alert("Add matches first");
+      
+      let htmlRows = matches.map((m, i) => `
+    <div class="match-row" style="animation-delay: ${0.1 + (i * 0.15)}s">
+      <div class="team-card left">
+        <div class="team-name">${m.t1n}</div>
+        <div class="team-address">${m.t1a}</div>
+      </div>
+      <div class="match-badge">
+        <div class="match-num">${i+1}</div>
+        <div class="match-time">${m.time}</div>
+      </div>
+      <div class="team-card right">
+        <div class="team-name">${m.t2n}</div>
+        <div class="team-address">${m.t2a}</div>
+      </div>
+    </div>`).join('\n');
+
+      const template = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    :root {
+      --cyan-glow: #00d2ff; --cyan-shadow: rgba(0, 210, 255, 0.5);
+      --orange-top: #ffcf00; --orange-bottom: #f57c00; --orange-border: #ffecb3; --orange-shadow: rgba(245, 124, 0, 0.6);
+      --card-bg-top: #ffffff; --card-bg-bottom: #e6ebf0; --text-dark: #111111; --text-muted: #555555;
+    }
+    
+    /* Zero Margins & Hidden Overflow to prevent right margin bug */
+    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; font-family: 'Arial Black', -apple-system, sans-serif; }
+    
+    /* PERFECT 1080p CANVAS: Centers exactly in OBS without causing scrollbars */
+    #canvas { 
+      width: 1920px; height: 1080px; position: absolute; top: 50%; left: 50%; 
+      transform: translate(-50%, -50%); transform-origin: center center; 
+      display: flex; align-items: center; justify-content: center; 
+    }
+    
+    .schedule-container { width: 100%; max-width: 90%; display: flex; flex-direction: column; gap: 35px; }
+    .match-row { display: flex; align-items: center; justify-content: space-between; position: relative; width: 100%; opacity: 0; animation: fadeSlideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .team-card { width: 48.5%; background: linear-gradient(180deg, var(--card-bg-top) 0%, var(--card-bg-bottom) 100%); border-radius: 20px; border: 1px solid #ffffff; border-bottom: 4px solid var(--text-muted); padding: 28px 15px; display: flex; flex-direction: column; justify-content: center; align-items: center; animation: cyanGlow 3s infinite alternate ease-in-out; }
+    @keyframes cyanGlow { from { box-shadow: 0 0 5px var(--cyan-shadow); } to { box-shadow: 0 0 20px var(--cyan-glow); border-bottom-color: var(--cyan-glow); } }
+    .team-card.left { padding-right: 70px; } .team-card.right { padding-left: 70px; }
+    
+    .team-name { font-size: 40px; font-weight: 900; color: var(--text-dark); letter-spacing: 0.5px; line-height: 1.1; text-align: center; }
+    .team-address { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 24px; font-weight: 800; color: var(--text-muted); margin-top: 6px; letter-spacing: 1px; text-align: center; }
+    
+    @keyframes badgePulse { 0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 6px 15px var(--orange-shadow), inset 0 2px 4px rgba(255,255,255,0.4); } 100% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 10px 30px var(--orange-bottom), inset 0 2px 8px rgba(255,255,255,0.6); } }
+    .match-badge { position: absolute; left: 50%; top: 50%; z-index: 10; background: linear-gradient(180deg, var(--orange-top) 0%, var(--orange-bottom) 100%); border: 2px solid var(--orange-border); border-radius: 8px; padding: 8px 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 110px; animation: badgePulse 2s infinite alternate ease-in-out; }
+    .match-num { font-size: 64px; font-weight: 900; color: var(--text-dark); line-height: 1; margin-bottom: 2px; text-shadow: 1px 1px 2px rgba(255,255,255,0.5); }
+    .match-time { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 900; color: var(--text-dark); margin-top: 0; }
+  </style>
+</head>
+<body>
+  <div id="canvas">
+    <div class="schedule-container">
+${htmlRows}
+    </div>
+  </div>
+  <script>
+    function scaleCanvas() { const s = Math.min(window.innerWidth/1920, window.innerHeight/1080); document.getElementById('canvas').style.transform = 'translate(-50%, -50%) scale('+s+')'; }
+    window.addEventListener('resize', scaleCanvas); scaleCanvas();
+  <\/script>
+</body>
+</html>`;
+      unifiedInput.value = template; renderPreview();
+    }
+
+    // SLIDER GENERATOR
+    window.addSlide = () => {
+      const img = document.getElementById('sl-img').value;
+      const head = document.getElementById('sl-head').value;
+      const sub = document.getElementById('sl-sub').value;
+      if(!img && !head && !sub) return alert("Enter content for the slide");
+      slides.push({img, head, sub});
+      renderSlideList();
+      
+      document.getElementById('sl-img').value = ''; document.getElementById('sl-head').value = ''; document.getElementById('sl-sub').value = '';
+    }
+
+    window.deleteSlide = (index) => {
+      slides.splice(index, 1);
+      renderSlideList();
+    }
+
+    window.editSlide = (index) => {
+      const s = slides[index];
+      document.getElementById('sl-img').value = s.img;
+      document.getElementById('sl-head').value = s.head;
+      document.getElementById('sl-sub').value = s.sub;
+      deleteSlide(index);
+    }
+
+    function renderSlideList() {
+      const box = document.getElementById('slide-list');
+      if(slides.length === 0) { box.innerHTML = "No slides added yet."; return; }
+      
+      box.innerHTML = slides.map((s, i) => `
+        <div class="list-item">
+          <span>Slide ${i+1}: ${s.head || (s.img ? 'Image Only' : 'Empty')}</span>
+          <div class="list-actions">
+            <button class="btn-tiny" onclick="editSlide(${i})">Edit</button>
+            <button class="btn-tiny danger" onclick="deleteSlide(${i})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    window.generateSlider = () => {
+      if(slides.length === 0) return alert("Add slides first");
+      
+      const totalTime = slides.length * 6; // 6 seconds per slide
+      const pctStep = 100 / slides.length;
+      
+      let htmlRows = slides.map((s, i) => {
+        let content = '';
+        if (s.img) content += `<img src="${s.img}" class="slide-bg">`;
+        if (s.head || s.sub) {
+          // If image exists, align bottom. If no image, center perfectly.
+          const alignClass = s.img ? 'box-bottom' : 'box-center';
+          content += `<div class="slide-content ${alignClass}">
+            <div class="text-box">
+              ${s.head ? `<div class="head">${s.head}</div>` : ''}
+              ${s.sub ? `<div class="sub">${s.sub}</div>` : ''}
+            </div>
+          </div>`;
+        }
+        return `<div class="slide" style="animation-delay: ${i * 6}s">${content}</div>`;
+      }).join('\n');
+
+      const template = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: transparent; font-family: 'Arial Black', sans-serif; }
+    #canvas { width: 1920px; height: 1080px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transform-origin: center center; }
+    
+    .slider-wrap { width: 100%; height: 100%; position: relative; }
+    .slide { position: absolute; width: 100%; height: 100%; opacity: 0; animation: fadeLoop ${totalTime}s infinite; }
+    
+    @keyframes fadeLoop {
+      0%, 2% { opacity: 0; transform: scale(1.05); }
+      5%, ${(pctStep - 2).toFixed(2)}% { opacity: 1; transform: scale(1); }
+      ${pctStep.toFixed(2)}%, 100% { opacity: 0; transform: scale(1); }
+    }
+    
+    /* Fixed: Absolute positioning full cover for image */
+    .slide-bg { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; }
+    
+    .slide-content { position: absolute; z-index: 2; width: 100%; height: 100%; display: flex; flex-direction: column; }
+    .box-bottom { justify-content: flex-end; align-items: center; padding-bottom: 120px; box-sizing: border-box; }
+    .box-center { justify-content: center; align-items: center; }
+    
+    .text-box { background: rgba(0,0,0,0.65); padding: 50px 100px; border-radius: 24px; text-align: center; border: 4px solid #fff; box-shadow: 0 20px 50px rgba(0,0,0,0.5); backdrop-filter: blur(10px);}
+    .head { font-size: 110px; color: #fff; line-height: 1.1; text-transform: uppercase; margin-bottom: 10px; }
+    .sub { font-size: 55px; color: #00d2ff; font-family: 'Segoe UI', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;}
+  </style>
+</head>
+<body>
+  <div id="canvas">
+    <div class="slider-wrap">
+${htmlRows}
+    </div>
+  </div>
+  <script>
+    function scaleCanvas() { const s = Math.min(window.innerWidth/1920, window.innerHeight/1080); document.getElementById('canvas').style.transform = 'translate(-50%, -50%) scale('+s+')'; }
+    window.addEventListener('resize', scaleCanvas); scaleCanvas();
+  <\/script>
+</body>
+</html>`;
+      unifiedInput.value = template; renderPreview();
+    }
+  </script>
+</body>
+</html>
