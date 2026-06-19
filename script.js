@@ -122,11 +122,10 @@ function showConfirm(title, message) {
     const targetParent = appContainer || document.body;
       
     const overlay = document.createElement('div');
-    // Using absolute inset-0 so it stays within the mobile wrapper boundaries on desktop
     overlay.className = 'absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-white p-6 pb-12 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-white p-6 pb-8 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
     <div class="flex justify-between items-center mb-4">
@@ -187,13 +186,12 @@ const showView = (viewName) => {
       }
   };
 
-  // If there's an active view, fade it out before transitioning
   if (currentActive && currentActive.id !== `${viewName}-view` && currentActive.id !== viewName) {
       currentActive.classList.add('animate-fade-out');
       setTimeout(() => {
           currentActive.classList.remove('animate-fade-out');
           transitionToNew();
-      }, 300); // Wait for fade-out to finish
+      }, 300);
   } else {
       transitionToNew();
   }
@@ -607,23 +605,25 @@ expenseForm?.addEventListener('submit', async e => {
         if (!navigator.onLine) showToast("Please connect to internet", "error");
         return;
     }
+    const type = document.querySelector('input[name="entry-type"]:checked').value;
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
     const date = document.getElementById('date').value;
+    const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date) {
         const appId = "construction-expenses";
         const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
         try {
             await runTransaction(db, async (t) => {
-                t.set(newRef, { material, cost, date, projectId: activeProjectId });
+                t.set(newRef, { material, cost, date, type, info, projectId: activeProjectId });
             });
             expenseForm.reset();
+            document.querySelector('input[name="entry-type"][value="expense"]').checked = true;
             document.getElementById('date').valueAsDate = new Date();
             addExpenseSheet.classList.add('hidden');
-            showToast("Expense added successfully!", "success");
+            showToast("Entry added successfully!", "success");
             
-            // Auto scroll to history section to see new addition
             document.getElementById('main-scroll').scrollTo({
                 top: document.getElementById('history-section').offsetTop - 20,
                 behavior: 'smooth'
@@ -643,27 +643,38 @@ function renderExpenses(expenses) {
         return;
     }
     
-    // Injecting sleek cards instead of table rows
-    expenseList.innerHTML = expenses.map(expense => `
+    expenseList.innerHTML = expenses.map(expense => {
+        const isIncome = expense.type === 'income';
+        const costSign = isIncome ? '+' : '-';
+        const costColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
+        const iconBgColor = isIncome ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500';
+        const iconSvg = isIncome 
+            ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
+            : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>';
+        
+        return `
         <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-all hover:border-indigo-100">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sky-50 text-slate-400 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
+                    ${iconSvg}
                 </div>
                 <div class="overflow-hidden">
                     <h4 class="font-bold text-slate-700 truncate">${escapeHTML(expense.material)}</h4>
-                    <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
+                        ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                    ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
                 </div>
             </div>
             <div class="text-right shrink-0 ml-2">
-                <p class="font-bold text-slate-700">₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                <p class="font-bold ${costColor}">${costSign}₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                 <div class="flex gap-4 mt-1 justify-end">
                     <button data-id="${expense.id}" class="edit-btn text-sm text-indigo-600 hover:text-slate-700 font-bold tracking-wider">Edit</button>
                     <button data-id="${expense.id}" class="delete-btn text-sm text-rose-600 hover:text-slate-600 font-bold tracking-wider">Delete</button>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 
     document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
     document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
@@ -673,14 +684,14 @@ async function handleDelete(event) {
     const id = event.target.dataset.id;
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!id) return;
-    const isConfirmed = await showConfirm("Delete Expense", "Are you sure you want to delete this expense?");
+    const isConfirmed = await showConfirm("Delete Entry", "Are you sure you want to delete this entry?");
     if (isConfirmed) {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); return; }
         const appId = "construction-expenses";
         const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
             await runTransaction(db, async (t) => { t.delete(docRef); });
-            showToast("Expense deleted", "success");
+            showToast("Entry deleted", "success");
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
         }
@@ -691,10 +702,15 @@ function handleEdit(event) {
     const id = event.target.dataset.id;
     const expense = allExpensesForProject.find(e => e.id === id);
     if (!expense) return;
+    
     document.getElementById('edit-expense-id').value = expense.id;
+    document.querySelector(`input[name="edit-entry-type"][value="${expense.type || 'expense'}"]`).checked = true;
     document.getElementById('edit-material-name').value = expense.material;
     document.getElementById('edit-cost').value = expense.cost;
     document.getElementById('edit-date').value = expense.date;
+    const infoInput = document.getElementById('edit-additional-info');
+    if(infoInput) infoInput.value = expense.info || '';
+    
     editModal.classList.remove('hidden');
 }
 
@@ -703,9 +719,11 @@ editExpenseForm?.addEventListener('submit', async e => {
     if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); return; }
     const id = document.getElementById('edit-expense-id').value;
     const updatedData = {
+        type: document.querySelector('input[name="edit-entry-type"]:checked').value,
         material: document.getElementById('edit-material-name').value.trim(),
         cost: parseFloat(document.getElementById('edit-cost').value),
-        date: document.getElementById('edit-date').value
+        date: document.getElementById('edit-date').value,
+        info: document.getElementById('edit-additional-info').value.trim()
     };
     if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
         const appId = "construction-expenses";
@@ -713,7 +731,7 @@ editExpenseForm?.addEventListener('submit', async e => {
         try {
             await runTransaction(db, async (t) => { t.update(docRef, updatedData); });
             closeEditModal();
-            showToast("Expense updated successfully!", "success");
+            showToast("Entry updated successfully!", "success");
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
         }
@@ -733,7 +751,7 @@ async function handleDeleteProject(e) {
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!projectId) return;
 
-    const isConfirmed = await showConfirm("Delete Project", `Are you sure? All expenses in "${projectName}" will be permanently deleted.`);
+    const isConfirmed = await showConfirm("Delete Project", `Are you sure? All data in "${projectName}" will be permanently deleted.`);
     if (isConfirmed) {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); return; }
         const appId = "construction-expenses";
@@ -828,20 +846,32 @@ infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInf
 // --- Summaries ---
 function updateSummaries(expenses) {
     if (!finalExpensesEl) return;
-    const total = expenses.reduce((sum, exp) => sum + exp.cost, 0);
-    const formattedTotal = `₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-    finalExpensesEl.textContent = formattedTotal;
     
-    // Updates secondary copy in gradient card UI block 
-    if(cardExpenseCopy) cardExpenseCopy.textContent = formattedTotal;
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    expenses.forEach(exp => {
+        const amount = parseFloat(exp.cost) || 0;
+        if (exp.type === 'income') totalIncome += amount;
+        else totalExpense += amount;
+    });
+
+    const netBalance = totalIncome - totalExpense;
+    
+    finalExpensesEl.textContent = `₹${netBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    
+    const cardIncomeCopy = document.getElementById('card-income-copy');
+    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${totalExpense.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
     const materialTotals = expenses.reduce((acc, exp) => {
         const key = exp.material.trim().toLowerCase();
-        acc[key] = (acc[key] || 0) + exp.cost;
+        const amount = exp.type === 'income' ? exp.cost : -exp.cost;
+        acc[key] = (acc[key] || 0) + amount;
         return acc;
     }, {});
 
-    const sorted = Object.keys(materialTotals).sort((a, b) => materialTotals[b] - materialTotals[a]);
+    const sorted = Object.keys(materialTotals).sort((a, b) => Math.abs(materialTotals[b]) - Math.abs(materialTotals[a]));
     if (sorted.length === 0) {
         if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
         return;
@@ -849,9 +879,12 @@ function updateSummaries(expenses) {
 
     if (materialSummaryEl) {
         materialSummaryEl.innerHTML = sorted.map(key => {
-            const total = materialTotals[key];
+            const netAmount = materialTotals[key];
+            const isPositive = netAmount >= 0;
             const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700">${escapeHTML(displayName)}</span><span class="font-bold text-slate-900">₹${total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            const colorClass = isPositive ? 'text-emerald-600' : 'text-slate-900';
+            const sign = isPositive ? '+' : '';
+            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass}">${sign}₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
         }).join('');
     }
 }
@@ -873,41 +906,43 @@ const routeToAnalytics = () => {
         return; 
     }
     
-    // Calculate totals locally using the existing allExpensesForProject state (No extra DB calls)
     const categoryTotals = {};
-    const monthlyTotals = {};
+    const monthlyExpenseTotals = {};
+    const monthlyIncomeTotals = {};
     
     allExpensesForProject.forEach(exp => {
-        // Doughnut Chart (Categories)
-        const mat = exp.material.trim().charAt(0).toUpperCase() + exp.material.trim().slice(1).toLowerCase();
-        categoryTotals[mat] = (categoryTotals[mat] || 0) + exp.cost;
+        const monthKey = exp.date.substring(0, 7); 
+        monthlyExpenseTotals[monthKey] = monthlyExpenseTotals[monthKey] || 0;
+        monthlyIncomeTotals[monthKey] = monthlyIncomeTotals[monthKey] || 0;
         
-        // Bar Chart (Monthly)
-        const monthKey = exp.date.substring(0, 7); // Gets YYYY-MM
-        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + exp.cost;
+        if (exp.type === 'income') {
+            monthlyIncomeTotals[monthKey] += exp.cost;
+        } else {
+            const mat = exp.material.trim().charAt(0).toUpperCase() + exp.material.trim().slice(1).toLowerCase();
+            categoryTotals[mat] = (categoryTotals[mat] || 0) + exp.cost;
+            monthlyExpenseTotals[monthKey] += exp.cost;
+        }
     });
 
-    // Sort months chronologically for the bar chart
-    const sortedMonths = Object.keys(monthlyTotals).sort();
-    const sortedMonthlyTotals = {};
-    sortedMonths.forEach(key => {
-        sortedMonthlyTotals[key] = monthlyTotals[key];
+    const sortedMonths = [...new Set([...Object.keys(monthlyExpenseTotals), ...Object.keys(monthlyIncomeTotals)])].sort();
+    const finalMonthlyExp = {};
+    const finalMonthlyInc = {};
+    sortedMonths.forEach(m => {
+        finalMonthlyExp[m] = monthlyExpenseTotals[m];
+        finalMonthlyInc[m] = monthlyIncomeTotals[m];
     });
 
-    renderCharts(categoryTotals, sortedMonthlyTotals);
+    renderCharts(categoryTotals, finalMonthlyExp, finalMonthlyInc);
     
-    // Show the modal view
     analyticsModal.classList.remove('hidden');
 };
 
-const renderCharts = (categoryTotals, monthlyTotals) => {
+const renderCharts = (categoryTotals, monthlyExpenseTotals, monthlyIncomeTotals) => {
     const currencyFormatter = (value) => '₹' + value.toLocaleString('en-IN');
     
-    // Destroy existing instances if they exist to prevent hover glitches
     if (categoryChartInstance) categoryChartInstance.destroy();
     if (monthlyChartInstance) monthlyChartInstance.destroy();
     
-    // Render Category Doughnut Chart
     const ctxCategory = document.getElementById('category-chart').getContext('2d');
     categoryChartInstance = new Chart(ctxCategory, {
         type: 'doughnut',
@@ -930,21 +965,28 @@ const renderCharts = (categoryTotals, monthlyTotals) => {
         }
     });
 
-    // Render Monthly Bar Chart
     const ctxMonthly = document.getElementById('monthly-chart').getContext('2d');
     monthlyChartInstance = new Chart(ctxMonthly, {
         type: 'bar',
         data: {
-            labels: Object.keys(monthlyTotals).map(date => {
+            labels: Object.keys(monthlyExpenseTotals).map(date => {
                 const d = new Date(date + '-01'); 
                 return d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
             }),
-            datasets: [{
-                label: 'Monthly Spend',
-                data: Object.values(monthlyTotals),
-                backgroundColor: '#10B981',
-                borderRadius: 4
-            }]
+            datasets: [
+                {
+                    label: 'Income',
+                    data: Object.values(monthlyIncomeTotals),
+                    backgroundColor: '#10B981',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Expenses',
+                    data: Object.values(monthlyExpenseTotals),
+                    backgroundColor: '#EF4444',
+                    borderRadius: 4
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -952,12 +994,11 @@ const renderCharts = (categoryTotals, monthlyTotals) => {
             scales: {
                 y: { beginAtZero: true, ticks: { callback: currencyFormatter } }
             },
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: true, position: 'top' } }
         }
     });
 };
 
-// Bind Analytics events
 goToAnalyticsBtn?.addEventListener('click', routeToAnalytics);
 goToAnalyticsBtnNav?.addEventListener('click', routeToAnalytics);
 
@@ -966,7 +1007,6 @@ analyticsModal?.addEventListener('click', e => {
     if (e.target === analyticsModal) analyticsModal.classList.add('hidden'); 
 });
 
-// User Status Updates (Network/Welcome) mapped to small slick UI
 const userStatusDisplay = document.getElementById('user-status-display');
 let statusTimeout;
 
@@ -1009,7 +1049,6 @@ window.addEventListener('online', () => {
     updateStatusUI('online');
 });
 
-// Share App
 document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () => {
     const finTrackShareText = "I’ve been using HisapBook to manage my expenses and get clear insights into my spending.\nIt’s simple, effective, and actually helps me stay on top of my finances.\n\nYou should give it a try 👍";
     const appUrl = window.location.origin;
@@ -1024,6 +1063,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.2.1";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
