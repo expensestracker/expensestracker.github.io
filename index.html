@@ -150,7 +150,7 @@
             </button>
         </header>
 
-        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-28 relative scroll-smooth" id="main-scroll">
+        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-24 relative scroll-smooth" id="main-scroll">
             
             <div id="no-project-message" class="hidden text-center py-20 mt-10 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                 <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
@@ -252,39 +252,11 @@
             </button>
         </main>
 
-        <div class="absolute bottom-0 w-full bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.03)] border-t border-slate-100 z-30">
-            
-            <div id="fab-add-expense" class="absolute -top-6 left-1/2 transform -translate-x-1/2 flex justify-center">
-                <div class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-sm shadow-indigo-300 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                </div>
-            </div>
-
-            <nav class="px-6 py-3 flex justify-between items-center relative z-10">
-                <a href="#summary-section" class="flex flex-col items-center text-indigo-600 w-12">
-                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                    <span class="text-xs font-bold tracking-wider">Home</span>
-                </a>
-                
-                <a href="#history-section" class="flex flex-col items-center text-slate-400 hover:text-indigo-500 transition-colors w-12 mr-8">
-                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span class="text-xs font-bold tracking-wider">History</span>
-                </a>
-
-                <button id="go-to-analytics-btn-nav" class="flex flex-col items-center text-slate-400 hover:text-indigo-500 transition-colors w-12 ml-8 focus:outline-none">
-                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                    <span class="text-xs font-bold tracking-wider">Stats</span>
-                </button>
-
-                <button class="flex flex-col items-center text-slate-400 hover:text-indigo-500 transition-colors w-12 relative focus:outline-none">
-                    <span class="absolute top-0 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white"></span>
-                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    <span class="text-xs font-bold tracking-wider">Alerts</span>
-                </button>
-            </nav>
-        </div>
+        <button id="fab-add-expense" class="absolute bottom-6 right-6 w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-400 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none z-40">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </button>
 
         <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
             <div class="border-t border-slate-400 bg-white w-full p-6 pb-8 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col">
