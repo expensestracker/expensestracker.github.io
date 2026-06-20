@@ -150,7 +150,7 @@
             </button>
         </header>
 
-        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-24 relative scroll-smooth" id="main-scroll">
+        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-32 relative scroll-smooth" id="main-scroll">
             
             <div id="no-project-message" class="hidden text-center py-20 mt-10 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                 <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
@@ -284,7 +284,7 @@
         </div>
 
         <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
-            <div class="border-t border-slate-400  bg-white w-full p-6 pb-5 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="border-t border-slate-400 bg-white w-full p-6 pb-10 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
                         <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Add Entry
@@ -294,14 +294,18 @@
                     </button>
                 </div>
                 <form id="expense-form" class="space-y-4">
-                    <div class="flex gap-4">
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="entry-type" value="expense" checked class="peer sr-only">
-                            <div class="w-full text-center py-2 bg-white border border-slate-200 rounded-xl text-slate-500 font-bold peer-checked:bg-rose-50 peer-checked:text-rose-600 peer-checked:border-rose-200 transition-all">Expense</div>
+                    
+                    <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
+                        <input type="radio" name="entry-type" id="add-type-expense" value="expense" checked class="peer/expense sr-only">
+                        <input type="radio" name="entry-type" id="add-type-income" value="income" class="peer/income sr-only">
+
+                        <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+
+                        <label for="add-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                            Expense
                         </label>
-                        <label class="flex-1 cursor-pointer">
-                            <input type="radio" name="entry-type" value="income" class="peer sr-only">
-                            <div class="w-full text-center py-2 bg-white border border-slate-200 rounded-xl text-slate-500 font-bold peer-checked:bg-emerald-50 peer-checked:text-emerald-600 peer-checked:border-emerald-200 transition-all">Income</div>
+                        <label for="add-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                            Income
                         </label>
                     </div>
                   
@@ -365,7 +369,7 @@
     </div>
 
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400  bg-white w-full p-6 pb-5 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-10 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Edit Entry</h3>
                 <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
@@ -374,16 +378,21 @@
             </div>
             <form id="edit-expense-form" class="space-y-4 text-left">
                 <input type="hidden" id="edit-expense-id">
-                <div class="flex gap-4">
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="edit-entry-type" value="expense" class="peer sr-only">
-                        <div class="w-full text-center py-2 bg-white border border-slate-200 rounded-xl text-slate-500 font-bold peer-checked:bg-rose-50 peer-checked:text-rose-600 peer-checked:border-rose-200 transition-all">Expense</div>
+                
+                <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
+                    <input type="radio" name="edit-entry-type" id="edit-type-expense" value="expense" class="peer/expense sr-only">
+                    <input type="radio" name="edit-entry-type" id="edit-type-income" value="income" class="peer/income sr-only">
+
+                    <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+
+                    <label for="edit-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                        Expense
                     </label>
-                    <label class="flex-1 cursor-pointer">
-                        <input type="radio" name="edit-entry-type" value="income" class="peer sr-only">
-                        <div class="w-full text-center py-2 bg-white border border-slate-200 rounded-xl text-slate-500 font-bold peer-checked:bg-emerald-50 peer-checked:text-emerald-600 peer-checked:border-emerald-200 transition-all">Income</div>
+                    <label for="edit-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                        Income
                     </label>
                 </div>
+
                 <div class="relative w-full">
                     <input type="text" id="edit-material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
                     <label for="edit-material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Item Name</label>
