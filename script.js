@@ -115,8 +115,25 @@ function showToast(message, type = 'error') {
   }, 3000);
 }
 
-// --- Custom Native-Feel Confirmation Modal ---
-function showConfirm(title, message) {
+// --- Loading Helper for Forms ---
+function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    const btnText = button.querySelector('.btn-text');
+    const btnSpinner = button.querySelector('.btn-spinner');
+    
+    if (isLoading) {
+        button.disabled = true;
+        if (btnText) btnText.classList.add('opacity-0');
+        if (btnSpinner) btnSpinner.classList.remove('opacity-0');
+    } else {
+        button.disabled = false;
+        if (btnText) btnText.classList.remove('opacity-0');
+        if (btnSpinner) btnSpinner.classList.add('opacity-0');
+    }
+}
+
+// --- Custom Native-Feel Confirmation Modal with Spinner Support ---
+function showConfirm(title, message, onConfirmAsync = null) {
   return new Promise((resolve) => {
     const appContainer = document.querySelector('.max-w-md.relative');
     const targetParent = appContainer || document.body;
@@ -136,8 +153,11 @@ function showConfirm(title, message) {
     </div>
     <p class="text-sm text-slate-500 mb-6 leading-relaxed">${escapeHTML(message)}</p>
     <div class="flex gap-3">
-        <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-        <button id="confirm-delete-btn" class="flex-1 px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Delete</button>
+        <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+        <button id="confirm-delete-btn" class="flex-1 relative flex items-center justify-center px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 disabled:opacity-70 disabled:cursor-not-allowed">
+            <span class="btn-text transition-opacity">Delete</span>
+            <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </button>
     </div>
     `;
 
@@ -160,8 +180,27 @@ function showConfirm(title, message) {
       }, 300); 
     };
 
-    modal.querySelector('#confirm-cancel-btn').addEventListener('click', () => closeAndResolve(false));
-    modal.querySelector('#confirm-delete-btn').addEventListener('click', () => closeAndResolve(true));
+    const cancelBtn = modal.querySelector('#confirm-cancel-btn');
+    const deleteBtn = modal.querySelector('#confirm-delete-btn');
+
+    cancelBtn.addEventListener('click', () => closeAndResolve(false));
+    
+    deleteBtn.addEventListener('click', async () => {
+        if (onConfirmAsync) {
+            setButtonLoading(deleteBtn, true);
+            cancelBtn.disabled = true;
+            try {
+                await onConfirmAsync();
+                closeAndResolve(true);
+            } catch (err) {
+                // If it fails, stop loading spinner and let user try again
+                setButtonLoading(deleteBtn, false);
+                cancelBtn.disabled = false;
+            }
+        } else {
+            closeAndResolve(true);
+        }
+    });
   });
 }
 
@@ -421,8 +460,12 @@ sidebarAddProjectBtn?.addEventListener('click', (e) => {
 addProjectFormModal?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
+    
+    const submitBtn = addProjectFormModal.querySelector('button[type="submit"]');
     const projectName = document.getElementById('new-project-name-modal').value.trim();
+    
     if (projectName && currentUser) {
+        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
         try {
@@ -434,6 +477,8 @@ addProjectFormModal?.addEventListener('submit', async e => {
             showToast(`Project "${projectName}" created!`, "success");
         } catch (err) {
             showToast("Transaction failed: Check your connection.", "error");
+        } finally {
+            setButtonLoading(submitBtn, false);
         }
     }
 });
@@ -605,6 +650,8 @@ expenseForm?.addEventListener('submit', async e => {
         if (!navigator.onLine) showToast("Please connect to internet", "error");
         return;
     }
+    
+    const submitBtn = expenseForm.querySelector('button[type="submit"]');
     const type = document.querySelector('input[name="entry-type"]:checked').value;
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
@@ -612,6 +659,7 @@ expenseForm?.addEventListener('submit', async e => {
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date) {
+        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
         try {
@@ -630,6 +678,8 @@ expenseForm?.addEventListener('submit', async e => {
             });
         } catch (err) {
             showToast("Network Error: Data not saved.", "error");
+        } finally {
+            setButtonLoading(submitBtn, false);
         }
     }
 });
@@ -684,18 +734,22 @@ async function handleDelete(event) {
     const id = event.target.dataset.id;
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!id) return;
-    const isConfirmed = await showConfirm("Delete Entry", "Are you sure you want to delete this entry?");
-    if (isConfirmed) {
-        if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); return; }
-        const appId = "construction-expenses";
-        const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
+    
+    await showConfirm("Delete Entry", "Are you sure you want to delete this entry?", async () => {
+        if (!navigator.onLine) { 
+            showToast("Cannot delete while offline.", "error"); 
+            throw new Error("Offline"); 
+        }
         try {
+            const appId = "construction-expenses";
+            const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
             await runTransaction(db, async (t) => { t.delete(docRef); });
             showToast("Entry deleted", "success");
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
+            throw err;
         }
-    }
+    });
 }
 
 function handleEdit(event) {
@@ -717,6 +771,8 @@ function handleEdit(event) {
 editExpenseForm?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); return; }
+    
+    const submitBtn = editExpenseForm.querySelector('button[type="submit"]');
     const id = document.getElementById('edit-expense-id').value;
     const updatedData = {
         type: document.querySelector('input[name="edit-entry-type"]:checked').value,
@@ -725,7 +781,9 @@ editExpenseForm?.addEventListener('submit', async e => {
         date: document.getElementById('edit-date').value,
         info: document.getElementById('edit-additional-info').value.trim()
     };
+    
     if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
@@ -734,6 +792,8 @@ editExpenseForm?.addEventListener('submit', async e => {
             showToast("Entry updated successfully!", "success");
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
+        } finally {
+            setButtonLoading(submitBtn, false);
         }
     }
 });
@@ -751,19 +811,24 @@ async function handleDeleteProject(e) {
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!projectId) return;
 
-    const isConfirmed = await showConfirm("Delete Project", `Are you sure? All data in "${projectName}" will be permanently deleted.`);
-    if (isConfirmed) {
-        if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); return; }
-        const appId = "construction-expenses";
-        const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-        const q = query(expensesRef, where("projectId", "==", projectId));
+    await showConfirm("Delete Project", `Are you sure? All data in "${projectName}" will be permanently deleted.`, async () => {
+        if (!navigator.onLine) { 
+            showToast("Cannot delete while offline.", "error"); 
+            throw new Error("Offline"); 
+        }
         try {
+            const appId = "construction-expenses";
+            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
+            const q = query(expensesRef, where("projectId", "==", projectId));
+            
             const snapshot = await getDocs(q);
             const batch = writeBatch(db);
             snapshot.forEach(d => batch.delete(d.ref));
             batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
             await batch.commit();
+            
             showToast("Project deleted", "success");
+            
             if (activeProjectId === projectId) {
                 const generalProject = projects.find(p => p.name === 'General Project') || projects[0];
                 if (generalProject) {
@@ -777,16 +842,21 @@ async function handleDeleteProject(e) {
             }
         } catch (error) {
             showToast("Delete failed: Network error.", "error");
+            throw error;
         }
-    }
+    });
 }
 
 editProjectForm?.addEventListener('submit', async e => {
     e.preventDefault();
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
+    
+    const submitBtn = editProjectForm.querySelector('button[type="submit"]');
     const projectId = document.getElementById('edit-project-id').value,
     newName = document.getElementById('edit-project-name').value.trim();
+    
     if (newName && projectId) {
+        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
         try {
@@ -795,6 +865,8 @@ editProjectForm?.addEventListener('submit', async e => {
             showToast("Project renamed successfully!", "success");
         } catch (err) {
             showToast("Rename failed.", "error");
+        } finally {
+            setButtonLoading(submitBtn, false);
         }
     }
 });

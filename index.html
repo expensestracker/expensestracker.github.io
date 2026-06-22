@@ -41,7 +41,7 @@
 </head>
 <body class="bg-slate-200/50 flex items-center justify-center min-h-screen text-slate-800 font-sans">
 
-  <div class="w-full max-w-md h-screen sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-hidden flex flex-col">
+  <div class="w-full max-w-md h-[100dvh] sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-hidden flex flex-col">
     
     <div id="global-notification" class="hidden bg-indigo-600 flex items-start sm:items-center justify-between w-full text-white py-3 px-4 font-medium z-50 absolute top-0 transition-all duration-300">
       <p id="notification-text" class="flex-1 mr-4 text-md"></p>
@@ -252,7 +252,7 @@
             </button>
         </main>
 
-        <button id="fab-add-expense" class="absolute bottom-6 right-6 w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-400 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none z-40">
+        <button id="fab-add-expense" class="absolute bottom-8 right-6 w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-400 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none z-40">
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
             </svg>
@@ -327,8 +327,9 @@
                         <input type="text" id="additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
                         <label for="additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Additional Info (Optional notes...)</label>
                     </div>
-                    <button type="submit" class="w-full mt-4 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
-                        Save Entry
+                    <button type="submit" class="relative flex items-center justify-center w-full mt-4 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save Entry</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </button>
                 </form>
             </div>
@@ -413,7 +414,10 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" id="save-edit-btn" class="flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">Save</button>
+                    <button type="submit" id="save-edit-btn" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
                 </div>
             </form>
         </div>
@@ -435,7 +439,10 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" id="cancel-edit-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" class="flex-1 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95">Save</button>
+                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
                 </div>
             </form>
         </div>
@@ -456,7 +463,10 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button type="button" id="cancel-add-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" class="flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">Create</button>
+                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Create</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
                 </div>
             </form>
         </div>
