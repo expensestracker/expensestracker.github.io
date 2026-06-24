@@ -1,0 +1,20 @@
+{
+  "name": "Notes",
+  "short_name": "Notes",
+  "start_url": "/notes",
+  "display": "standalone",
+  "background_color": "#f9fafc",
+  "theme_color": "#f9fafc",
+  "icons": [
+    {
+      "src": "/notes/logo-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "notes/logo-192.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
