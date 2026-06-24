@@ -3,7 +3,7 @@ const ASSETS = [
   "/",
   "/index.html",
   "/logo-192.webp",
-  "/logo-192.png"
+  "/logo-512.webp"
 ];
 
 self.addEventListener("install", event => {
