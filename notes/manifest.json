@@ -3,8 +3,8 @@
   "short_name": "Notes",
   "start_url": "/notes",
   "display": "standalone",
-  "background_color": "#f9fafc",
-  "theme_color": "#f9fafc",
+  "background_color": "",
+  "theme_color": "",
   "icons": [{
     "src": "/notes/logo-192.webp",
     "sizes": "192x192",
