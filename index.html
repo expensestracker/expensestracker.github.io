@@ -4,7 +4,7 @@
   <meta name="theme-color" content="#f9fafc" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1E1F21" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover, interactive-widget=resizes-content">
   <title>HisapBook</title>
   <meta name="description" content="Track expenses easily">
   <link rel="manifest" href="manifest.json">
@@ -12,22 +12,31 @@
   <link rel="preload" href="sans-display.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
+  <style>
     /* Hide scrollbar for clean app-like UI */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Chrome scroll overflow fix */
-    html, body {
+    /* Chrome scroll overflow & viewport fix */
+    html {
       height: 100%;
+      height: -webkit-fill-available; /* Locks to visible viewport, prevents URL bar jump */
+    }
+    
+    body {
+      height: 100%;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
       overflow: hidden;
       overscroll-behavior: none;
-      position: fixed;
       width: 100%;
+      margin: 0;
+      padding: 0;
+      touch-action: pan-x pan-y; /* Prevent unwanted browser zoom/scroll gestures */
     }
 
     /* Safe area bottom padding utility */
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem); }
     
     /* Smooth Enter Animations */
     @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
@@ -51,9 +60,9 @@
   </style>
 
 </head>
-<body class="bg-slate-200/50 flex items-center justify-center min-h-screen text-slate-800 font-sans overflow-hidden overscroll-none">
+<body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
 
-  <div class="w-full max-w-md h-[100dvh] sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
+  <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
     
     <div id="global-notification" class="hidden bg-indigo-600 flex items-start sm:items-center justify-between w-full text-white py-3 px-4 font-medium z-50 absolute top-0 transition-all duration-300">
       <p id="notification-text" class="flex-1 mr-4 text-md"></p>
@@ -499,7 +508,8 @@
         </div>
     </div>
 
-  </div> <div id="toast-container" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none max-w-[calc(100vw-2rem)]"></div>
+  </div> 
+  <div id="toast-container" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none max-w-[calc(100vw-2rem)]"></div>
 
   <script type="module" src="script.js"></script>
 </body>
