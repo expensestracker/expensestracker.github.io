@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="theme-color" content="#f9fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1E1F21" media="(prefers-color-scheme: dark)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HisapBook</title>
+  <meta name="description" content="Track expenses easily">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preload" href="sans-display.woff2" as="font" type="font/woff2" crossorigin>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    /* Hide scrollbar for clean app-like UI */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Chrome scroll overflow fix */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      width: 100%;
+    }
+
+    /* Safe area bottom padding utility */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    
+    /* Smooth Enter Animations */
+    @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+    .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+
+    @keyframes slideInRight { 
+      0% { opacity: 0; transform: translateX(20px); } 
+      100% { opacity: 1; transform: translateX(0); } 
+    }
+    .animate-slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+
+    /* Smooth Exit Animations */
+    @keyframes slideDown { 0% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+    .animate-slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+    .animate-fade-out { animation: fadeOut 0.3s ease forwards; }
+  </style>
+
+</head>
+<body class="bg-slate-200/50 flex items-center justify-center min-h-screen text-slate-800 font-sans overflow-hidden overscroll-none">
+
+  <div class="w-full max-w-md h-[100dvh] sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
+    
+    <div id="global-notification" class="hidden bg-indigo-600 flex items-start sm:items-center justify-between w-full text-white py-3 px-4 font-medium z-50 absolute top-0 transition-all duration-300">
+      <p id="notification-text" class="flex-1 mr-4 text-md"></p>
+      <button id="close-notification" class="flex-shrink-0 sm:mt-0 p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/20 transition-colors duration-200 focus:outline-none">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div id="maintenance-view" class="view hidden absolute inset-0 bg-slate-50 z-[100] flex-col items-center justify-center px-4 overflow-hidden">
+        <div class="absolute top-0 right-0 w-[30rem] h-[30rem] bg-indigo-100 rounded-full blur-[100px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col items-start p-8 rounded-3xl bg-white border border-slate-200 shadow-xl max-w-lg w-full text-left">
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-4">Under Maintenance</h1>
+          <p class="text-slate-600 text-md leading-relaxed mb-8">We are currently upgrading the system to improve your experience. Please check back shortly.</p>
+        </div>
+    </div>
+
+    <div id="splash-view" class="view active absolute inset-0 bg-gray-50 z-[90] flex flex-col">
+
+    <div class="flex-grow flex flex-col items-center justify-center">
+        <div class="w-24 h-28 rounded-3xl bg-white shadow-lg flex items-center justify-center mb-8">
+            <img
+                src="logo-512.webp"
+                class="w-16 h-16 object-contain"
+                onerror="this.src='https://ui-avatars.com/api/?name=₹&background=4f46e5&color=fff&size=112&rounded=true'"
+            >
+        </div>
+    </div>
+
+    <div class="pb-10 text-center">
+        <div id="loading-indicator" class="three-body mb-6">
+            <div class="three-body__dot"></div>
+            <div class="three-body__dot"></div>
+            <div class="three-body__dot"></div>
+        </div>
+        <h2 class="text-lg font-extrabold text-slate-900 tracking-tight">HisapBook</h2>
+    </div>
+
+</div>
+
+    <div id="auth-view" class="view hidden absolute inset-0 z-[80] flex flex-col bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100 to-slate-50 overflow-y-auto no-scrollbar">
+        <div class="px-8 pt-14 pb-14 flex-shrink-0">
+          <h1 class="text-4xl font-extrabold text-[#1e293b] tracking-tight leading-tight mb-2">HisapBook</h1>
+          <p class="text-md text-slate-500 font-medium">Track expenses, manage budgets, and gain clarity on your spending.</p>
+        </div>
+        
+        <div class="w-full bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.08)] border-t border-sky-300 flex-1 p-8 flex flex-col">
+          <div class="mb-6">
+            <h2 id="auth-title" class="text-2xl font-bold text-slate-800">Welcome Back</h2>
+            <p class="text-sm text-slate-500 mt-1">Log in or sign up to continue</p>
+          </div>
+          
+          <form id="email-form" class="space-y-4">
+            <div class="relative w-full group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+              </div>
+              <input type="email" id="email-input" required class="block w-full pl-11 pr-4 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+              <label for="email-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Email Address</label>
+            </div>
+            
+            <div class="relative w-full group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <input type="password" id="password-input" required class="block w-full pl-11 pr-12 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+              <label for="password-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Password</label>
+              <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none z-20">
+                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <svg id="eye-slash-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+              </button>
+            </div>
+            
+            <div class="flex gap-3 pt-2">
+              <button type="button" id="google-signin-btn" class="flex-1 flex items-center justify-center bg-white border border-slate-200 text-slate-700 text-md font-bold py-3.5 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" /><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" /><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" /><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.022,35.244,44,30.036,44,24C44,22.659,43.862,21.35,43.611,20.083z" /></svg>
+                Google
+              </button>
+              <button type="submit" id="email-action-btn" class="flex-1 relative flex items-center justify-center bg-[#0f172a] text-white text-md font-bold py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md">
+                <span id="btn-text" class="transition-opacity">Continue</span>
+                <svg id="btn-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              </button>
+            </div>
+          </form>
+          <div class="text-center mt-6 mb-4">
+            <a href="#" id="forgot-password-link" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Forgot Password?</a>
+          </div>
+        </div>
+    </div>
+
+    <div id="app-view" class="view hidden flex-col h-full bg-slate-50 relative z-10">
+        
+        <header class="px-6 py-2 flex justify-between items-center bg-slate-50 z-20 sticky top-0">
+            <div class="flex items-center gap-3">
+                <img id="header-avatar" src="" alt="User" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover">
+                <div>
+                    <div id="user-status-display" class="flex items-center gap-1.5 text-sm text-slate-500 font-bold tracking-wider">
+                        <span class="w-2 h-2 bg-slate-300 rounded-full"></span> Loading
+                    </div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">HisapBook</h1>
+                </div>
+            </div>
+            <button id="hamburger-btn" class="p-2 rounded-full bg-white shadow-sm text-slate-600 hover:text-indigo-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-28 relative scroll-smooth overscroll-contain" id="main-scroll">
+            
+            <div id="no-project-message" class="hidden text-center py-20 mt-10 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">No Project Active</h3>
+                <p class="text-md text-slate-500 mt-2 px-4">Create or select a project from the menu to begin.</p>
+            </div>
+
+            <div id="expense-dashboard" class="space-y-6">
+                <div id="summary-section" class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-lg shadow-indigo-200 mt-2 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-10 transition-transform group-hover:scale-110 duration-700"></div>
+                    <div class="absolute bottom-0 right-10 -mb-10 w-24 h-24 rounded-full bg-white opacity-10 transition-transform group-hover:scale-110 duration-700 delay-75"></div>
+                    
+                    <div class="flex justify-between items-center mb-1 relative z-10">
+                        <p id="project-summary-title" class="text-indigo-100 text-md font-bold capitalise tracking-wider">Project Name</p>
+                        <button id="go-to-analytics-btn" class="p-1.5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <h2 id="final-expenses" class="text-4xl font-black tracking-tight mb-2 relative z-10">₹0.00</h2>
+                    
+                    <div class="flex justify-between items-center pt-4 relative z-10">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Income</p>
+                                <p class="text-md font-semibold" id="card-income-copy">₹0.00</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Expenses</p>
+                                <p class="text-md font-semibold" id="card-expense-copy">₹0.00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span> Item Summary
+                    </h2>
+                    <div id="material-summary" class="space-y-3 max-h-40 overflow-y-auto pr-2 no-scrollbar text-sm"></div>
+                </div>
+
+                <div id="history-section" class="pt-2">
+                    <div class="flex justify-between items-end mb-4">
+                        <h3 class="text-lg font-bold text-slate-800">Recent Transactions</h3>
+                        <button id="filter-btn" class="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="filter-panel" class="overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 bg-white rounded-2xl mb-4 border border-slate-100 shadow-sm">
+                        <div class="p-4 space-y-4">
+                            <div class="relative w-full">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+                                    <svg class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                                </div>
+                                <input type="search" id="search-input" class="block w-full pl-9 pr-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                                <label for="search-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-8 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Search item...</label>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="last-week" class="text-sm font-bold capitalise tracking-wider px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors">Last Week</button>
+                                <button id="last-month" class="text-sm font-bold capitalise tracking-wider px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors">Last Month</button>
+                                <button id="last-year" class="text-sm font-bold capitalise tracking-wider px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors">This Year</button>
+                            </div>
+                            <div class="flex gap-3">
+                                <div class="relative w-full">
+                                    <input id="start-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                                    <label for="start-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">From</label>
+                                </div>
+                                <div class="relative w-full">
+                                    <input id="end-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                                    <label for="end-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">To</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="expense-list" class="space-y-3 pb-4">
+                        </div>
+                    <button id="view-all" class="w-full bg-indigo-50 text-indigo-600 font-bold text-md py-3 rounded-2xl transition-all hover:bg-indigo-100 hidden">View all</button>
+                </div>
+            </div>
+            
+            <button id="shareFinTrackBtn" class="flex items-center justify-center gap-2 w-full mt-6 py-4 text-slate-400 hover:text-slate-600 text-sm font-bold capitalise tracking-wider transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                Share App
+            </button>
+        </main>
+
+        <button id="fab-add-expense" class="absolute bottom-8 right-6 w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-400 hover:bg-indigo-700 hover:scale-105 transition-transform duration-200 focus:outline-none z-40">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </button>
+
+        <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]" style="padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem))">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <h3 class="text-xl font-bold text-slate-800">Project Stats</h3>
+                    <button id="close-analytics-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="overflow-y-auto no-scrollbar flex-grow pb-6 space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="relative w-full">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="relative h-64 w-full">
+                            <canvas id="monthly-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Add Entry
+                    </h2>
+                    <button id="close-add-expense-btn" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 focus:outline-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="expense-form" class="space-y-4">
+                    
+                    <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
+                        <input type="radio" name="entry-type" id="add-type-expense" value="expense" checked class="peer/expense sr-only">
+                        <input type="radio" name="entry-type" id="add-type-income" value="income" class="peer/income sr-only">
+
+                        <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+
+                        <label for="add-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                            Expense
+                        </label>
+                        <label for="add-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                            Income
+                        </label>
+                    </div>
+                  
+                    <div class="relative w-full">
+                        <input type="text" id="material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                        <label for="material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Item Name</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative w-full">
+                            <input type="number" id="cost" required step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                            <label for="cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Amount</label>
+                        </div>
+                        <div class="relative w-full">
+                            <input id="date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                            <label for="date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Date</label>
+                        </div>
+                    </div>
+                    <div class="relative w-full">
+                        <input type="text" id="additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                        <label for="additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Additional Info (Optional notes...)</label>
+                    </div>
+                    <button type="submit" class="relative flex items-center justify-center w-full mt-4 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save Entry</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="mobile-menu-backdrop" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[110] opacity-0 pointer-events-none transition-opacity">
+            <div id="mobile-menu" class="absolute top-0 left-0 h-full w-72 bg-white shadow-2xl p-6 transform -translate-x-full flex flex-col transition-transform duration-300 rounded-r-3xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-800">Menu</h2>
+                    <button id="close-menu-btn" class="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <div id="user-profile-mobile" class="mb-6"></div>
+                <nav class="flex-grow overflow-y-auto no-scrollbar">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider">Projects</h3>
+                        <button id="sidebar-add-project-btn" class="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        </button>
+                    </div>
+                    <div id="sidebar-project-list" class="space-y-1 mb-8"></div>
+                    
+                    <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider mb-3">Information</h3>
+                    <div class="space-y-1">
+                        <a href="#" id="about-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>About Us</a>
+                        <a href="#" id="privacy-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>Privacy</a>
+                        <a href="#" id="contact-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>Contact</a>
+                    </div>
+                </nav>
+                <div class="mt-auto pt-6 border-t border-slate-100">
+                    <button id="mobile-sign-out-btn" class="w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Sign Out</button>
+                    <p class="mt-4 text-center text-sm text-slate-400 capitalise tracking-wider font-bold" id="app-version"></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800">Edit Entry</h3>
+                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </div>
+            </div>
+            <form id="edit-expense-form" class="space-y-4 text-left">
+                <input type="hidden" id="edit-expense-id">
+                
+                <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
+                    <input type="radio" name="edit-entry-type" id="edit-type-expense" value="expense" class="peer/expense sr-only">
+                    <input type="radio" name="edit-entry-type" id="edit-type-income" value="income" class="peer/income sr-only">
+
+                    <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+
+                    <label for="edit-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                        Expense
+                    </label>
+                    <label for="edit-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                        Income
+                    </label>
+                </div>
+
+                <div class="relative w-full">
+                    <input type="text" id="edit-material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                    <label for="edit-material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Item Name</label>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="relative w-full">
+                        <input type="number" id="edit-cost" required min="0" step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                        <label for="edit-cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Amount</label>
+                    </div>
+                    <div class="relative w-full">
+                        <input id="edit-date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                        <label for="edit-date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Date</label>
+                    </div>
+                </div>
+                <div class="relative w-full">
+                    <input type="text" id="edit-additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                    <label for="edit-additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Additional Info</label>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
+                    <button type="submit" id="save-edit-btn" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800">Edit Project</h3>
+                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </div>
+            </div>
+            <form id="edit-project-form" class="space-y-4">
+                <input type="hidden" id="edit-project-id">
+                <div class="relative w-full">
+                    <input type="text" id="edit-project-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                    <label for="edit-project-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancel-edit-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
+                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Save</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-slate-800">Add Project</h3>
+                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </div>
+            </div>
+            <form id="add-project-form-modal" class="space-y-4 text-left">
+                <div class="relative w-full">
+                    <input type="text" id="new-project-name-modal" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
+                    <label for="new-project-name-modal" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name (e.g. Home Renovation)</label>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" id="cancel-add-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
+                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span class="btn-text transition-opacity">Create</span>
+                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="info-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="info-modal-title" class="text-xl font-bold text-slate-800">Info</h3>
+                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-indigo-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+            </div>
+            <div id="info-modal-content" class="text-md text-slate-500 leading-relaxed max-h-60 overflow-y-auto no-scrollbar"></div>
+            <div class="pt-6">
+                <button id="close-info-modal-btn" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95">Got it</button>
+            </div>
+        </div>
+    </div>
+
+  </div> <div id="toast-container" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none max-w-[calc(100vw-2rem)]"></div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
