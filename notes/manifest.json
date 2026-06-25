@@ -1,12 +1,12 @@
 {
-  "name": "Activity Log",
-  "short_name": "Log",
+  "name": "Notes",
+  "short_name": "Notes",
   "description": "A real-time personal activity logger",
-  "start_url": "/logs",
+  "start_url": "/notes",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8fafc",
-  "theme_color": "#6366f1",
+  "background_color": "#f9fafc",
+  "theme_color": "#f9fafc",
   "icons": [
     {
       "src": "logs/logo-192.webp",
