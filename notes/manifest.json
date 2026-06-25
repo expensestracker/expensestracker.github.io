@@ -9,13 +9,13 @@
   "theme_color": "#f9fafc",
   "icons": [
     {
-      "src": "logs/logo-192.webp",
+      "src": "notes/logo-192.webp",
       "sizes": "192x192",
       "type": "image/webp",
       "purpose": "any maskable"
     },
     {
-      "src": "logs/logo-512.webp",
+      "src": "notes/logo-512.webp",
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any maskable"
