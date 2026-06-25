@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="theme-color" content="#f9fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- Viewport: removed maximum-scale/user-scalable (accessibility + iOS zoom fix) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Activity Log</title>
 
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="logo-192.png">
 
   <style>
-    /* 1. Core Variables & Gradients */
-:root {
+    /* 1. Core Variables */
+    :root {
       --text-main: #0f172a;
       --text-muted: #475569;
       --text-light: #94a3b8;
 
       --gradient-primary: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-      --gradient-glow: rgba(236, 72, 153, 0.4);
+      --gradient-glow: rgba(236, 72, 153, 0.35);
 
       --slate-50: #f8fafc;
       --slate-100: #f1f5f9;
@@ -25,25 +27,38 @@
 
       --rose-50: #fff1f2;
       --rose-600: #e11d48;
+
+      /* Safe area insets for notch/home-bar devices */
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
     }
 
-    /* 2. Resets & Clean Body */
-    * {
+    /* 2. Resets */
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+    html {
+      height: 100%;
+      /* Prevent font size inflation on orientation change */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
     body {
+      height: 100%;
       background-color: var(--slate-100);
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: var(--text-main);
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    input, textarea, button {
+    input, textarea, button, select {
       font-family: inherit;
       border: none;
       outline: none;
@@ -51,11 +66,9 @@
     button {
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -65,6 +78,8 @@
     .app-container {
       width: 100%;
       max-width: 448px;
+      /* Use dvh with fallback — stays stable when soft keyboard appears */
+      height: 100vh;
       height: 100dvh;
       background: #ffffff;
       display: flex;
@@ -74,20 +89,57 @@
     }
     @media (min-width: 640px) {
       .app-container {
-        height: 850px;
+        height: min(850px, 100dvh);
         border-radius: 2rem;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+        box-shadow:
+          0 25px 50px -12px rgba(0, 0, 0, 0.12),
+          0 0 0 1px rgba(0, 0, 0, 0.05);
       }
     }
 
-    /* 4. Timeline Layout */
+    /* 4. Header */
+    .app-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px 12px 20px;
+      /* Respect top notch in standalone PWA mode */
+      padding-top: max(16px, var(--safe-top));
+      border-bottom: 1px solid var(--slate-100);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 20;
+    }
+    .header-title {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-date {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* 5. Timeline Layout */
     .main-scroll {
       flex: 1;
       overflow-y: auto;
+      /* Momentum scrolling on iOS */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
       scroll-behavior: smooth;
     }
     .notes-container {
-      padding: 32px 0 48px 0;
+      padding: 28px 0 32px 0;
       display: flex;
       flex-direction: column;
       position: relative;
@@ -95,22 +147,67 @@
     }
     .timeline-line {
       display: none;
-      /* Hidden while loading/empty */
       position: absolute;
       left: 81px;
       width: 2px;
-      background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.3) 5%, rgba(236, 72, 153, 0.3) 95%, transparent);
-      top: 32px;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(99, 102, 241, 0.25) 5%,
+        rgba(236, 72, 153, 0.25) 95%,
+        transparent
+      );
+      top: 28px;
       bottom: 0;
       z-index: 0;
     }
 
-    /* 5. Timeline Items */
+    /* 6. Empty State */
+    .empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 48px 32px;
+      text-align: center;
+      gap: 12px;
+    }
+    .empty-state.visible {
+      display: flex;
+    }
+    .empty-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      background: var(--slate-100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .empty-icon svg {
+      width: 26px;
+      height: 26px;
+      color: var(--text-light);
+    }
+    .empty-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .empty-sub {
+      font-size: 13px;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+
+    /* 7. Timeline Items */
     .date-header {
       width: 100%;
       display: flex;
       justify-content: center;
-      padding: 12px 0 24px 0;
+      padding: 10px 0 22px 0;
       position: relative;
       z-index: 10;
     }
@@ -122,7 +219,7 @@
       color: var(--text-muted);
       border-radius: 9999px;
       letter-spacing: 0.05em;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       border: 1px solid var(--slate-100);
     }
     .timeline-item {
@@ -144,7 +241,6 @@
       color: var(--text-muted);
       font-weight: 600;
     }
-
     .dot-col {
       width: 20px;
       flex-shrink: 0;
@@ -185,7 +281,6 @@
       background: var(--gradient-primary);
       box-shadow: 0 0 0 4px #ffffff, 0 0 10px var(--gradient-glow);
     }
-
     .content-col {
       flex: 1;
       padding-left: 12px;
@@ -194,40 +289,46 @@
       text-align: left;
     }
     .content-text {
-      font-size: 16px;
+      font-size: 15.5px;
       color: var(--text-main);
       font-weight: 500;
       line-height: 1.6;
       white-space: pre-wrap;
-      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
       padding-right: 16px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: opacity 0.15s, transform 0.15s;
       text-align: left;
+      /* Prevent text selection on quick tap */
+      -webkit-user-select: none;
+      user-select: none;
     }
     .content-text:active {
       opacity: 0.5;
       transform: scale(0.99);
     }
 
-    /* 6. Dynamic Bottom Bar & Network Status */
+    /* 8. Bottom Bar */
     .bottom-bar {
       position: relative;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.93);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       flex-shrink: 0;
       z-index: 30;
-      padding: 10px 12px;
+      /* Safe area padding for home bar */
+      padding: 10px 12px max(10px, calc(var(--safe-bottom) + 2px)) 12px;
       border-top: 1px solid var(--slate-200);
     }
 
-    /* Top Loading Bar inside bottom-bar */
+    /* Loading bar */
     .status-bar-wrapper {
       position: absolute;
       top: -1px;
       left: 0;
       right: 0;
-      height: 1.5px;
+      height: 2px;
       background: transparent;
       overflow: hidden;
     }
@@ -235,48 +336,35 @@
       height: 100%;
       width: 60%;
       border-radius: 4px;
-      transition: background 0.3s ease, opacity 0.3s ease, width 0.3s;
+      transition: background 0.3s ease, opacity 0.4s ease;
     }
 
-    /* State Management - Offline */
     .bottom-bar.offline .status-bar-line {
       background: linear-gradient(90deg, transparent, var(--rose-600), transparent);
       width: 100%;
-      transform: translateX(0);
       opacity: 1;
     }
-
-    /* State Management - Connecting */
     .bottom-bar.connecting .status-bar-line {
-      background: linear-gradient(90deg, transparent, #ff1b55, transparent);
+      background: linear-gradient(90deg, transparent, #f59e0b, transparent);
       animation: barRun 1.4s infinite ease-in-out;
       opacity: 1;
     }
-
-    /* State Management - Syncing (Upload/Download) */
     .bottom-bar.syncing .status-bar-line {
-      background: linear-gradient(90deg, transparent, #00b1cd, transparent);
+      background: linear-gradient(90deg, transparent, #06b6d4, transparent);
       animation: barRun 1s infinite ease-in-out;
       opacity: 1;
     }
-
-    /* State Management - Online / Idle */
     .bottom-bar.online .status-bar-line {
       opacity: 0;
-      /* Instantly disappears when fully online/idle */
       animation: none;
     }
 
     @keyframes barRun {
-      0% {
-        transform: translateX(-100%);
-      }
-      100% {
-        transform: translateX(200%);
-      }
+      0%   { transform: translateX(-120%); }
+      100% { transform: translateX(220%); }
     }
 
-    /* Bottom Input Layout */
+    /* 9. Input Area */
     .input-form {
       display: flex;
       align-items: flex-end;
@@ -286,26 +374,35 @@
       flex: 1;
       display: flex;
       align-items: center;
-      transition: all 0.3s;
+      background: var(--slate-50);
+      border: 1.5px solid var(--slate-200);
+      border-radius: 22px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      padding: 0 4px;
+    }
+    .input-wrapper:focus-within {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: #ffffff;
     }
     .main-input {
-      width: 100%;
+      flex: 1;
       background: transparent;
       padding: 10px 12px;
       font-size: 15px;
       color: var(--text-main);
       font-weight: 500;
       resize: none;
-      max-height: 128px;
+      max-height: 120px;
       line-height: 1.4;
     }
     .main-input::placeholder {
       color: var(--text-light);
-      font-weight: 500;
+      font-weight: 400;
     }
     .submit-btn {
-      width: 40px;
-      height: 40px;
+      width: 42px;
+      height: 42px;
       flex-shrink: 0;
       background: var(--gradient-primary);
       color: white;
@@ -313,16 +410,21 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
       box-shadow: 0 4px 12px var(--gradient-glow);
-      margin-bottom: 1px;
     }
     .submit-btn:hover {
-      transform: scale(1.05) translateY(-2px);
-      box-shadow: 0 6px 16px var(--gradient-glow);
+      transform: scale(1.06) translateY(-1px);
+      box-shadow: 0 6px 18px var(--gradient-glow);
     }
     .submit-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.93);
+      box-shadow: 0 2px 8px var(--gradient-glow);
+    }
+    .submit-btn:disabled {
+      opacity: 0.45;
+      transform: none;
+      cursor: not-allowed;
     }
     .icon-send {
       width: 18px;
@@ -331,12 +433,10 @@
       left: 1px;
     }
 
-    /* 7. Modals */
+    /* 10. Modals */
     .modal-backdrop {
       position: absolute;
       inset: 0;
-      background: transparent;
-      backdrop-filter: none;
       z-index: 100;
       display: none;
       flex-direction: column;
@@ -345,20 +445,37 @@
     }
     .modal-backdrop.flex {
       display: flex;
-      animation: fadeIn 0.3s ease forwards;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    /* Dim overlay */
+    .modal-backdrop::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.25);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
     }
     .modal-surface {
-      background: rgba(255, 255, 255, 0.98);
+      position: relative;
+      background: rgba(255, 255, 255, 0.99);
       width: 100%;
-      padding: 24px 24px 40px 24px;
-      border-radius: 32px 32px 0 0;
-      box-shadow: 0 -25px 50px -12px rgba(0,0,0,0.15);
+      padding: 24px 24px 20px 24px;
+      /* Safe area bottom padding */
+      padding-bottom: max(24px, calc(var(--safe-bottom) + 12px));
+      border-radius: 28px 28px 0 0;
+      box-shadow: 0 -20px 60px -12px rgba(0,0,0,0.18);
       transform: translateY(100%);
-      animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      animation: slideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
       border-top: 1px solid var(--slate-100);
     }
-
-    /* Updated Modal Header */
+    .modal-drag-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--slate-200);
+      border-radius: 9999px;
+      margin: 0 auto 20px auto;
+    }
     .modal-header {
       display: flex;
       justify-content: space-between;
@@ -366,129 +483,103 @@
       margin-bottom: 20px;
     }
     .modal-title {
-      font-size: 20px;
+      font-size: 19px;
       font-weight: 800;
       color: var(--text-main);
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
     }
     .btn-close-icon {
-      background: transparent;
-      color: var(--text-light);
-      padding: 8px;
+      background: var(--slate-100);
+      color: var(--text-muted);
+      padding: 6px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s;
-      margin-right: -8px;
     }
     .btn-close-icon:hover {
-      background: var(--slate-100);
+      background: var(--slate-200);
       color: var(--text-main);
     }
-    .btn-close-icon svg {
-      width: 22px;
-      height: 22px;
-    }
+    .btn-close-icon svg { width: 20px; height: 20px; }
 
     .edit-textarea {
       display: block;
       width: 100%;
-      padding: 16px;
-      font-size: 16px;
+      padding: 14px 16px;
+      font-size: 15.5px;
       color: var(--text-main);
       font-weight: 500;
       background: var(--slate-50);
-      border-radius: 20px;
-      border: 1px solid var(--slate-200);
-      margin-bottom: 20px;
+      border-radius: 18px;
+      border: 1.5px solid var(--slate-200);
+      margin-bottom: 16px;
       resize: none;
-      transition: all 0.3s;
-      line-height: 1.5;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      line-height: 1.55;
     }
     .edit-textarea:focus {
       border-color: #6366f1;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
       background: white;
     }
 
     .modal-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
     .btn {
-      padding: 14px;
+      padding: 13px;
       font-size: 15px;
       font-weight: 700;
-      border-radius: 16px;
+      border-radius: 14px;
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      letter-spacing: -0.01em;
     }
+    .btn:active { transform: scale(0.97); }
     .btn-icon {
       flex: none;
-      width: 56px;
+      width: 52px;
     }
     .btn-delete {
       background: var(--rose-50);
       color: var(--rose-600);
-      border: 1px solid rgba(225, 29, 72, 0.1);
+      border: 1.5px solid rgba(225, 29, 72, 0.12);
     }
-    .btn-delete:hover {
-      background: #ffe4e6;
-      transform: translateY(-1px);
-    }
+    .btn-delete:hover { background: #ffe4e6; }
     .btn-primary {
       background: var(--gradient-primary);
       color: white;
       box-shadow: 0 4px 12px var(--gradient-glow);
     }
     .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px var(--gradient-glow);
+      box-shadow: 0 6px 18px var(--gradient-glow);
     }
 
-    /* 8. Animations */
+    /* 11. Animations */
     @keyframes ping {
-      75%, 100% {
-        transform: scale(2.5);
-        opacity: 0;
-      }
+      75%, 100% { transform: scale(2.5); opacity: 0; }
     }
     @keyframes smoothGrow {
-      0% {
-        opacity: 0;
-        transform: translateY(15px) scale(0.98);
-      }
-
-      100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+      0%   { opacity: 0; transform: translateY(12px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
     }
     .animate-grow {
       opacity: 0;
       animation: smoothGrow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
     @keyframes fadeIn {
-      0% {
-        opacity: 0;
-      }
-
-      100% {
-        opacity: 1;
-      }
+      0%   { opacity: 0; }
+      100% { opacity: 1; }
     }
     @keyframes slideUp {
-      0% {
-        transform: translateY(100%);
-      }
-
-      100% {
-        transform: translateY(0);
-      }
+      0%   { transform: translateY(100%); }
+      100% { transform: translateY(0); }
     }
   </style>
 </head>
@@ -496,12 +587,32 @@
 
   <div class="app-container">
 
+    <!-- Header -->
+    <header class="app-header">
+      <span class="header-title">Activity Log</span>
+      <span class="header-date" id="header-date"></span>
+    </header>
+
+    <!-- Timeline -->
     <main class="main-scroll no-scrollbar" id="scroll-container">
       <div class="notes-container" id="notes-container">
         <div class="timeline-line"></div>
+
+        <!-- Empty state (shown until first entry loads) -->
+        <div class="empty-state visible" id="empty-state">
+          <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <p class="empty-title">No entries yet</p>
+          <p class="empty-sub">Log your first activity below<br>and it'll appear here.</p>
+        </div>
       </div>
     </main>
 
+    <!-- Bottom Input Bar -->
     <footer id="bottom-bar" class="bottom-bar connecting">
       <div class="status-bar-wrapper">
         <div class="status-bar-line"></div>
@@ -509,21 +620,34 @@
 
       <form id="add-form" class="input-form">
         <div class="input-wrapper">
-          <textarea id="add-content" required rows="1" class="main-input no-scrollbar" placeholder="Log activity..."></textarea>
+          <textarea id="add-content" required rows="1"
+            class="main-input no-scrollbar"
+            placeholder="Log activity…"
+            autocomplete="off"
+            autocorrect="on"
+            spellcheck="true"
+          ></textarea>
         </div>
-        <button type="submit" class="submit-btn">
-          <svg class="icon-send" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+        <button type="submit" class="submit-btn" id="submit-btn" disabled>
+          <svg class="icon-send" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
         </button>
       </form>
     </footer>
 
-    <div id="edit-modal" class="modal-backdrop">
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Edit log entry">
       <div class="modal-surface">
+        <div class="modal-drag-handle"></div>
 
         <div class="modal-header">
-          <h3 class="modal-title">Edit Log</h3>
-          <button type="button" class="close-modal-btn btn-close-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+          <h3 class="modal-title">Edit Entry</h3>
+          <button type="button" class="close-modal-btn btn-close-icon" aria-label="Close">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
           </button>
         </div>
 
@@ -532,8 +656,11 @@
           <textarea id="edit-content" required rows="4" class="edit-textarea no-scrollbar"></textarea>
 
           <div class="modal-actions">
-            <button type="button" id="delete-btn" class="btn btn-icon btn-delete">
-              <svg style="width:22px;height:22px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <button type="button" id="delete-btn" class="btn btn-icon btn-delete" aria-label="Delete entry">
+              <svg style="width:20px;height:20px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
             </button>
             <button type="submit" class="btn btn-primary">Update</button>
           </div>
@@ -544,37 +671,29 @@
   </div>
 
   <script>
+    // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js')
-        .then((registration) => {
-          console.log('ServiceWorker registered with scope:', registration.scope);
-        })
-        .catch((error) => {
-          console.error('ServiceWorker registration failed:', error);
-        });
+          .then(r => console.log('SW registered:', r.scope))
+          .catch(e => console.warn('SW registration failed:', e));
       });
     }
+
+    // Header date
+    (function () {
+      const el = document.getElementById('header-date');
+      const d = new Date();
+      el.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+    })();
   </script>
 
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
     import {
-      initializeApp
-    } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-    import {
-      getDatabase,
-      ref,
-      onValue,
-      push,
-      set,
-      update,
-      remove,
-      serverTimestamp,
-      onChildAdded,
-      onChildChanged,
-      onChildRemoved,
-      query,
-      orderByChild
+      getDatabase, ref, onValue, push, set, update, remove,
+      serverTimestamp, onChildAdded, onChildChanged, onChildRemoved,
+      query, orderByChild
     } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
     const firebaseConfig = {
@@ -591,9 +710,8 @@
     const db = getDatabase(app);
     const notesRef = ref(db, 'notes');
 
-    /* --- Network & Loading State Management --- */
+    /* --- Network & Status State --- */
     const bottomBar = document.getElementById('bottom-bar');
-
     let connectionState = 'connecting';
     let activityState = 'idle';
     let activeUploads = 0;
@@ -604,23 +722,23 @@
       } else if (connectionState === 'connecting') {
         bottomBar.className = 'bottom-bar connecting';
       } else {
-        if (activeUploads > 0) {
-          bottomBar.className = 'bottom-bar syncing';
-        } else if (activityState === 'syncing') {
-          bottomBar.className = 'bottom-bar syncing';
-        } else {
-          bottomBar.className = 'bottom-bar online';
-        }
+        bottomBar.className = (activeUploads > 0 || activityState === 'syncing')
+          ? 'bottom-bar syncing'
+          : 'bottom-bar online';
       }
     }
 
-    // 1. Listen to Raw Connectivity
+    // Firebase connectivity
     onValue(ref(db, '.info/connected'), (snap) => {
-      connectionState = snap.val() ? 'online': 'connecting';
+      connectionState = snap.val() ? 'online' : 'connecting';
       updateStatusUI();
     });
 
-    // 2. Track Server Uploads
+    // Browser online/offline events (covers network cable pull, airplane mode)
+    window.addEventListener('online',  () => { connectionState = 'connecting'; updateStatusUI(); });
+    window.addEventListener('offline', () => { connectionState = 'offline';    updateStatusUI(); });
+
+    // Upload tracking
     function runSyncTask(promise) {
       activeUploads++;
       updateStatusUI();
@@ -630,16 +748,14 @@
       });
     }
 
-    // 3. Track Server Downloads (Debounced)
+    // Download tracking (debounced)
     let delayResetTimer;
     let delayIndex = 0;
 
     function triggerDownloadUI() {
-      if (activeUploads > 0) return; // Prioritize Upload UI if writing
-
+      if (activeUploads > 0) return;
       activityState = 'syncing';
       updateStatusUI();
-
       clearTimeout(delayResetTimer);
       delayResetTimer = setTimeout(() => {
         delayIndex = 0;
@@ -647,48 +763,73 @@
           activityState = 'idle';
           updateStatusUI();
         }
-      },
-        500); // UI stays downloading for at least 500ms after last node arrives
+      }, 500);
     }
 
-    /* --- Form Submissions --- */
+    /* --- Input: auto-grow + submit button state --- */
     const textarea = document.getElementById('add-content');
-    textarea.addEventListener('input', function() {
-      this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
+    const submitBtn = document.getElementById('submit-btn');
+
+    textarea.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = this.scrollHeight + 'px';
+      submitBtn.disabled = !this.value.trim();
     });
 
+    // Allow Shift+Enter for newline, Enter alone submits
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!textarea.value.trim()) return;
+        document.getElementById('add-form').requestSubmit();
+      }
+    });
+
+    /* --- Forms --- */
     document.getElementById('add-form').addEventListener('submit', (e) => {
       e.preventDefault();
       if (!textarea.value.trim()) return;
-
       runSyncTask(set(push(notesRef), {
         content: textarea.value.trim(),
         timestamp: serverTimestamp()
       }));
-
       textarea.value = '';
       textarea.style.height = 'auto';
+      submitBtn.disabled = true;
     });
 
     document.getElementById('edit-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      runSyncTask(update(ref(db, `notes/${document.getElementById('edit-id').value}`), {
-        content: document.getElementById('edit-content').value
-      }));
+      const content = document.getElementById('edit-content').value.trim();
+      if (!content) return;
+      runSyncTask(update(ref(db, `notes/${document.getElementById('edit-id').value}`), { content }));
       closeModals();
     });
 
     document.getElementById('delete-btn').addEventListener('click', () => {
-      if (confirm("Permanently delete this entry?")) {
+      if (confirm('Permanently delete this entry?')) {
         runSyncTask(remove(ref(db, `notes/${document.getElementById('edit-id').value}`)));
         closeModals();
       }
     });
 
     /* --- Modals --- */
-    const openModal = (id) => document.getElementById(id).classList.add('flex');
+    const openModal  = (id) => document.getElementById(id).classList.add('flex');
     const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('flex'));
+
     document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModals));
+
+    // Close on backdrop tap (outside modal surface)
+    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModals();
+      });
+    });
+
+    // Close modals on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModals();
+    });
 
     const openEdit = (id, content) => {
       document.getElementById('edit-id').value = id;
@@ -696,7 +837,14 @@
       openModal('edit-modal');
     };
 
-    /* --- DOM Updates (Triggers Download Tracker) --- */
+    /* --- Empty state --- */
+    const emptyState = document.getElementById('empty-state');
+    function updateEmptyState() {
+      const hasItems = container.querySelectorAll('.timeline-item').length > 0;
+      emptyState.classList.toggle('visible', !hasItems);
+    }
+
+    /* --- DOM Updates --- */
     const container = document.getElementById('notes-container');
     const scrollContainer = document.getElementById('scroll-container');
     let lastDateStr = null;
@@ -704,32 +852,23 @@
 
     const scrollToBottom = () => {
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight, behavior: 'smooth'
-      }),
-        100);
+      scrollTimeout = setTimeout(() => {
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+      }, 100);
     };
 
     onChildAdded(query(notesRef, orderByChild('timestamp')), (data) => {
       triggerDownloadUI();
 
-      // Show timeline line once data starts loading
       const tLine = document.querySelector('.timeline-line');
       if (tLine) tLine.style.display = 'block';
 
-      const note = {
-        id: data.key,
-        ...data.val()
-      };
-      const dateObj = note.timestamp ? new Date(note.timestamp): new Date();
-      const dateStr = dateObj.toLocaleDateString('en-GB', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      });
-      const timeStr = dateObj.toLocaleTimeString('en-US', {
-        hour: 'numeric', minute: '2-digit', hour12: true
-      }).toLowerCase();
+      const note = { id: data.key, ...data.val() };
+      const dateObj = note.timestamp ? new Date(note.timestamp) : new Date();
+      const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 
-      const currentDelay = delayIndex * 0.08;
+      const currentDelay = delayIndex * 0.07;
       delayIndex++;
 
       const oldActive = document.querySelector('.dot-active-container');
@@ -738,34 +877,33 @@
       if (dateStr !== lastDateStr) {
         lastDateStr = dateStr;
         const headerDiv = document.createElement('div');
-        headerDiv.className = "date-header animate-grow";
+        headerDiv.className = 'date-header animate-grow';
         headerDiv.style.animationDelay = `${currentDelay}s`;
         headerDiv.innerHTML = `<span class="date-badge">${dateStr}</span>`;
         container.appendChild(headerDiv);
       }
 
       const itemDiv = document.createElement('div');
-      itemDiv.className = "timeline-item animate-grow";
+      itemDiv.className = 'timeline-item animate-grow';
       itemDiv.style.animationDelay = `${currentDelay}s`;
       itemDiv.id = `note-${note.id}`;
-
       itemDiv.innerHTML = `
-      <div class="time-col"><span class="time-text">${timeStr}</span></div>
-      <div class="dot-col">
-      <div class="dot-active-container">
-      <span class="dot-ping"></span><span class="dot-core"></span>
-      </div>
-      </div>
-      <div class="content-col">
-      <p id="text-${note.id}" class="content-text"></p>
-      </div>
-      `;
+        <div class="time-col"><span class="time-text">${timeStr}</span></div>
+        <div class="dot-col">
+          <div class="dot-active-container">
+            <span class="dot-ping"></span><span class="dot-core"></span>
+          </div>
+        </div>
+        <div class="content-col">
+          <p id="text-${note.id}" class="content-text"></p>
+        </div>`;
 
       const pTag = itemDiv.querySelector('.content-text');
       pTag.textContent = note.content;
       pTag.addEventListener('click', () => openEdit(note.id, note.content));
 
       container.appendChild(itemDiv);
+      updateEmptyState();
       scrollToBottom();
     });
 
@@ -775,10 +913,9 @@
       if (pTag) {
         const newContent = data.val().content;
         pTag.textContent = newContent;
-
-        const clonedTag = pTag.cloneNode(true);
-        clonedTag.addEventListener('click', () => openEdit(data.key, newContent));
-        pTag.replaceWith(clonedTag);
+        const clone = pTag.cloneNode(true);
+        clone.addEventListener('click', () => openEdit(data.key, newContent));
+        pTag.replaceWith(clone);
       }
     });
 
@@ -787,12 +924,12 @@
       const itemDiv = document.getElementById(`note-${data.key}`);
       if (itemDiv) itemDiv.remove();
 
-      // Hide timeline line again if all nodes are removed
       if (container.querySelectorAll('.timeline-item').length === 0) {
         const tLine = document.querySelector('.timeline-line');
         if (tLine) tLine.style.display = 'none';
-        lastDateStr = null; // reset date tracker
+        lastDateStr = null;
       }
+      updateEmptyState();
     });
   </script>
 </body>
