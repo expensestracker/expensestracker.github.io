@@ -16,6 +16,18 @@
     /* Hide scrollbar for clean app-like UI */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Chrome scroll overflow fix */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+      width: 100%;
+    }
+
+    /* Safe area bottom padding utility */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
     
     /* Smooth Enter Animations */
     @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
@@ -39,9 +51,9 @@
   </style>
 
 </head>
-<body class="bg-slate-200/50 flex items-center justify-center min-h-screen text-slate-800 font-sans">
+<body class="bg-slate-200/50 flex items-center justify-center min-h-screen text-slate-800 font-sans overflow-hidden overscroll-none">
 
-  <div class="w-full max-w-md h-[100dvh] sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-hidden flex flex-col">
+  <div class="w-full max-w-md h-[100dvh] sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
     
     <div id="global-notification" class="hidden bg-indigo-600 flex items-start sm:items-center justify-between w-full text-white py-3 px-4 font-medium z-50 absolute top-0 transition-all duration-300">
       <p id="notification-text" class="flex-1 mr-4 text-md"></p>
@@ -150,7 +162,7 @@
             </button>
         </header>
 
-        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-32 relative scroll-smooth" id="main-scroll">
+        <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-28 relative scroll-smooth overscroll-contain" id="main-scroll">
             
             <div id="no-project-message" class="hidden text-center py-20 mt-10 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                 <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
@@ -259,7 +271,7 @@
         </button>
 
         <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 pb-8 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]" style="padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem))">
                 <div class="flex justify-between items-center mb-6 shrink-0">
                     <h3 class="text-xl font-bold text-slate-800">Project Stats</h3>
                     <button id="close-analytics-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors">
@@ -284,7 +296,7 @@
         </div>
 
         <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 pb-10 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
                         <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Add Entry
@@ -370,7 +382,7 @@
     </div>
 
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400 bg-white w-full p-6 pb-10 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar">
+        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Edit Entry</h3>
                 <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
@@ -424,7 +436,7 @@
     </div>
 
     <div id="edit-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400  bg-white w-full p-6 pb-5 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Edit Project</h3>
                 <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
@@ -449,7 +461,7 @@
     </div>
 
     <div id="add-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400  bg-white w-full p-6 pb-5 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Add Project</h3>
                 <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
@@ -487,7 +499,7 @@
         </div>
     </div>
 
-  </div> <div id="toast-container" class="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none"></div>
+  </div> <div id="toast-container" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none max-w-[calc(100vw-2rem)]"></div>
 
   <script type="module" src="script.js"></script>
 </body>
