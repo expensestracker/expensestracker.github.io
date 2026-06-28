@@ -4,36 +4,32 @@
   <meta name="theme-color" content="#f9fafc" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1E1F21" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
-  <!-- Viewport: removed maximum-scale/user-scalable (accessibility + iOS zoom fix) -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Activity Log</title>
 
-  <!-- PWA: Web App Manifest -->
   <link rel="manifest" href="manifest.json">
 
-  <!-- PWA: iOS / Safari -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Activity Log">
   <link rel="apple-touch-icon" href="logo-192.png">
 
-  <!-- PWA: Android / Chrome -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="application-name" content="Activity Log">
 
-  <!-- General -->
   <meta name="description" content="Log and track your daily activities with a real-time timeline.">
   <meta name="format-detection" content="telephone=no">
 
   <style>
-    /* 1. Core Variables */
+    /* 1. Core Variables (Updated with Blue Theme from Icon) */
     :root {
       --text-main: #0f172a;
       --text-muted: #475569;
       --text-light: #94a3b8;
 
-      --gradient-primary: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-      --gradient-glow: rgba(236, 72, 153, 0.35);
+      /* New Blue Gradient */
+      --gradient-primary: linear-gradient(135deg, #00b4ff 0%, #004de6 100%);
+      --gradient-glow: rgba(0, 77, 230, 0.35);
 
       --slate-50: #f8fafc;
       --slate-100: #f1f5f9;
@@ -164,11 +160,12 @@
       position: absolute;
       left: 81px;
       width: 2px;
+      /* Updated to match the blue theme */
       background: linear-gradient(
         to bottom,
         transparent,
-        rgba(99, 102, 241, 0.25) 5%,
-        rgba(236, 72, 153, 0.25) 95%,
+        rgba(0, 180, 255, 0.25) 5%,
+        rgba(0, 77, 230, 0.25) 95%,
         transparent
       );
       top: 28px;
@@ -395,8 +392,9 @@
       padding: 0 4px;
     }
     .input-wrapper:focus-within {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      /* Updated to blue theme */
+      border-color: #0080ff;
+      box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.15);
       background: #ffffff;
     }
     .main-input {
@@ -534,8 +532,9 @@
       line-height: 1.55;
     }
     .edit-textarea:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      /* Updated to blue theme */
+      border-color: #0080ff;
+      box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.15);
       background: white;
     }
 
@@ -601,18 +600,15 @@
 
   <div class="app-container">
 
-    <!-- Header -->
     <header class="app-header">
       <span class="header-title">Activity Log</span>
       <span class="header-date" id="header-date"></span>
     </header>
 
-    <!-- Timeline -->
     <main class="main-scroll no-scrollbar" id="scroll-container">
       <div class="notes-container" id="notes-container">
         <div class="timeline-line"></div>
 
-        <!-- Empty state (shown until first entry loads) -->
         <div class="empty-state visible" id="empty-state">
           <div class="empty-icon">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -626,7 +622,6 @@
       </div>
     </main>
 
-    <!-- Bottom Input Bar -->
     <footer id="bottom-bar" class="bottom-bar connecting">
       <div class="status-bar-wrapper">
         <div class="status-bar-line"></div>
@@ -651,7 +646,6 @@
       </form>
     </footer>
 
-    <!-- Edit Modal -->
     <div id="edit-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Edit log entry">
       <div class="modal-surface">
         <div class="modal-drag-handle"></div>
@@ -790,6 +784,13 @@
       submitBtn.disabled = !this.value.trim();
     });
 
+    // Handle keyboard focus to keep input in view (Android Chrome fix)
+    textarea.addEventListener('focus', () => {
+      setTimeout(() => {
+        bottomBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 300);
+    });
+
     // Allow Shift+Enter for newline, Enter alone submits
     textarea.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -870,6 +871,19 @@
         scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
       }, 100);
     };
+
+    /* --- Visual Viewport Fix for Android Chrome Keyboard --- */
+    const appContainer = document.querySelector('.app-container');
+    if (window.visualViewport) {
+      const adjustHeight = () => {
+        appContainer.style.height = `${window.visualViewport.height}px`;
+        scrollToBottom(); 
+      };
+      
+      window.visualViewport.addEventListener('resize', adjustHeight);
+      // Set initial height
+      adjustHeight();
+    }
 
     onChildAdded(query(notesRef, orderByChild('timestamp')), (data) => {
       triggerDownloadUI();
