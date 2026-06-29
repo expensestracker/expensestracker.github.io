@@ -65,7 +65,7 @@
 
   <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
 
-    <header class="px-6 py-4 flex justify-between items-center bg-slate-50 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
+    <header class="px-5 py-4 flex justify-between items-center bg-slate-50 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
         <h1 class="text-lg font-bold text-slate-900 leading-tight">Activity Log</h1>
         
         <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
@@ -96,7 +96,7 @@
       </div>
     </main>
 
-    <footer id="bottom-bar" class="relative bg-slate-50 backdrop-blur-md shrink-0 z-40 px-3 py-3 pb-safe transition-colors">
+    <footer id="bottom-bar" class="relative bg-slate-50 backdrop-blur-md shrink-0 z-40 px-5 py-3 pb-safe transition-colors">
       
       <div class="absolute -top-[1px] left-0 right-0 h-[2px] bg-transparent overflow-hidden">
         <div id="status-line" class="status-bar-line h-full w-[60%] rounded-md connecting-bar"></div>
@@ -106,13 +106,13 @@
       
         <div class="flex-1 flex items-center transition-all">
          <div class="relative w-full">
-    <textarea id="add-content"  rows="1" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
-    <label for="add-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
+    <textarea id="add-content"  rows="1" required class="no-scrollbar block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-3xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
+    <label for="add-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Enter logs</label>
 </div>
         </div>
-        <button type="submit" id="submit-btn" disabled class="mb-0.5 w-[46px] h-[46px] shrink-0 bg-indigo-600 text-white rounded-full flex items-center justify-center transition-all shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed">
-          <svg class="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        <button type="submit" id="submit-btn" disabled class="mb-0.5 w-12 h-12 shrink-0 bg-gradient-to-tr from-indigo-600 to-blue-500 text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-300 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed">
+          <svg class="w-5 h-5 ml-[2px]" fill="currentColor" viewBox="0 0 24 24">
+             <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
           </svg>
         </button>
       </form>
