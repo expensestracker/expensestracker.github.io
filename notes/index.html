@@ -65,7 +65,7 @@
 
   <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
 
-    <header class="px-6 py-4 flex justify-between items-center bg-white/95 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
+    <header class="px-6 py-4 flex justify-between items-center bg-slate-50 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
         <h1 class="text-lg font-bold text-slate-900 leading-tight">Activity Log</h1>
         
         <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
@@ -96,15 +96,19 @@
       </div>
     </main>
 
-    <footer id="bottom-bar" class="relative bg-white/95 backdrop-blur-md shrink-0 z-40 px-3 py-3 pb-safe border-t border-slate-200 transition-colors">
+    <footer id="bottom-bar" class="relative bg-slate-50 backdrop-blur-md shrink-0 z-40 px-3 py-3 pb-safe transition-colors">
       
       <div class="absolute -top-[1px] left-0 right-0 h-[2px] bg-transparent overflow-hidden">
         <div id="status-line" class="status-bar-line h-full w-[60%] rounded-md connecting-bar"></div>
       </div>
 
       <form id="add-form" class="flex items-end gap-2.5">
-        <div class="flex-1 flex items-center bg-slate-50 border-2 border-slate-200 rounded-3xl focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:bg-white transition-all">
-          <textarea id="add-content" required rows="1" class="block w-full bg-transparent px-4 py-2.5 text-[15px] text-slate-900 font-semibold placeholder:text-slate-400 placeholder:font-medium resize-none max-h-[140px] focus:outline-none no-scrollbar leading-relaxed" placeholder="Log activity..." autocomplete="off"></textarea>
+      
+        <div class="flex-1 flex items-center transition-all">
+         <div class="relative w-full">
+    <textarea id="add-content"  rows="1" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
+    <label for="add-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
+</div>
         </div>
         <button type="submit" id="submit-btn" disabled class="mb-0.5 w-[46px] h-[46px] shrink-0 bg-indigo-600 text-white rounded-full flex items-center justify-center transition-all shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed">
           <svg class="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,8 +134,12 @@
           <input type="hidden" id="edit-id">
           
           <div class="relative w-full">
-            <textarea id="edit-content" required rows="4" class="block w-full px-4 py-3 text-md text-slate-900 font-bold bg-slate-50 rounded-2xl border-2 border-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all resize-none no-scrollbar leading-relaxed"></textarea>
-          </div>
+    <textarea id="edit-content" rows="" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
+    <label for="edit-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
+</div>
+
+          
+          
           
           <div class="flex gap-3 pt-2">
             <button type="button" id="delete-btn" class="w-[52px] h-[52px] shrink-0 flex items-center justify-center bg-rose-50 text-rose-600 font-bold rounded-2xl border-2 border-rose-100 hover:bg-rose-100 transition-all active:scale-95" aria-label="Delete entry">
