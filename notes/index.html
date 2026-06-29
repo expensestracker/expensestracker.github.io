@@ -1,676 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="theme-color" content="#f9fafc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1E1F21" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Activity Log</title>
-
-  <link rel="manifest" href="manifest.json">
-
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Activity Log">
-  <link rel="apple-touch-icon" href="logo-192.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="application-name" content="Activity Log">
-
   <meta name="description" content="Log and track your daily activities with a real-time timeline.">
-  <meta name="format-detection" content="telephone=no">
-
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
   <style>
-    /* 1. Core Variables (Updated with Blue Theme from Icon) */
-    :root {
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --text-light: #94a3b8;
+    /* Hide scrollbar for clean app-like UI */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-      /* New Blue Gradient */
-      --gradient-primary: linear-gradient(135deg, #00b4ff 0%, #004de6 100%);
-      --gradient-glow: rgba(0, 77, 230, 0.35);
-
-      --slate-50: #f8fafc;
-      --slate-100: #f1f5f9;
-      --slate-200: #e2e8f0;
-
-      --rose-50: #fff1f2;
-      --rose-600: #e11d48;
-
-      /* Safe area insets for notch/home-bar devices */
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-    }
-
-    /* 2. Resets */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* Chrome scroll overflow & viewport fix */
     html {
       height: 100%;
-      /* Prevent font size inflation on orientation change */
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
+      height: -webkit-fill-available;
     }
+    
     body {
       height: 100%;
-      background-color: var(--slate-100);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: var(--text-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    input, textarea, button, select {
-      font-family: inherit;
-      border: none;
-      outline: none;
-    }
-    button {
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    /* 3. App Container */
-    .app-container {
-      width: 100%;
-      max-width: 448px;
-      /* Use dvh with fallback — stays stable when soft keyboard appears */
-      height: 100vh;
-      height: 100dvh;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      position: relative;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
       overflow: hidden;
-    }
-    @media (min-width: 640px) {
-      .app-container {
-        height: min(850px, 100dvh);
-        border-radius: 2rem;
-        box-shadow:
-          0 25px 50px -12px rgba(0, 0, 0, 0.12),
-          0 0 0 1px rgba(0, 0, 0, 0.05);
-      }
-    }
-
-    /* 4. Header */
-    .app-header {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px 12px 20px;
-      /* Respect top notch in standalone PWA mode */
-      padding-top: max(16px, var(--safe-top));
-      border-bottom: 1px solid var(--slate-100);
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      z-index: 20;
-    }
-    .header-title {
-      font-size: 17px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .header-date {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-light);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    /* 5. Timeline Layout */
-    .main-scroll {
-      flex: 1;
-      overflow-y: auto;
-      /* Momentum scrolling on iOS */
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
-      scroll-behavior: smooth;
-    }
-    .notes-container {
-      padding: 28px 0 32px 0;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      z-index: 10;
-    }
-    .timeline-line {
-      display: none;
-      position: absolute;
-      left: 81px;
-      width: 2px;
-      /* Updated to match the blue theme */
-      background: linear-gradient(
-        to bottom,
-        transparent,
-        rgba(0, 180, 255, 0.25) 5%,
-        rgba(0, 77, 230, 0.25) 95%,
-        transparent
-      );
-      top: 28px;
-      bottom: 0;
-      z-index: 0;
-    }
-
-    /* 6. Empty State */
-    .empty-state {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      padding: 48px 32px;
-      text-align: center;
-      gap: 12px;
-    }
-    .empty-state.visible {
-      display: flex;
-    }
-    .empty-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
-      background: var(--slate-100);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 4px;
-    }
-    .empty-icon svg {
-      width: 26px;
-      height: 26px;
-      color: var(--text-light);
-    }
-    .empty-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-muted);
-    }
-    .empty-sub {
-      font-size: 13px;
-      color: var(--text-light);
-      line-height: 1.5;
-    }
-
-    /* 7. Timeline Items */
-    .date-header {
+      overscroll-behavior: none;
       width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 10px 0 22px 0;
-      position: relative;
-      z-index: 10;
-    }
-    .date-badge {
-      background: #ffffff;
-      padding: 4px 12px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      border-radius: 9999px;
-      letter-spacing: 0.05em;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      border: 1px solid var(--slate-100);
-    }
-    .timeline-item {
-      display: flex;
-      align-items: flex-start;
-      width: 100%;
-      position: relative;
-      z-index: 10;
-    }
-    .time-col {
-      width: 72px;
-      flex-shrink: 0;
-      text-align: right;
-      padding-right: 16px;
-      padding-top: 3px;
-    }
-    .time-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-    .dot-col {
-      width: 20px;
-      flex-shrink: 0;
-      display: flex;
-      justify-content: center;
-      padding-top: 7px;
-      position: relative;
-    }
-    .dot-inactive {
-      width: 6px;
-      height: 6px;
-      background: rgba(148, 163, 184, 0.5);
-      border-radius: 50%;
-      box-shadow: 0 0 0 4px #ffffff;
-    }
-    .dot-active-container {
-      position: relative;
-      width: 10px;
-      height: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dot-ping {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--gradient-primary);
-      opacity: 0.4;
-      animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-    .dot-core {
-      position: relative;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--gradient-primary);
-      box-shadow: 0 0 0 4px #ffffff, 0 0 10px var(--gradient-glow);
-    }
-    .content-col {
-      flex: 1;
-      padding-left: 12px;
-      padding-bottom: 28px;
-      position: relative;
-      text-align: left;
-    }
-    .content-text {
-      font-size: 15.5px;
-      color: var(--text-main);
-      font-weight: 500;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      padding-right: 16px;
-      cursor: pointer;
-      transition: opacity 0.15s, transform 0.15s;
-      text-align: left;
-      /* Prevent text selection on quick tap */
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    .content-text:active {
-      opacity: 0.5;
-      transform: scale(0.99);
+      margin: 0;
+      padding: 0;
+      touch-action: pan-x pan-y;
     }
 
-    /* 8. Bottom Bar */
-    .bottom-bar {
-      position: relative;
-      background: rgba(255, 255, 255, 0.93);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      flex-shrink: 0;
-      z-index: 30;
-      /* Safe area padding for home bar */
-      padding: 10px 12px max(10px, calc(var(--safe-bottom) + 2px)) 12px;
-      border-top: 1px solid var(--slate-200);
-    }
+    /* Safe area padding utilities */
+    .pt-safe { padding-top: max(1rem, env(safe-area-inset-top, 0px)); }
+    .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
+    
+    /* Animations */
+    @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+    .animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
 
-    /* Loading bar */
-    .status-bar-wrapper {
-      position: absolute;
-      top: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: transparent;
-      overflow: hidden;
+    @keyframes smoothGrow {
+      0%   { opacity: 0; transform: translateY(12px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .status-bar-line {
-      height: 100%;
-      width: 60%;
-      border-radius: 4px;
-      transition: background 0.3s ease, opacity 0.4s ease;
-    }
-
-    .bottom-bar.offline .status-bar-line {
-      background: linear-gradient(90deg, transparent, var(--rose-600), transparent);
-      width: 100%;
-      opacity: 1;
-    }
-    .bottom-bar.connecting .status-bar-line {
-      background: linear-gradient(90deg, transparent, #f59e0b, transparent);
-      animation: barRun 1.4s infinite ease-in-out;
-      opacity: 1;
-    }
-    .bottom-bar.syncing .status-bar-line {
-      background: linear-gradient(90deg, transparent, #06b6d4, transparent);
-      animation: barRun 1s infinite ease-in-out;
-      opacity: 1;
-    }
-    .bottom-bar.online .status-bar-line {
-      opacity: 0;
-      animation: none;
-    }
+    .animate-grow { opacity: 0; animation: smoothGrow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
     @keyframes barRun {
       0%   { transform: translateX(-120%); }
       100% { transform: translateX(220%); }
     }
-
-    /* 9. Input Area */
-    .input-form {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    .input-wrapper {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      background: var(--slate-50);
-      border: 1.5px solid var(--slate-200);
-      border-radius: 22px;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      padding: 0 4px;
-    }
-    .input-wrapper:focus-within {
-      /* Updated to blue theme */
-      border-color: #0080ff;
-      box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.15);
-      background: #ffffff;
-    }
-    .main-input {
-      flex: 1;
-      background: transparent;
-      padding: 10px 12px;
-      font-size: 15px;
-      color: var(--text-main);
-      font-weight: 500;
-      resize: none;
-      max-height: 120px;
-      line-height: 1.4;
-    }
-    .main-input::placeholder {
-      color: var(--text-light);
-      font-weight: 400;
-    }
-    .submit-btn {
-      width: 42px;
-      height: 42px;
-      flex-shrink: 0;
-      background: var(--gradient-primary);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-      box-shadow: 0 4px 12px var(--gradient-glow);
-    }
-    .submit-btn:hover {
-      transform: scale(1.06) translateY(-1px);
-      box-shadow: 0 6px 18px var(--gradient-glow);
-    }
-    .submit-btn:active {
-      transform: scale(0.93);
-      box-shadow: 0 2px 8px var(--gradient-glow);
-    }
-    .submit-btn:disabled {
-      opacity: 0.45;
-      transform: none;
-      cursor: not-allowed;
-    }
-    .icon-send {
-      width: 18px;
-      height: 18px;
-      position: relative;
-      left: 1px;
-    }
-
-    /* 10. Modals */
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-      justify-content: flex-end;
-      opacity: 0;
-    }
-    .modal-backdrop.flex {
-      display: flex;
-      animation: fadeIn 0.25s ease forwards;
-    }
-    /* Dim overlay */
-    .modal-backdrop::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.25);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-    }
-    .modal-surface {
-      position: relative;
-      background: rgba(255, 255, 255, 0.99);
-      width: 100%;
-      padding: 24px 24px 20px 24px;
-      /* Safe area bottom padding */
-      padding-bottom: max(24px, calc(var(--safe-bottom) + 12px));
-      border-radius: 28px 28px 0 0;
-      box-shadow: 0 -20px 60px -12px rgba(0,0,0,0.18);
-      transform: translateY(100%);
-      animation: slideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-      border-top: 1px solid var(--slate-100);
-    }
-    .modal-drag-handle {
-      width: 36px;
-      height: 4px;
-      background: var(--slate-200);
-      border-radius: 9999px;
-      margin: 0 auto 20px auto;
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .modal-title {
-      font-size: 19px;
-      font-weight: 800;
-      color: var(--text-main);
-      letter-spacing: -0.025em;
-    }
-    .btn-close-icon {
-      background: var(--slate-100);
-      color: var(--text-muted);
-      padding: 6px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    .btn-close-icon:hover {
-      background: var(--slate-200);
-      color: var(--text-main);
-    }
-    .btn-close-icon svg { width: 20px; height: 20px; }
-
-    .edit-textarea {
-      display: block;
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 15.5px;
-      color: var(--text-main);
-      font-weight: 500;
-      background: var(--slate-50);
-      border-radius: 18px;
-      border: 1.5px solid var(--slate-200);
-      margin-bottom: 16px;
-      resize: none;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-      line-height: 1.55;
-    }
-    .edit-textarea:focus {
-      /* Updated to blue theme */
-      border-color: #0080ff;
-      box-shadow: 0 0 0 3px rgba(0, 128, 255, 0.15);
-      background: white;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-    }
-    .btn {
-      padding: 13px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 14px;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-      letter-spacing: -0.01em;
-    }
-    .btn:active { transform: scale(0.97); }
-    .btn-icon {
-      flex: none;
-      width: 52px;
-    }
-    .btn-delete {
-      background: var(--rose-50);
-      color: var(--rose-600);
-      border: 1.5px solid rgba(225, 29, 72, 0.12);
-    }
-    .btn-delete:hover { background: #ffe4e6; }
-    .btn-primary {
-      background: var(--gradient-primary);
-      color: white;
-      box-shadow: 0 4px 12px var(--gradient-glow);
-    }
-    .btn-primary:hover {
-      box-shadow: 0 6px 18px var(--gradient-glow);
-    }
-
-    /* 11. Animations */
-    @keyframes ping {
-      75%, 100% { transform: scale(2.5); opacity: 0; }
-    }
-    @keyframes smoothGrow {
-      0%   { opacity: 0; transform: translateY(12px) scale(0.98); }
-      100% { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .animate-grow {
-      opacity: 0;
-      animation: smoothGrow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-    @keyframes fadeIn {
-      0%   { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    @keyframes slideUp {
-      0%   { transform: translateY(100%); }
-      100% { transform: translateY(0); }
-    }
+    .status-bar-line { transition: background 0.3s ease, opacity 0.4s ease; }
+    .offline-bar { background: linear-gradient(90deg, transparent, #e11d48, transparent); width: 100%; opacity: 1; }
+    .connecting-bar { background: linear-gradient(90deg, transparent, #f59e0b, transparent); animation: barRun 1.4s infinite ease-in-out; opacity: 1; }
+    .syncing-bar { background: linear-gradient(90deg, transparent, #4f46e5, transparent); animation: barRun 1s infinite ease-in-out; opacity: 1; }
+    .online-bar { opacity: 0; animation: none; }
   </style>
 </head>
-<body>
+<body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
 
-  <div class="app-container">
+  <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
 
-    <header class="app-header">
-      <span class="header-title">Activity Log</span>
-      <span class="header-date" id="header-date"></span>
+    <header class="px-6 py-4 flex justify-between items-center bg-white/95 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
+        <h1 class="text-lg font-bold text-slate-900 leading-tight">Activity Log</h1>
+        
+        <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+          <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="status-text" class="text-[10px] font-bold text-slate-500 tracking-wider uppercase mt-[1px]">Connecting</span>
+        </div>
     </header>
 
-    <main class="main-scroll no-scrollbar" id="scroll-container">
-      <div class="notes-container" id="notes-container">
-        <div class="timeline-line"></div>
+    <main class="flex-1 overflow-y-auto no-scrollbar relative scroll-smooth overscroll-contain bg-slate-50" id="scroll-container">
+      
+      <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-30 transition-opacity duration-300">
+        <div class="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
+        <p class="mt-4 text-sm font-semibold text-slate-400">Loading activities...</p>
+      </div>
 
-        <div class="empty-state visible" id="empty-state">
-          <div class="empty-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-          </div>
-          <p class="empty-title">No entries yet</p>
-          <p class="empty-sub">Log your first activity below<br>and it'll appear here.</p>
+      <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20 transition-opacity duration-300 opacity-0 pointer-events-none text-center px-8">
+        <div class="w-16 h-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center justify-center mb-3 text-slate-300">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
         </div>
+        <h3 class="text-lg font-bold text-slate-800">No entries yet</h3>
+        <p class="text-md text-slate-500 mt-1">Log your first activity below<br>and it'll appear here.</p>
+      </div>
+
+      <div class="py-7 flex flex-col relative z-10 min-h-full" id="notes-container">
+        <div id="timeline-line" class="hidden absolute left-[81px] w-[2px] bg-gradient-to-b from-transparent via-indigo-200 to-transparent top-7 bottom-0 z-0"></div>
       </div>
     </main>
 
-    <footer id="bottom-bar" class="bottom-bar connecting">
-      <div class="status-bar-wrapper">
-        <div class="status-bar-line"></div>
+    <footer id="bottom-bar" class="relative bg-white/95 backdrop-blur-md shrink-0 z-40 px-3 py-3 pb-safe border-t border-slate-200 transition-colors">
+      
+      <div class="absolute -top-[1px] left-0 right-0 h-[2px] bg-transparent overflow-hidden">
+        <div id="status-line" class="status-bar-line h-full w-[60%] rounded-md connecting-bar"></div>
       </div>
 
-      <form id="add-form" class="input-form">
-        <div class="input-wrapper">
-          <textarea id="add-content" required rows="1"
-            class="main-input no-scrollbar"
-            placeholder="Log activity…"
-            autocomplete="off"
-            autocorrect="on"
-            spellcheck="true"
-          ></textarea>
+      <form id="add-form" class="flex items-end gap-2.5">
+        <div class="flex-1 flex items-center bg-slate-50 border-2 border-slate-200 rounded-3xl focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:bg-white transition-all">
+          <textarea id="add-content" required rows="1" class="block w-full bg-transparent px-4 py-2.5 text-[15px] text-slate-900 font-semibold placeholder:text-slate-400 placeholder:font-medium resize-none max-h-[140px] focus:outline-none no-scrollbar leading-relaxed" placeholder="Log activity..." autocomplete="off"></textarea>
         </div>
-        <button type="submit" class="submit-btn" id="submit-btn" disabled>
-          <svg class="icon-send" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-              d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        <button type="submit" id="submit-btn" disabled class="mb-0.5 w-[46px] h-[46px] shrink-0 bg-indigo-600 text-white rounded-full flex items-center justify-center transition-all shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed">
+          <svg class="w-5 h-5 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
           </svg>
         </button>
       </form>
     </footer>
 
-    <div id="edit-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Edit log entry">
-      <div class="modal-surface">
-        <div class="modal-drag-handle"></div>
-
-        <div class="modal-header">
-          <h3 class="modal-title">Edit Entry</h3>
-          <button type="button" class="close-modal-btn btn-close-icon" aria-label="Close">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
+    <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex-col justify-end animate-fade-in opacity-0">
+      <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up pb-safe">
+        
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Edit Entry
+          </h2>
+          <button type="button" class="close-modal-btn p-2 bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
 
-        <form id="edit-form">
+        <form id="edit-form" class="space-y-4 text-left">
           <input type="hidden" id="edit-id">
-          <textarea id="edit-content" required rows="4" class="edit-textarea no-scrollbar"></textarea>
-
-          <div class="modal-actions">
-            <button type="button" id="delete-btn" class="btn btn-icon btn-delete" aria-label="Delete entry">
-              <svg style="width:20px;height:20px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          
+          <div class="relative w-full">
+            <textarea id="edit-content" required rows="4" class="block w-full px-4 py-3 text-md text-slate-900 font-bold bg-slate-50 rounded-2xl border-2 border-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all resize-none no-scrollbar leading-relaxed"></textarea>
+          </div>
+          
+          <div class="flex gap-3 pt-2">
+            <button type="button" id="delete-btn" class="w-[52px] h-[52px] shrink-0 flex items-center justify-center bg-rose-50 text-rose-600 font-bold rounded-2xl border-2 border-rose-100 hover:bg-rose-100 transition-all active:scale-95" aria-label="Delete entry">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
             </button>
-            <button type="submit" class="btn btn-primary">Update</button>
+            <button type="submit" class="flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 text-[15px]">
+              Save Changes
+            </button>
           </div>
         </form>
       </div>
@@ -679,21 +150,12 @@
   </div>
 
   <script>
-    // Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/notes/service-worker.js', { scope: '/notes/' })
-          .then(r => console.log('SW registered:', r.scope))
           .catch(e => console.warn('SW registration failed:', e));
       });
     }
-
-    // Header date
-    (function () {
-      const el = document.getElementById('header-date');
-      const d = new Date();
-      el.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
-    })();
   </script>
 
   <script type="module">
@@ -719,34 +181,49 @@
     const notesRef = ref(db, 'notes');
 
     /* --- Network & Status State --- */
-    const bottomBar = document.getElementById('bottom-bar');
+    const statusLine = document.getElementById('status-line');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
     let connectionState = 'connecting';
     let activityState = 'idle';
     let activeUploads = 0;
 
     function updateStatusUI() {
+      // Bottom line updates
+      statusLine.className = 'status-bar-line h-full w-[60%] rounded-md'; 
+      
+      // Header pills updates
+      statusDot.className = 'w-2 h-2 rounded-full';
+
       if (connectionState === 'offline') {
-        bottomBar.className = 'bottom-bar offline';
+        statusLine.classList.add('offline-bar');
+        statusDot.classList.add('bg-rose-500');
+        statusText.textContent = 'Offline';
       } else if (connectionState === 'connecting') {
-        bottomBar.className = 'bottom-bar connecting';
+        statusLine.classList.add('connecting-bar');
+        statusDot.classList.add('bg-amber-400', 'animate-pulse');
+        statusText.textContent = 'Connecting';
       } else {
-        bottomBar.className = (activeUploads > 0 || activityState === 'syncing')
-          ? 'bottom-bar syncing'
-          : 'bottom-bar online';
+        if (activeUploads > 0 || activityState === 'syncing') {
+            statusLine.classList.add('syncing-bar');
+            statusDot.classList.add('bg-indigo-500', 'animate-pulse');
+            statusText.textContent = 'Syncing';
+        } else {
+            statusLine.classList.add('online-bar');
+            statusDot.classList.add('bg-emerald-500');
+            statusText.textContent = 'Online';
+        }
       }
     }
 
-    // Firebase connectivity
     onValue(ref(db, '.info/connected'), (snap) => {
       connectionState = snap.val() ? 'online' : 'connecting';
       updateStatusUI();
     });
 
-    // Browser online/offline events (covers network cable pull, airplane mode)
     window.addEventListener('online',  () => { connectionState = 'connecting'; updateStatusUI(); });
     window.addEventListener('offline', () => { connectionState = 'offline';    updateStatusUI(); });
 
-    // Upload tracking
     function runSyncTask(promise) {
       activeUploads++;
       updateStatusUI();
@@ -756,7 +233,6 @@
       });
     }
 
-    // Download tracking (debounced)
     let delayResetTimer;
     let delayIndex = 0;
 
@@ -774,9 +250,10 @@
       }, 500);
     }
 
-    /* --- Input: auto-grow + submit button state --- */
+    /* --- Input Setup --- */
     const textarea = document.getElementById('add-content');
     const submitBtn = document.getElementById('submit-btn');
+    const bottomBar = document.getElementById('bottom-bar');
 
     textarea.addEventListener('input', function () {
       this.style.height = 'auto';
@@ -784,21 +261,14 @@
       submitBtn.disabled = !this.value.trim();
     });
 
-    // Handle keyboard focus to keep input in view (Android Chrome fix)
     textarea.addEventListener('focus', () => {
       setTimeout(() => {
         bottomBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }, 300);
     });
-
-    // Allow Shift+Enter for newline, Enter alone submits
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (!textarea.value.trim()) return;
-        document.getElementById('add-form').requestSubmit();
-      }
-    });
+    
+    // Note: The previous enter-to-submit logic was completely removed.
+    // Textarea natively handles multi-line support on 'Enter' now.
 
     /* --- Forms --- */
     document.getElementById('add-form').addEventListener('submit', (e) => {
@@ -811,6 +281,7 @@
       textarea.value = '';
       textarea.style.height = 'auto';
       submitBtn.disabled = true;
+      textarea.focus(); // Keeps keyboard open after sending
     });
 
     document.getElementById('edit-form').addEventListener('submit', (e) => {
@@ -829,19 +300,26 @@
     });
 
     /* --- Modals --- */
-    const openModal  = (id) => document.getElementById(id).classList.add('flex');
-    const closeModals = () => document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.remove('flex'));
+    const openModal  = (id) => {
+        const m = document.getElementById(id);
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+    };
+    const closeModals = () => {
+        document.querySelectorAll('.modal-backdrop, #edit-modal').forEach(m => {
+            m.classList.remove('flex');
+            m.classList.add('hidden');
+        });
+    };
 
     document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModals));
 
-    // Close on backdrop tap (outside modal surface)
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    document.querySelectorAll('#edit-modal').forEach(backdrop => {
       backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) closeModals();
       });
     });
 
-    // Close modals on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModals();
     });
@@ -852,18 +330,42 @@
       openModal('edit-modal');
     };
 
-    /* --- Empty state --- */
+    /* --- UI State Management (Loading & Empty States) --- */
     const emptyState = document.getElementById('empty-state');
-    function updateEmptyState() {
-      const hasItems = container.querySelectorAll('.timeline-item').length > 0;
-      emptyState.classList.toggle('visible', !hasItems);
-    }
-
-    /* --- DOM Updates --- */
+    const loadingState = document.getElementById('loading-state');
     const container = document.getElementById('notes-container');
     const scrollContainer = document.getElementById('scroll-container');
+    
+    let isInitialDataLoaded = false;
     let lastDateStr = null;
     let scrollTimeout;
+
+    // Detect when the initial batch of data has finished loading from Firebase
+    onValue(notesRef, (snap) => {
+        if (!isInitialDataLoaded) {
+            isInitialDataLoaded = true;
+            
+            // Fade out loading screen
+            loadingState.classList.add('opacity-0');
+            setTimeout(() => {
+                loadingState.remove(); // Safely remove from DOM after transition
+                updateEmptyState();
+            }, 300);
+        }
+    }, { onlyOnce: true });
+
+    function updateEmptyState() {
+      if (!isInitialDataLoaded) return; // Prevent flashing empty state during load
+
+      const hasItems = container.querySelectorAll('.timeline-item').length > 0;
+      if (hasItems) {
+          emptyState.classList.remove('opacity-100', 'pointer-events-auto');
+          emptyState.classList.add('opacity-0', 'pointer-events-none');
+      } else {
+          emptyState.classList.remove('opacity-0', 'pointer-events-none');
+          emptyState.classList.add('opacity-100', 'pointer-events-auto');
+      }
+    }
 
     const scrollToBottom = () => {
       clearTimeout(scrollTimeout);
@@ -872,24 +374,22 @@
       }, 100);
     };
 
-    /* --- Visual Viewport Fix for Android Chrome Keyboard --- */
-    const appContainer = document.querySelector('.app-container');
+    const appContainer = document.querySelector('.max-w-md');
     if (window.visualViewport) {
       const adjustHeight = () => {
         appContainer.style.height = `${window.visualViewport.height}px`;
         scrollToBottom(); 
       };
-      
       window.visualViewport.addEventListener('resize', adjustHeight);
-      // Set initial height
       adjustHeight();
     }
 
+    /* --- Firebase Listeners --- */
     onChildAdded(query(notesRef, orderByChild('timestamp')), (data) => {
       triggerDownloadUI();
 
-      const tLine = document.querySelector('.timeline-line');
-      if (tLine) tLine.style.display = 'block';
+      const tLine = document.getElementById('timeline-line');
+      if (tLine) tLine.classList.remove('hidden');
 
       const note = { id: data.key, ...data.val() };
       const dateObj = note.timestamp ? new Date(note.timestamp) : new Date();
@@ -900,30 +400,36 @@
       delayIndex++;
 
       const oldActive = document.querySelector('.dot-active-container');
-      if (oldActive) oldActive.outerHTML = '<div class="dot-inactive"></div>';
+      if (oldActive) {
+          oldActive.outerHTML = `<div class="w-1.5 h-1.5 bg-slate-300 rounded-full shadow-[0_0_0_4px_#f8fafc]"></div>`;
+      }
 
       if (dateStr !== lastDateStr) {
         lastDateStr = dateStr;
         const headerDiv = document.createElement('div');
-        headerDiv.className = 'date-header animate-grow';
+        headerDiv.className = 'w-full flex justify-center py-3 pb-6 relative z-10 animate-grow';
         headerDiv.style.animationDelay = `${currentDelay}s`;
-        headerDiv.innerHTML = `<span class="date-badge">${dateStr}</span>`;
+        headerDiv.innerHTML = `<span class="bg-white px-3 py-1 text-[11px] font-bold text-slate-500 rounded-full tracking-wider border border-slate-100 shadow-sm">${dateStr}</span>`;
         container.appendChild(headerDiv);
       }
 
       const itemDiv = document.createElement('div');
-      itemDiv.className = 'timeline-item animate-grow';
+      itemDiv.className = 'timeline-item flex items-start w-full relative z-10 animate-grow';
       itemDiv.style.animationDelay = `${currentDelay}s`;
       itemDiv.id = `note-${note.id}`;
+      
       itemDiv.innerHTML = `
-        <div class="time-col"><span class="time-text">${timeStr}</span></div>
-        <div class="dot-col">
-          <div class="dot-active-container">
-            <span class="dot-ping"></span><span class="dot-core"></span>
+        <div class="w-[72px] shrink-0 text-right pr-4 pt-1">
+            <span class="text-[11px] text-slate-500 font-bold">${timeStr}</span>
+        </div>
+        <div class="w-5 shrink-0 flex justify-center pt-1.5 relative">
+          <div class="relative w-2.5 h-2.5 flex items-center justify-center dot-active-container">
+            <span class="absolute w-5 h-5 rounded-full bg-indigo-500 opacity-30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
+            <span class="relative w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_0_4px_#f8fafc]"></span>
           </div>
         </div>
-        <div class="content-col">
-          <p id="text-${note.id}" class="content-text"></p>
+        <div class="flex-1 pl-3 pb-7 relative text-left">
+          <p id="text-${note.id}" class="text-[15.5px] text-slate-800 font-medium leading-relaxed whitespace-pre-wrap break-words pr-4 cursor-pointer active:opacity-50 active:scale-95 transition-all select-none content-text"></p>
         </div>`;
 
       const pTag = itemDiv.querySelector('.content-text');
@@ -953,8 +459,8 @@
       if (itemDiv) itemDiv.remove();
 
       if (container.querySelectorAll('.timeline-item').length === 0) {
-        const tLine = document.querySelector('.timeline-line');
-        if (tLine) tLine.style.display = 'none';
+        const tLine = document.getElementById('timeline-line');
+        if (tLine) tLine.classList.add('hidden');
         lastDateStr = null;
       }
       updateEmptyState();
