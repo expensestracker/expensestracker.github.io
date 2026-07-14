@@ -5,26 +5,27 @@
   <meta name="theme-color" content="#1E1F21" media="(prefers-color-scheme: dark)">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Activity Log</title>
-  <meta name="description" content="Log and track your daily activities with a real-time timeline.">
-  <link rel="manifest" href="manifest.json">
+  <title>Timelines</title>
+  <meta name="description" content="Log and track your daily Timeline in real-time.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <style>
     /* Hide scrollbar for clean app-like UI */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+    :root { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif; }
+
     /* Chrome scroll overflow & viewport fix */
-    html {
+    html, body {
       height: 100%;
       height: -webkit-fill-available;
-    }
-    
-    body {
-      height: 100%;
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
       overflow: hidden;
       overscroll-behavior: none;
       width: 100%;
@@ -34,136 +35,174 @@
     }
 
     /* Safe area padding utilities */
-    .pt-safe { padding-top: max(1rem, env(safe-area-inset-top, 0px)); }
-    .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
-    
-    /* Animations */
-    @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
-    .animate-slide-up { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    
-    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
-    .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+    .pt-safe { padding-top: max(0.6rem, env(safe-area-inset-top, 0px)); }
+    .pb-safe { padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 0px)); }
 
+    /* Animations */
     @keyframes smoothGrow {
       0%   { opacity: 0; transform: translateY(12px) scale(0.98); }
       100% { opacity: 1; transform: translateY(0) scale(1); }
     }
     .animate-grow { opacity: 0; animation: smoothGrow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
-    @keyframes barRun {
-      0%   { transform: translateX(-120%); }
-      100% { transform: translateX(220%); }
+    @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+    .shimmer {
+      background: linear-gradient(90deg, #eef1f6 25%, #e4e9f1 37%, #eef1f6 63%);
+      background-size: 800px 100%;
+      animation: shimmer 1.6s linear infinite;
     }
-    .status-bar-line { transition: background 0.3s ease, opacity 0.4s ease; }
-    .offline-bar { background: linear-gradient(90deg, transparent, #e11d48, transparent); width: 100%; opacity: 1; }
-    .connecting-bar { background: linear-gradient(90deg, transparent, #f59e0b, transparent); animation: barRun 1.4s infinite ease-in-out; opacity: 1; }
-    .syncing-bar { background: linear-gradient(90deg, transparent, #4f46e5, transparent); animation: barRun 1s infinite ease-in-out; opacity: 1; }
-    .online-bar { opacity: 0; animation: none; }
+
+    /* Bottom Toast Notifications */
+    @keyframes toastBottomIn { 0% { opacity: 0; transform: translateY(20px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes toastBottomOut { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(20px) scale(0.96); } }
+    .toast-in { animation: toastBottomIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .toast-out { animation: toastBottomOut 0.25s ease forwards; }
+
+    /* Menu dropdown */
+    @keyframes popoverIn { 0% { opacity: 0; transform: translateY(-6px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    .menu-in { transform-origin: top right; animation: popoverIn 0.18s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+    /* FAB */
+    @keyframes popIn { 0% { opacity: 0; transform: translateY(6px) scale(0.8); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+    .fab-pop { animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+    /* Better focus rings */
+    textarea:focus, input:focus, button:focus-visible { outline: none; }
+    ::selection { background: #c7d2fe; }
+
+    /* Swipe Logic Fixes */
+    .swipe-container { touch-action: pan-y; }
+
+    /* Smooth transition for backdrop blur */
+    .blur-backdrop {
+      filter: blur(4px);
+      opacity: 0.6;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .blur-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   </style>
 </head>
 <body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
 
-  <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
+  <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm: relative overflow-clip flex flex-col overscroll-none">
 
-    <header class="px-5 py-4 flex justify-between items-center bg-slate-50 backdrop-blur-md z-40 sticky top-0 pt-safe border-b border-slate-100 shrink-0">
-        <h1 class="text-lg font-bold text-slate-900 leading-tight">Activity Log</h1>
-        <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
-          <span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-          <span id="status-text" class="text-[10px] font-bold text-slate-500 tracking-wider uppercase mt-[1px]">Connecting</span>
+    <!-- Bottom Toast Container -->
+    <div id="toast-container" class="absolute left-0 right-0 bottom-[100px] z-[100] flex flex-col-reverse items-center gap-2 px-5 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header id="app-header" class="bg-slate-50/90 backdrop-blur-xl backdrop-saturate-150 z-40 sticky top-0 pt-safe border-b border-slate-200/80 shrink-0 blur-transition">
+      <div class="px-5 py-3.5 flex justify-between items-center">
+        <div class="min-w-0">
+          <h1 class="text-xl font-extrabold text-slate-900 leading-tight tracking-tight">Timelines</h1>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span id="main-status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="main-status-text" class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Connecting...</span>
+          </div>
         </div>
-    </header>
+        
+        <div class="flex items-center relative">
+          <!-- Menu Button -->
+          <button id="menu-btn" type="button" aria-label="Menu" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 active:scale-90 transition-all shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+          </button>
 
-    <main class="flex-1 overflow-y-auto no-scrollbar relative scroll-smooth overscroll-contain bg-slate-50" id="scroll-container">
-      
-      <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-30 transition-opacity duration-300">
-        <div class="w-8 h-8 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p class="mt-4 text-sm font-semibold text-slate-400">Loading activities...</p>
+          <!-- Dropdown Menu -->
+          <div id="dropdown-menu" class="hidden absolute right-0 top-12 w-52 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 py-1.5 menu-in">
+            <button id="menu-delete-all-btn" class="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-[14px] font-semibold text-rose-600 hover:bg-rose-50 transition-colors">
+              <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              Delete All Entries
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-20 transition-opacity duration-300 opacity-0 pointer-events-none text-center px-8">
-        <div class="w-16 h-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center justify-center mb-3 text-slate-300">
+      <!-- Always-on Search Row -->
+      <div id="search-row" class="px-5 pb-4">
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+          <input id="search-input" type="text" placeholder="Search Timeline…" class="w-full pl-10 pr-10 py-2.5 text-[14px] font-medium bg-white border border-slate-200 rounded-2xl focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-slate-400 shadow-sm">
+          <button id="search-clear-btn" type="button" class="hidden absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-100 text-slate-500 items-center justify-center hover:bg-slate-200 active:scale-90 transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto no-scrollbar relative scroll-smooth overscroll-contain bg-slate-50/50 blur-transition" id="scroll-container">
+
+      <!-- Loading State -->
+      <div id="loading-state" class="absolute inset-0 px-5 pt-7 z-30 transition-opacity duration-300 pointer-events-none">
+        <div class="flex flex-col gap-5">
+          <div class="flex justify-center"><div class="w-24 h-5 rounded-full shimmer"></div></div>
+          <div class="w-full h-32 rounded-2xl shimmer"></div>
+          <div class="w-full h-24 rounded-2xl shimmer"></div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center z-20 transition-opacity duration-300 opacity-0 pointer-events-none text-center px-8">
+        <div class="w-16 h-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center justify-center mb-3 text-indigo-300">
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
         </div>
         <h3 class="text-lg font-bold text-slate-800">No entries yet</h3>
-        <p class="text-md text-slate-500 mt-1">Log your first activity below<br>and it'll appear here.</p>
+        <p class="text-md text-slate-500 mt-1">Log your first Timeline entry below.</p>
       </div>
 
-      <div class="py-7 flex flex-col relative z-10 min-h-full" id="notes-container">
-        <div id="timeline-line" class="hidden absolute left-[81px] w-[2px] bg-gradient-to-b from-transparent via-indigo-200 to-transparent top-7 bottom-0 z-0"></div>
+      <!-- No Results State -->
+      <div id="no-results-state" class="absolute inset-0 flex flex-col items-center justify-center z-20 transition-opacity duration-300 opacity-0 pointer-events-none text-center px-8">
+        <div class="w-16 h-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center justify-center mb-3 text-slate-300">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800">No matches</h3>
+        <p class="text-md text-slate-500 mt-1">Try a different search term.</p>
+      </div>
+
+      <!-- Timeline Container -->
+      <div class="py-5 px-5 flex flex-col relative z-10 min-h-full" id="notes-container"></div>
+
+      <!-- Scroll FABs (Top & Bottom) -->
+      <div class="fixed sm:absolute right-5 bottom-[128px] flex flex-col gap-3 z-30 pointer-events-none">
+        <button id="scroll-top-fab" class="hidden fab-pop pointer-events-auto w-10 h-10 rounded-full bg-white border border-slate-200 shadow-lg text-indigo-600 items-center justify-center active:scale-90 transition-transform">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+        </button>
+        <button id="scroll-bottom-fab" class="hidden fab-pop pointer-events-auto w-10 h-10 rounded-full bg-white border border-slate-200 shadow-lg text-indigo-600 items-center justify-center active:scale-90 transition-transform">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+        </button>
       </div>
     </main>
 
-    <footer id="bottom-bar" class="relative bg-slate-50 backdrop-blur-md shrink-0 z-40 px-5 py-3 pb-safe transition-colors">
+    <!-- Footer Input Bar -->
+    <footer id="bottom-bar" class="border-b border-slate-200/80 relative bg-white shrink-0 z-40 px-5 pt-3 pb-safe transition-colors border-t border-slate-100 ">
       
-      <div class="absolute -top-[1px] left-0 right-0 h-[2px] bg-transparent overflow-hidden">
-        <div id="status-line" class="status-bar-line h-full w-[60%] rounded-md connecting-bar"></div>
+      <!-- Clean Edit Mode Indicator -->
+      <div id="edit-banner" class="hidden justify-between items-center px-2 pb-3">
+        <span class="text-[12px] font-bold text-indigo-600 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+          Editing Entry
+        </span>
+        <button type="button" id="cancel-edit-btn" class="text-[12px] font-bold text-slate-500 hover:text-slate-700 transition-colors">Cancel</button>
       </div>
 
-      <form id="add-form" class="flex items-end gap-2.5">
-      
-        <div class="flex-1 flex items-center transition-all">
-         <div class="relative w-full">
-    <textarea id="add-content"  rows="1" required class="no-scrollbar block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-3xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
-    <label for="add-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Enter logs</label>
-</div>
+      <form id="add-form" class="flex items-end gap-3 pb-3">
+        <div class="flex-1 flex items-center transition-all relative">
+          <textarea id="add-content" rows="1" required maxlength="2000" class="no-scrollbar block w-full px-4 py-3.5 text-[15px] text-slate-900 font-medium bg-slate-100/70 rounded-2xl border-none appearance-none focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all placeholder:text-slate-400 placeholder:font-medium" placeholder="Enter Timeline..."></textarea>
+          <span id="char-counter" class="hidden absolute -top-6 right-2 text-[10px] font-bold text-slate-400"></span>
         </div>
-        <button type="submit" id="submit-btn" disabled class="mb-0.5 w-12 h-12 shrink-0 bg-gradient-to-tr from-indigo-600 to-blue-500 text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-300 hover:-translate-y-0.5 active:scale-95 disabled:opacity-40 disabled:hover:translate-y-0 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed">
-          <svg class="w-5 h-5 ml-[2px]" fill="currentColor" viewBox="0 0 24 24">
-             <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+        <button type="submit" id="submit-btn" disabled class="mb-0.5 w-12 h-12 shrink-0 bg-indigo-600 text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:scale-100 disabled:shadow-none disabled:cursor-not-allowed disabled:bg-slate-300">
+          <svg id="submit-icon" class="w-5 h-5 ml-[2px]" viewBox="0 0 24 24">
+             <path id="submit-icon-path" fill="currentColor" d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
           </svg>
         </button>
       </form>
     </footer>
 
-    <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex-col justify-end animate-fade-in opacity-0">
-      <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up pb-safe">
-        
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Edit Entry
-          </h2>
-          <button type="button" class="close-modal-btn p-2 bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors focus:outline-none">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-          </button>
-        </div>
-
-        <form id="edit-form" class="space-y-4 text-left">
-          <input type="hidden" id="edit-id">
-          
-          <div class="relative w-full">
-    <textarea id="edit-content" rows="" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" "></textarea>
-    <label for="edit-content" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:top-3 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
-</div>
-
-          
-          
-          
-          <div class="flex gap-3 pt-2">
-            <button type="button" id="delete-btn" class="w-[52px] h-[52px] shrink-0 flex items-center justify-center bg-rose-50 text-rose-600 font-bold rounded-2xl border-2 border-rose-100 hover:bg-rose-100 transition-all active:scale-95" aria-label="Delete entry">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
-            <button type="submit" class="flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 text-[15px]">
-              Save Changes
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
   </div>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/notes/service-worker.js', { scope: '/notes/' })
-          .catch(e => console.warn('SW registration failed:', e));
-      });
-    }
-  </script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
@@ -177,301 +216,590 @@
       apiKey: "AIzaSyBmXewXcQQt97EJzbKceLbCoTTG_9aJlJI",
       authDomain: "bhaskarjyoticlub.firebaseapp.com",
       databaseURL: "https://bhaskarjyoticlub-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "bhaskarjyoticlub",
-      storageBucket: "bhaskarjyoticlub.firebasestorage.app",
-      messagingSenderId: "730168687443",
-      appId: "1:730168687443:web:479bedc258bd9dd06fffa6"
+      projectId: "bhaskarjyoticlub"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const notesRef = ref(db, 'notes');
 
-    /* --- Network & Status State --- */
-    const statusLine = document.getElementById('status-line');
-    const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
-    let connectionState = 'connecting';
-    let activityState = 'idle';
+    /* ============ Toast System ============ */
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(message, { type = 'default', actionLabel = null, onAction = null, duration = 3200 } = {}) {
+      const colors = {
+        default: 'bg-white text-slate-800 border border-slate-200 shadow-sm',
+        success: 'bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-sm',
+        info: 'bg-indigo-50 text-indigo-800 border border-indigo-200 shadow-sm',
+        delete: 'bg-rose-50 text-rose-800 border border-rose-200 shadow-sm'
+      };
+      
+      const toast = document.createElement('div');
+      toast.className = `toast-in pointer-events-auto max-w-full w-[90%] sm:w-auto flex items-center justify-between gap-3 ${colors[type] || colors.default} px-4 py-3 rounded-2xl shadow-xl text-[14px] font-semibold`;
+      
+      const span = document.createElement('span');
+      span.className = 'flex-1 min-w-0 break-words';
+      span.textContent = message;
+      toast.appendChild(span);
+
+      if (actionLabel && onAction) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `shrink-0 uppercase tracking-wide text-[12px] font-bold underline underline-offset-2 decoration-2 active:scale-95 transition-all ${type === 'delete' ? 'text-rose-700 hover:text-rose-900' : 'opacity-90 hover:opacity-100'}`;
+        btn.textContent = actionLabel;
+        btn.addEventListener('click', () => { onAction(); dismiss(); });
+        toast.appendChild(btn);
+      }
+
+      let dismissed = false;
+      function dismiss() {
+        if (dismissed) return;
+        dismissed = true;
+        toast.classList.remove('toast-in');
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 250);
+      }
+
+      toastContainer.appendChild(toast);
+      const timer = setTimeout(dismiss, duration);
+      toast.addEventListener('click', (e) => { if (e.target === toast || e.target === span) { clearTimeout(timer); dismiss(); } });
+      return dismiss;
+    }
+
+    /* ============ Network & Sync Status ============ */
+    const statusDot = document.getElementById('main-status-dot');
+    const statusText = document.getElementById('main-status-text');
+    let connectionState = navigator.onLine === false ? 'offline' : 'connecting';
     let activeUploads = 0;
 
-    function updateStatusUI() {
-      // Bottom line updates
-      statusLine.className = 'status-bar-line h-full w-[60%] rounded-md'; 
-      
-      // Header pills updates
-      statusDot.className = 'w-2 h-2 rounded-full';
+    const STATUS_META = {
+      offline: { label: 'Offline • Saving Locally', dot: 'bg-slate-400', pulse: false },
+      connecting: { label: 'Connecting...', dot: 'bg-amber-400', pulse: true },
+      syncing: { label: 'Syncing Changes...', dot: 'bg-indigo-500', pulse: true },
+      online: { label: 'Online & Synced', dot: 'bg-emerald-500', pulse: false }
+    };
 
-      if (connectionState === 'offline') {
-        statusLine.classList.add('offline-bar');
-        statusDot.classList.add('bg-rose-500');
-        statusText.textContent = 'Offline';
-      } else if (connectionState === 'connecting') {
-        statusLine.classList.add('connecting-bar');
-        statusDot.classList.add('bg-amber-400', 'animate-pulse');
-        statusText.textContent = 'Connecting';
-      } else {
-        if (activeUploads > 0 || activityState === 'syncing') {
-            statusLine.classList.add('syncing-bar');
-            statusDot.classList.add('bg-indigo-500', 'animate-pulse');
-            statusText.textContent = 'Syncing';
-        } else {
-            statusLine.classList.add('online-bar');
-            statusDot.classList.add('bg-emerald-500');
-            statusText.textContent = 'Online';
-        }
-      }
+    function updateStatusUI() {
+      let key = connectionState;
+      if (connectionState === 'online' && activeUploads > 0) key = 'syncing';
+      const meta = STATUS_META[key];
+      statusDot.className = `w-2 h-2 rounded-full ${meta.dot}${meta.pulse ? ' animate-pulse' : ''}`;
+      statusText.textContent = meta.label;
     }
 
     onValue(ref(db, '.info/connected'), (snap) => {
-      connectionState = snap.val() ? 'online' : 'connecting';
+      connectionState = snap.val() ? 'online' : (navigator.onLine === false ? 'offline' : 'connecting');
       updateStatusUI();
     });
+    window.addEventListener('online', () => { connectionState = 'connecting'; updateStatusUI(); });
+    window.addEventListener('offline', () => { connectionState = 'offline'; updateStatusUI(); });
 
-    window.addEventListener('online',  () => { connectionState = 'connecting'; updateStatusUI(); });
-    window.addEventListener('offline', () => { connectionState = 'offline';    updateStatusUI(); });
-
-    function runSyncTask(promise) {
+    function runSyncTask(promise, errorMessage = 'Action failed') {
       activeUploads++;
       updateStatusUI();
-      return promise.finally(() => {
-        activeUploads--;
-        updateStatusUI();
-      });
-    }
-
-    let delayResetTimer;
-    let delayIndex = 0;
-
-    function triggerDownloadUI() {
-      if (activeUploads > 0) return;
-      activityState = 'syncing';
-      updateStatusUI();
-      clearTimeout(delayResetTimer);
-      delayResetTimer = setTimeout(() => {
-        delayIndex = 0;
-        if (activeUploads === 0) {
-          activityState = 'idle';
+      return promise
+        .catch((err) => {
+          console.error(err);
+          showToast(errorMessage, { type: 'delete', duration: 4000 });
+          throw err;
+        })
+        .finally(() => {
+          activeUploads--;
           updateStatusUI();
-        }
-      }, 500);
+        });
     }
 
-    /* --- Input Setup --- */
+    function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+    /* ============ Header Menu & Search ============ */
+    const menuBtn = document.getElementById('menu-btn');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+    const menuDeleteAllBtn = document.getElementById('menu-delete-all-btn');
+    
+    const searchInput = document.getElementById('search-input');
+    const searchClearBtn = document.getElementById('search-clear-btn');
+    let searchQuery = '';
+
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdownMenu.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
+        dropdownMenu.classList.add('hidden');
+      }
+    });
+
+    searchInput.addEventListener('input', () => {
+      searchClearBtn.classList.toggle('hidden', !searchInput.value);
+      searchClearBtn.classList.toggle('flex', !!searchInput.value);
+      applySearch(searchInput.value.trim().toLowerCase());
+    });
+    
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClearBtn.classList.add('hidden');
+      searchInput.focus();
+      applySearch('');
+    });
+
+    function applySearch(q) {
+      searchQuery = q;
+      const items = document.querySelectorAll('.timeline-item');
+      let anyVisible = false;
+      items.forEach(item => {
+        const match = !q || (item.dataset.content || '').includes(q);
+        item.classList.toggle('hidden', !match);
+        if (match) anyVisible = true;
+      });
+
+      const noResultsState = document.getElementById('no-results-state');
+      if (isInitialDataLoaded && q && !anyVisible && items.length > 0) {
+        noResultsState.classList.remove('opacity-0', 'pointer-events-none');
+      } else {
+        noResultsState.classList.add('opacity-0', 'pointer-events-none');
+      }
+      updateEmptyState();
+    }
+
+    menuDeleteAllBtn.addEventListener('click', () => {
+      dropdownMenu.classList.add('hidden');
+      if (confirm("Are you sure you want to delete ALL entries? This action cannot be undone.")) {
+         runSyncTask(remove(notesRef), "Failed to clear entries")
+           .then(() => {
+              vibrate(15);
+              showToast("All entries deleted", { type: 'delete' });
+           });
+      }
+    });
+
+    /* ============ Input State & Form ============ */
     const textarea = document.getElementById('add-content');
     const submitBtn = document.getElementById('submit-btn');
-    const bottomBar = document.getElementById('bottom-bar');
+    const submitIconPath = document.getElementById('submit-icon-path');
+    const charCounter = document.getElementById('char-counter');
+    const editBanner = document.getElementById('edit-banner');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    
+    const appHeader = document.getElementById('app-header');
+    const mainScroll = document.getElementById('scroll-container');
+
+    const DRAFT_KEY = 'timeline-draft';
+    let currentEditId = null;
+
+    function updateCharCounter() {
+      const len = textarea.value.length;
+      if (len > 1500) {
+        charCounter.textContent = `${len}/2000`;
+        charCounter.classList.remove('hidden');
+        charCounter.classList.toggle('text-rose-500', len >= 1950);
+      } else {
+        charCounter.classList.add('hidden');
+      }
+    }
 
     textarea.addEventListener('input', function () {
       this.style.height = 'auto';
       this.style.height = this.scrollHeight + 'px';
       submitBtn.disabled = !this.value.trim();
-    });
-
-    textarea.addEventListener('focus', () => {
-      setTimeout(() => {
-        bottomBar.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 300);
-    });
-    
-    // Note: The previous enter-to-submit logic was completely removed.
-    // Textarea natively handles multi-line support on 'Enter' now.
-
-    /* --- Forms --- */
-    document.getElementById('add-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!textarea.value.trim()) return;
-      runSyncTask(set(push(notesRef), {
-        content: textarea.value.trim(),
-        timestamp: serverTimestamp()
-      }));
-      textarea.value = '';
-      textarea.style.height = 'auto';
-      submitBtn.disabled = true;
-      textarea.focus(); // Keeps keyboard open after sending
-    });
-
-    document.getElementById('edit-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const content = document.getElementById('edit-content').value.trim();
-      if (!content) return;
-      runSyncTask(update(ref(db, `notes/${document.getElementById('edit-id').value}`), { content }));
-      closeModals();
-    });
-
-    document.getElementById('delete-btn').addEventListener('click', () => {
-      if (confirm('Permanently delete this entry?')) {
-        runSyncTask(remove(ref(db, `notes/${document.getElementById('edit-id').value}`)));
-        closeModals();
+      updateCharCounter();
+      if (!currentEditId) {
+        try { localStorage.setItem(DRAFT_KEY, this.value); } catch (e) {}
       }
     });
 
-    /* --- Modals --- */
-    const openModal  = (id) => {
-        const m = document.getElementById(id);
-        m.classList.remove('hidden');
-        m.classList.add('flex');
-    };
-    const closeModals = () => {
-        document.querySelectorAll('.modal-backdrop, #edit-modal').forEach(m => {
-            m.classList.remove('flex');
-            m.classList.add('hidden');
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        textarea.value = savedDraft;
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        submitBtn.disabled = false;
+      }
+    } catch (e) {}
+
+    function exitEditMode() {
+      currentEditId = null;
+      textarea.value = '';
+      try { const d = localStorage.getItem(DRAFT_KEY); if(d) textarea.value = d; } catch(e){}
+      
+      editBanner.classList.add('hidden');
+      editBanner.classList.remove('flex');
+      
+      // Remove Backdrop Blur
+      appHeader.classList.remove('blur-backdrop');
+      mainScroll.classList.remove('blur-backdrop');
+      
+      // Restore send icon
+      submitIconPath.setAttribute('d', 'M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z');
+      submitIconPath.removeAttribute('stroke');
+      submitIconPath.removeAttribute('stroke-width');
+      submitIconPath.removeAttribute('stroke-linecap');
+      submitIconPath.removeAttribute('stroke-linejoin');
+      submitIconPath.setAttribute('fill', 'currentColor');
+      
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+      submitBtn.disabled = !textarea.value.trim();
+    }
+
+    cancelEditBtn.addEventListener('click', exitEditMode);
+
+    document.getElementById('add-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = textarea.value.trim();
+      if (!val) return;
+
+      if (currentEditId) {
+        runSyncTask(update(ref(db, `notes/${currentEditId}`), { content: val }), "Couldn't save edit")
+          .then(() => { showToast('Entry updated', { type: 'success', duration: 2000 }); exitEditMode(); });
+      } else {
+        const payload = { content: val, timestamp: serverTimestamp() };
+        const newRef = push(notesRef);
+        runSyncTask(set(newRef, payload), "Couldn't save entry")
+          .then(() => { vibrate(8); });
+        
+        textarea.value = '';
+        textarea.style.height = 'auto';
+        submitBtn.disabled = true;
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+      }
+      textarea.focus();
+    });
+
+    /* ============ Delete & strict undo logic ============ */
+    function deleteNoteById(id) {
+      if (!id) return;
+      const cached = noteCache.get(id);
+      
+      runSyncTask(remove(ref(db, `notes/${id}`)), "Couldn't delete entry")
+      .then(() => {
+        vibrate(10);
+        showToast('Timeline entry deleted', {
+          type: 'delete',
+          actionLabel: 'Undo',
+          duration: 5000,
+          onAction: () => {
+            if (cached) {
+              // Ensure we re-push with the EXACT cached timestamp integer to strictly undo to original time
+              const restorePayload = { content: cached.content, timestamp: cached.timestamp || Date.now() };
+              runSyncTask(set(ref(db, `notes/${id}`), restorePayload), "Couldn't restore entry")
+                .then(() => showToast('Entry restored', { type: 'success', duration: 2000 }));
+            }
+          }
         });
-    };
-
-    document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', closeModals));
-
-    document.querySelectorAll('#edit-modal').forEach(backdrop => {
-      backdrop.addEventListener('click', (e) => {
-        if (e.target === backdrop) closeModals();
       });
-    });
+    }
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModals();
-    });
+    /* ============ Utility: Generate deterministic color from string ============ */
+    function getCardColors(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+         hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash) % 360;
+      return {
+        bg: `hsl(${hue}, 70%, 96%)`, // Bright pastel background
+        border: `hsl(${hue}, 60%, 82%)` // Slightly darker variant for the border
+      };
+    }
 
-    const openEdit = (id, content) => {
-      document.getElementById('edit-id').value = id;
-      document.getElementById('edit-content').value = content;
-      openModal('edit-modal');
-    };
+    /* ============ Swipe Interface (Two-Step Action) ============ */
+    function attachSwipeInteractions(wrapperEl, id, content) {
+      const cardEl = wrapperEl.querySelector('.swipe-card');
+      const bgDel = wrapperEl.querySelector('.bg-delete');
+      const bgEdit = wrapperEl.querySelector('.bg-edit');
+      const btnDel = wrapperEl.querySelector('.btn-delete');
+      const btnEdit = wrapperEl.querySelector('.btn-edit');
 
-    /* --- UI State Management (Loading & Empty States) --- */
-    const emptyState = document.getElementById('empty-state');
-    const loadingState = document.getElementById('loading-state');
+      let startX = 0, currentX = 0, dragging = false;
+      let decided = false, horizontal = false;
+      let lockedState = null; // 'delete', 'edit', null
+
+      function resetSwipe() {
+        lockedState = null;
+        cardEl.style.transform = 'translateX(0)';
+        bgDel.style.opacity = '0';
+        bgEdit.style.opacity = '0';
+      }
+
+      cardEl.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (lockedState) { resetSwipe(); return; }
+        startX = e.clientX;
+        dragging = true;
+        decided = false;
+        horizontal = false;
+        cardEl.style.transition = 'none';
+      });
+
+      cardEl.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+
+        if (!decided) {
+          if (Math.abs(dx) > 8) {
+            decided = true;
+            horizontal = true;
+            try { cardEl.setPointerCapture(e.pointerId); } catch(err){}
+          }
+        }
+
+        if (decided && horizontal) {
+          e.preventDefault();
+          currentX = dx;
+          // Dampen pull past max bounds
+          if (currentX > 110) currentX = 110 + (currentX - 110) * 0.15;
+          if (currentX < -110) currentX = -110 + (currentX + 110) * 0.15;
+
+          cardEl.style.transform = `translateX(${currentX}px)`;
+          bgDel.style.opacity = currentX > 20 ? '1' : '0';
+          bgEdit.style.opacity = currentX < -20 ? '1' : '0';
+        }
+      });
+
+      const endDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        if (decided && horizontal) {
+          try { cardEl.releasePointerCapture(e.pointerId); } catch(err){}
+          cardEl.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
+          
+          if (currentX > 75) {
+            lockedState = 'delete';
+            cardEl.style.transform = 'translateX(96px)';
+          } else if (currentX < -75) {
+            lockedState = 'edit';
+            cardEl.style.transform = 'translateX(-96px)';
+          } else {
+            resetSwipe();
+          }
+        }
+        currentX = 0;
+      };
+
+      cardEl.addEventListener('pointerup', endDrag);
+      cardEl.addEventListener('pointercancel', endDrag);
+
+      // Listeners for revealed buttons
+      btnDel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteNoteById(id);
+        resetSwipe();
+      });
+
+      btnEdit.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetSwipe();
+        
+        // Enter edit mode
+        currentEditId = id;
+        textarea.value = content;
+        editBanner.classList.remove('hidden');
+        editBanner.classList.add('flex');
+        
+        // Add Backdrop Blur Focus
+        appHeader.classList.add('blur-backdrop');
+        mainScroll.classList.add('blur-backdrop');
+        
+        // Transform button icon to Checkmark
+        submitIconPath.setAttribute('d', 'M5 13l4 4L19 7');
+        submitIconPath.setAttribute('stroke', 'currentColor');
+        submitIconPath.setAttribute('stroke-width', '2.5');
+        submitIconPath.setAttribute('stroke-linecap', 'round');
+        submitIconPath.setAttribute('stroke-linejoin', 'round');
+        submitIconPath.setAttribute('fill', 'none');
+        
+        updateCharCounter();
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
+        submitBtn.disabled = false;
+        textarea.focus();
+      });
+    }
+
+    /* ============ Rendering & State ============ */
     const container = document.getElementById('notes-container');
     const scrollContainer = document.getElementById('scroll-container');
+    const emptyState = document.getElementById('empty-state');
+    const loadingState = document.getElementById('loading-state');
     
-    let isInitialDataLoaded = false;
-    let lastDateStr = null;
-    let scrollTimeout;
+    // Top & Bottom FAB refs
+    const scrollTopFab = document.getElementById('scroll-top-fab');
+    const scrollBottomFab = document.getElementById('scroll-bottom-fab');
 
-    // Detect when the initial batch of data has finished loading from Firebase
+    let isInitialDataLoaded = false;
+    let scrollTimeout;
+    let noteCache = new Map();
+
     onValue(notesRef, (snap) => {
-        if (!isInitialDataLoaded) {
-            isInitialDataLoaded = true;
-            
-            // Fade out loading screen
-            loadingState.classList.add('opacity-0');
-            setTimeout(() => {
-                loadingState.remove(); // Safely remove from DOM after transition
-                updateEmptyState();
-            }, 300);
-        }
+      if (!isInitialDataLoaded) {
+        isInitialDataLoaded = true;
+        loadingState.classList.add('opacity-0');
+        setTimeout(() => { loadingState.remove(); updateEmptyState(); }, 300);
+      }
     }, { onlyOnce: true });
 
     function updateEmptyState() {
-      if (!isInitialDataLoaded) return; // Prevent flashing empty state during load
-
-      const hasItems = container.querySelectorAll('.timeline-item').length > 0;
-      if (hasItems) {
-          emptyState.classList.remove('opacity-100', 'pointer-events-auto');
-          emptyState.classList.add('opacity-0', 'pointer-events-none');
+      if (!isInitialDataLoaded) return;
+      if (noteCache.size > 0) {
+        emptyState.classList.add('opacity-0', 'pointer-events-none');
       } else {
-          emptyState.classList.remove('opacity-0', 'pointer-events-none');
-          emptyState.classList.add('opacity-100', 'pointer-events-auto');
+        emptyState.classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('no-results-state').classList.add('opacity-0', 'pointer-events-none');
       }
     }
 
-    const scrollToBottom = () => {
+    const scrollToTop = (smooth = true) => {
+      scrollContainer.scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
+    };
+
+    const scrollToBottom = (smooth = true) => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' });
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
       }, 100);
     };
 
-    const appContainer = document.querySelector('.max-w-md');
-    if (window.visualViewport) {
-      const adjustHeight = () => {
-        appContainer.style.height = `${window.visualViewport.height}px`;
-        scrollToBottom(); 
-      };
-      window.visualViewport.addEventListener('resize', adjustHeight);
-      adjustHeight();
+    function isNearBottom() {
+      return scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight < 150;
+    }
+    
+    function isNearTop() {
+      return scrollContainer.scrollTop < 150;
     }
 
-    /* --- Firebase Listeners --- */
+    scrollContainer.addEventListener('scroll', () => {
+      if (isNearTop()) { 
+         scrollTopFab.classList.add('hidden'); 
+         scrollTopFab.classList.remove('flex'); 
+      } else { 
+         scrollTopFab.classList.remove('hidden'); 
+         scrollTopFab.classList.add('flex'); 
+      }
+
+      if (isNearBottom()) { 
+         scrollBottomFab.classList.add('hidden'); 
+         scrollBottomFab.classList.remove('flex'); 
+      } else { 
+         scrollBottomFab.classList.remove('hidden'); 
+         scrollBottomFab.classList.add('flex'); 
+      }
+    });
+
+    scrollTopFab.addEventListener('click', () => scrollToTop(true));
+    scrollBottomFab.addEventListener('click', () => scrollToBottom(true));
+
+    /* ============ Firebase Realtime Listeners ============ */
     onChildAdded(query(notesRef, orderByChild('timestamp')), (data) => {
-      triggerDownloadUI();
-
-      const tLine = document.getElementById('timeline-line');
-      if (tLine) tLine.classList.remove('hidden');
-
       const note = { id: data.key, ...data.val() };
+      noteCache.set(note.id, { content: note.content, timestamp: note.timestamp });
+
       const dateObj = note.timestamp ? new Date(note.timestamp) : new Date();
       const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-
-      const currentDelay = delayIndex * 0.07;
-      delayIndex++;
-
-      const oldActive = document.querySelector('.dot-active-container');
-      if (oldActive) {
-          oldActive.outerHTML = `<div class="w-1.5 h-1.5 bg-slate-300 rounded-full shadow-[0_0_0_4px_#f8fafc]"></div>`;
-      }
-
-      if (dateStr !== lastDateStr) {
-        lastDateStr = dateStr;
-        const headerDiv = document.createElement('div');
-        headerDiv.className = 'w-full flex justify-center py-3 pb-6 relative z-10 animate-grow';
-        headerDiv.style.animationDelay = `${currentDelay}s`;
-        headerDiv.innerHTML = `<span class="bg-white px-3 py-1 text-[11px] font-bold text-slate-500 rounded-full tracking-wider border border-slate-100 shadow-sm">${dateStr}</span>`;
-        container.appendChild(headerDiv);
-      }
+      const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
       const itemDiv = document.createElement('div');
-      itemDiv.className = 'timeline-item flex items-start w-full relative z-10 animate-grow';
-      itemDiv.style.animationDelay = `${currentDelay}s`;
+      itemDiv.className = 'timeline-item relative w-full z-10 animate-grow mb-4 swipe-container group';
       itemDiv.id = `note-${note.id}`;
+      itemDiv.dataset.date = dateStr;
+      itemDiv.dataset.content = (note.content || '').toLowerCase();
       
+      const { bg: cardBgColor, border: cardBorderColor } = getCardColors(note.id);
+
+      // Card UI with dynamic colored border matching the background
       itemDiv.innerHTML = `
-        <div class="w-[72px] shrink-0 text-right pr-4 pt-1">
-            <span class="text-[11px] text-slate-500 font-bold">${timeStr}</span>
-        </div>
-        <div class="w-5 shrink-0 flex justify-center pt-1.5 relative">
-          <div class="relative w-2.5 h-2.5 flex items-center justify-center dot-active-container">
-            <span class="absolute w-5 h-5 rounded-full bg-indigo-500 opacity-30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]"></span>
-            <span class="relative w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_0_4px_#f8fafc]"></span>
+        <div class="relative w-full overflow-hidden rounded-2xl shadow-sm border" style="border-color: ${cardBorderColor};">
+          
+          <!-- Background Action Drawers -->
+          <div class="absolute inset-0 flex justify-between bg-slate-100 z-0">
+             <div class="w-1/2 flex items-center pl-4 bg-delete transition-opacity duration-200 opacity-0">
+                <button class="btn-delete flex flex-col items-center justify-center gap-1 text-rose-600 font-bold w-16 h-16 rounded-2xl bg-white hover:bg-rose-50 border border-rose-100 active:scale-95 transition-all shadow-sm">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  <span class="text-[10px]">Delete</span>
+                </button>
+             </div>
+             <div class="w-1/2 flex items-center justify-end pr-4 bg-edit transition-opacity duration-200 opacity-0">
+                <button class="btn-edit flex flex-col items-center justify-center gap-1 text-indigo-600 font-bold w-16 h-16 rounded-2xl bg-white hover:bg-indigo-50 border border-indigo-100 active:scale-95 transition-all shadow-sm">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                  <span class="text-[10px]">Edit</span>
+                </button>
+             </div>
           </div>
-        </div>
-        <div class="flex-1 pl-3 pb-7 relative text-left">
-          <p id="text-${note.id}" class="text-[15.5px] text-slate-800 font-medium leading-relaxed whitespace-pre-wrap break-words pr-4 cursor-pointer active:opacity-50 active:scale-95 transition-all select-none content-text"></p>
+
+          <!-- Foreground Swipeable Card -->
+          <div class="swipe-card relative z-10 px-5 pt-3.5 pb-4 w-full rounded-2xl transform transition-transform" style="background-color: ${cardBgColor}">
+            <!-- Date & Time Top Row -->
+            <div class="flex justify-between items-center mb-2.5 pb-2.5 border-b border-black/5">
+              <span class="text-[12px] font-bold text-slate-600/80 tracking-wide uppercase">${dateStr}</span>
+              <span class="text-[12px] font-bold text-slate-600/80">${timeStr}</span>
+            </div>
+            
+            <!-- Content -->
+            <div class="text-left">
+              <p id="text-${note.id}" class="text-[15.5px] text-slate-800 font-medium leading-relaxed whitespace-pre-wrap break-words select-none"></p>
+            </div>
+          </div>
+
         </div>`;
 
-      const pTag = itemDiv.querySelector('.content-text');
+      const pTag = itemDiv.querySelector(`#text-${note.id}`);
       pTag.textContent = note.content;
-      pTag.addEventListener('click', () => openEdit(note.id, note.content));
 
-      container.appendChild(itemDiv);
+      attachSwipeInteractions(itemDiv, note.id, note.content);
+
+      // Insert matching strict chronological ordering (if items restore via undo)
+      const existingItems = Array.from(container.querySelectorAll('.timeline-item'));
+      const timestampValue = note.timestamp || Date.now();
+      itemDiv.dataset.ts = timestampValue;
+      
+      let inserted = false;
+      for(let existing of existingItems) {
+        if(parseInt(existing.dataset.ts) > timestampValue) {
+          container.insertBefore(itemDiv, existing);
+          inserted = true;
+          break;
+        }
+      }
+      if(!inserted) {
+         container.appendChild(itemDiv);
+      }
+
+      if (searchQuery && !itemDiv.dataset.content.includes(searchQuery)) itemDiv.classList.add('hidden');
+      
       updateEmptyState();
-      scrollToBottom();
+      if (isNearBottom() || !isInitialDataLoaded) scrollToBottom(isInitialDataLoaded);
     });
 
     onChildChanged(notesRef, (data) => {
-      triggerDownloadUI();
+      const note = { id: data.key, ...data.val() };
+      noteCache.set(note.id, { content: note.content, timestamp: note.timestamp });
+      
+      const itemDiv = document.getElementById(`note-${data.key}`);
       const pTag = document.getElementById(`text-${data.key}`);
-      if (pTag) {
-        const newContent = data.val().content;
-        pTag.textContent = newContent;
-        const clone = pTag.cloneNode(true);
-        clone.addEventListener('click', () => openEdit(data.key, newContent));
-        pTag.replaceWith(clone);
+      if (pTag) pTag.textContent = note.content;
+      if (itemDiv) {
+        itemDiv.dataset.content = (note.content || '').toLowerCase();
+        // Re-attach swipe with new content for edit payload
+        const swipeWrapper = itemDiv.querySelector('.relative.w-full.overflow-hidden');
+        if(swipeWrapper) {
+           const oldClone = swipeWrapper.cloneNode(true);
+           swipeWrapper.parentNode.replaceChild(oldClone, swipeWrapper);
+           attachSwipeInteractions(itemDiv, note.id, note.content);
+        }
+        if (searchQuery) applySearch(searchQuery);
       }
     });
 
     onChildRemoved(notesRef, (data) => {
-      triggerDownloadUI();
+      noteCache.delete(data.key);
       const itemDiv = document.getElementById(`note-${data.key}`);
       if (itemDiv) itemDiv.remove();
 
-      if (container.querySelectorAll('.timeline-item').length === 0) {
-        const tLine = document.getElementById('timeline-line');
-        if (tLine) tLine.classList.add('hidden');
-        lastDateStr = null;
-      }
+      if (searchQuery) applySearch(searchQuery);
       updateEmptyState();
     });
+
   </script>
 </body>
 </html>
