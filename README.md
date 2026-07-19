@@ -24,8 +24,8 @@ Hisapbook is a digital ledger designed to help users track their daily income an
 
 *(Note: Update this section based on your actual tech stack)*
 
-* **Frontend:** React.js / Vue.js / HTML5 & CSS3
-* **Styling:** Tailwind CSS / Bootstrap / Material-UI
+* **Frontend:** HTML5 & CSS3
+* **Styling:** Tailwind CSS
 * **Backend/BaaS:** Firebase (Authentication, Firestore Database)
 * **Hosting:** Firebase Hosting
 * **State Management:** Redux / Context API
