@@ -13,14 +13,12 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Hide scrollbar for clean app-like UI */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-    /* Chrome scroll overflow & viewport fix */
     html {
       height: 100%;
-      height: -webkit-fill-available; /* Locks to visible viewport, prevents URL bar jump */
+      height: -webkit-fill-available;
     }
     
     body {
@@ -32,13 +30,11 @@
       width: 100%;
       margin: 0;
       padding: 0;
-      touch-action: pan-x pan-y; /* Prevent unwanted browser zoom/scroll gestures */
+      touch-action: pan-x pan-y;
     }
 
-    /* Safe area bottom padding utility */
     .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem); }
     
-    /* Smooth Enter Animations */
     @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
     .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     
@@ -51,14 +47,32 @@
     }
     .animate-slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
 
-    /* Smooth Exit Animations */
     @keyframes slideDown { 0% { transform: translateY(0); } 100% { transform: translateY(100%); } }
     .animate-slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     
     @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
     .animate-fade-out { animation: fadeOut 0.3s ease forwards; }
-  </style>
 
+    /* Shimmer Text Animations for Swipe UI */
+    @keyframes shimmerText {
+        0% { background-position: 200% center; }
+        100% { background-position: -200% center; }
+    }
+    .shimmer-text {
+        background-size: 200% auto;
+        animation: shimmerText 3s linear infinite;
+    }
+    .shimmer-indigo {
+        background-image: linear-gradient(90deg, #6366f1 0%, #c7d2fe 50%, #6366f1 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .shimmer-red {
+        background-image: linear-gradient(90deg, #ef4444 0%, #fecaca 50%, #ef4444 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+  </style>
 </head>
 <body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
 
@@ -80,27 +94,20 @@
     </div>
 
     <div id="splash-view" class="view active absolute inset-0 bg-gray-50 z-[90] flex flex-col">
-
-    <div class="flex-grow flex flex-col items-center justify-center">
-        <div class="w-24 h-28 rounded-3xl bg-white shadow-lg flex items-center justify-center mb-8">
-            <img
-                src="logo-512.webp"
-                class="w-16 h-16 object-contain"
-                onerror="this.src='https://ui-avatars.com/api/?name=₹&background=4f46e5&color=fff&size=112&rounded=true'"
-            >
+        <div class="flex-grow flex flex-col items-center justify-center">
+            <div class="w-24 h-28 rounded-3xl bg-white shadow-lg flex items-center justify-center mb-8">
+                <img src="logo-512.webp" class="w-16 h-16 object-contain" onerror="this.src='https://ui-avatars.com/api/?name=₹&background=4f46e5&color=fff&size=112&rounded=true'">
+            </div>
+        </div>
+        <div class="pb-10 text-center">
+            <div id="loading-indicator" class="three-body mb-6">
+                <div class="three-body__dot"></div>
+                <div class="three-body__dot"></div>
+                <div class="three-body__dot"></div>
+            </div>
+            <h2 class="text-lg font-extrabold text-slate-900 tracking-tight">HisapBook</h2>
         </div>
     </div>
-
-    <div class="pb-10 text-center">
-        <div id="loading-indicator" class="three-body mb-6">
-            <div class="three-body__dot"></div>
-            <div class="three-body__dot"></div>
-            <div class="three-body__dot"></div>
-        </div>
-        <h2 class="text-lg font-extrabold text-slate-900 tracking-tight">HisapBook</h2>
-    </div>
-
-</div>
 
     <div id="auth-view" class="view hidden absolute inset-0 z-[80] flex flex-col bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100 to-slate-50 overflow-y-auto no-scrollbar">
         <div class="px-8 pt-14 pb-14 flex-shrink-0">
@@ -119,16 +126,16 @@
               <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
               </div>
-              <input type="email" id="email-input" required class="block w-full pl-11 pr-4 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-              <label for="email-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Email Address</label>
+              <input type="email" id="email-input" required class="block w-full pl-11 pr-4 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer" placeholder=" ">
+              <label for="email-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Email Address</label>
             </div>
             
             <div class="relative w-full group">
               <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
               </div>
-              <input type="password" id="password-input" required class="block w-full pl-11 pr-12 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-              <label for="password-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Password</label>
+              <input type="password" id="password-input" required class="block w-full pl-11 pr-12 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer" placeholder=" ">
+              <label for="password-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Password</label>
               <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none z-20">
                 <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                 <svg id="eye-slash-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
@@ -201,7 +208,7 @@
                                 <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
                             </div>
                             <div>
-                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Income</p>
+                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Received</p>
                                 <p class="text-md font-semibold" id="card-income-copy">₹0.00</p>
                             </div>
                         </div>
@@ -210,7 +217,7 @@
                                 <svg class="w-4 h-4 text-rose-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
                             </div>
                             <div>
-                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Expenses</p>
+                                <p class="text-sm text-indigo-100 capitalise font-bold tracking-wider">Paid</p>
                                 <p class="text-md font-semibold" id="card-expense-copy">₹0.00</p>
                             </div>
                         </div>
@@ -240,8 +247,8 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                                     <svg class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
                                 </div>
-                                <input type="search" id="search-input" class="block w-full pl-9 pr-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                                <label for="search-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-8 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Search item...</label>
+                                <input type="search" id="search-input" class="block w-full pl-9 pr-3 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                                <label for="search-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-8 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Search item...</label>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <button id="last-week" class="text-sm font-bold capitalise tracking-wider px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg transition-colors">Last Week</button>
@@ -250,19 +257,18 @@
                             </div>
                             <div class="flex gap-3">
                                 <div class="relative w-full">
-                                    <input id="start-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                                    <label for="start-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">From</label>
+                                    <input id="start-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                                    <label for="start-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">From</label>
                                 </div>
                                 <div class="relative w-full">
-                                    <input id="end-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                                    <label for="end-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">To</label>
+                                    <input id="end-date-input" type="date" class="block w-full px-3 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                                    <label for="end-date-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">To</label>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="expense-list" class="space-y-3 pb-4">
-                        </div>
+                    <div id="expense-list" class="space-y-3 pb-4"></div>
                     <button id="view-all" class="w-full bg-indigo-50 text-indigo-600 font-bold text-md py-3 rounded-2xl transition-all hover:bg-indigo-100 hidden">View all</button>
                 </div>
             </div>
@@ -278,84 +284,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
             </svg>
         </button>
-
-        <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]" style="padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem))">
-                <div class="flex justify-between items-center mb-6 shrink-0">
-                    <h3 class="text-xl font-bold text-slate-800">Project Stats</h3>
-                    <button id="close-analytics-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                
-                <div class="overflow-y-auto no-scrollbar flex-grow pb-6 space-y-4">
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
-                        <div class="relative w-full">
-                            <canvas id="category-chart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
-                        <div class="relative h-64 w-full">
-                            <canvas id="monthly-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>Add Entry
-                    </h2>
-                    <button id="close-add-expense-btn" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 focus:outline-none">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <form id="expense-form" class="space-y-4">
-                    
-                    <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
-                        <input type="radio" name="entry-type" id="add-type-expense" value="expense" checked class="peer/expense sr-only">
-                        <input type="radio" name="entry-type" id="add-type-income" value="income" class="peer/income sr-only">
-
-                        <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
-
-                        <label for="add-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
-                            Expense
-                        </label>
-                        <label for="add-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
-                            Income
-                        </label>
-                    </div>
-                  
-                    <div class="relative w-full">
-                        <input type="text" id="material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                        <label for="material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Item Name</label>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="relative w-full">
-                            <input type="number" id="cost" required step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                            <label for="cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Amount</label>
-                        </div>
-                        <div class="relative w-full">
-                            <input id="date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                            <label for="date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Date</label>
-                        </div>
-                    </div>
-                    <div class="relative w-full">
-                        <input type="text" id="additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                        <label for="additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Additional Info (Optional notes...)</label>
-                    </div>
-                    <button type="submit" class="relative flex items-center justify-center w-full mt-4 bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
-                        <span class="btn-text transition-opacity">Save Entry</span>
-                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </button>
-                </form>
-            </div>
-        </div>
-
+        
         <div id="mobile-menu-backdrop" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[110] opacity-0 pointer-events-none transition-opacity">
             <div id="mobile-menu" class="absolute top-0 left-0 h-full w-72 bg-white shadow-2xl p-6 transform -translate-x-full flex flex-col transition-transform duration-300 rounded-r-3xl">
                 <div class="flex justify-between items-center mb-6">
@@ -388,111 +317,217 @@
             </div>
         </div>
 
+        <!-- Analytics Modal -->
+        <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]" style="padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem))">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <h3 class="text-xl font-bold text-slate-800">Project Stats</h3>
+                    <button id="close-analytics-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="overflow-y-auto no-scrollbar flex-grow pb-6 space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="relative w-full">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="relative h-64 w-full">
+                            <canvas id="monthly-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Entry Sheet with Universal Swipe -->
+        <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
+            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-slate-800">Add Entry</h3>
+                    <button id="close-add-expense-btn" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <form id="expense-form" class="space-y-4">
+                    
+                    <div class="relative grid grid-cols-2 bg-slate-100 p-1 rounded-xl w-full mb-3 h-[52px] items-center">
+                        <input type="radio" name="entry-type" id="add-type-expense" value="expense" checked class="peer/expense sr-only">
+                        <input type="radio" name="entry-type" id="add-type-income" value="income" class="peer/income sr-only">
+
+                        <div class="absolute inset-y-1.5 left-1.5 w-[calc(50%-6px)] bg-rose-500 rounded-lg shadow-sm transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+
+                        <label for="add-type-expense" class="cursor-pointer relative z-10 text-center font-bold text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                            Paid
+                        </label>
+                        <label for="add-type-income" class="cursor-pointer relative z-10 text-center font-bold text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                            Received
+                        </label>
+                    </div>
+                  
+                    <div class="relative w-full">
+                        <input type="text" id="material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                        <label for="material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Item Name</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative w-full">
+                            <input type="number" id="cost" required step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                            <label for="cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Amount</label>
+                        </div>
+                        <div class="relative w-full">
+                            <input id="date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                            <label for="date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Date</label>
+                        </div>
+                    </div>
+                    <div class="relative w-full">
+                        <input type="text" id="additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                        <label for="additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Additional Info (Optional)</label>
+                    </div>
+
+                    <!-- Swipe to Create Component -->
+                    <div id="add-expense-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none  border border-indigo-100 touch-none mt-4">
+                        <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
+                            <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to add</span>
+                        </div>
+                        <div class="swipe-track absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-indigo-600 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
+                            <svg class="swipe-spinner w-5 h-5 animate-spin opacity-0 transition-opacity text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                        <div class="swipe-thumb absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-indigo-600 hover:scale-[1.02] transition-transform">
+                            <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </div>
+                </form>
+            </div>
+        </div>
     </div>
 
+    <!-- Edit Entry Modal with Swipe-to-Save -->
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Edit Entry</h3>
-                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </div>
+                <button id="close-edit-btn" class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             <form id="edit-expense-form" class="space-y-4 text-left">
                 <input type="hidden" id="edit-expense-id">
                 
-                <div class="relative grid grid-cols-2 bg-slate-200 p-1 rounded-full w-full mb-3 h-10 items-center">
+                <div class="relative grid grid-cols-2 bg-slate-100 p-1.5 rounded-xl w-full mb-3 h-[52px] items-center">
                     <input type="radio" name="edit-entry-type" id="edit-type-expense" value="expense" class="peer/expense sr-only">
                     <input type="radio" name="edit-entry-type" id="edit-type-income" value="income" class="peer/income sr-only">
 
-                    <div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-rose-500 rounded-full shadow-md transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
+                    <div class="absolute inset-y-1.5 left-1 w-[calc(50%-6px)] bg-rose-500 rounded-lg shadow-sm transition-all duration-300 ease-in-out peer-checked/income:translate-x-full peer-checked/income:bg-emerald-500 z-0"></div>
 
-                    <label for="edit-type-expense" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
-                        Expense
+                    <label for="edit-type-expense" class="cursor-pointer relative z-10 text-center font-bold  text-sm transition-colors duration-300 text-slate-500 peer-checked/expense:text-white py-1">
+                        Paid
                     </label>
-                    <label for="edit-type-income" class="cursor-pointer relative z-10 text-center font-bold tracking-wider uppercase text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
-                        Income
+                    <label for="edit-type-income" class="cursor-pointer relative z-10 text-center font-bold text-sm transition-colors duration-300 text-slate-500 peer-checked/income:text-white py-1">
+                        Received
                     </label>
                 </div>
 
                 <div class="relative w-full">
-                    <input type="text" id="edit-material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                    <label for="edit-material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Item Name</label>
+                    <input type="text" id="edit-material-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                    <label for="edit-material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Item Name</label>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="relative w-full">
-                        <input type="number" id="edit-cost" required min="0" step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                        <label for="edit-cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Amount</label>
+                        <input type="number" id="edit-cost" required min="0" step="0.01" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                        <label for="edit-cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Amount</label>
                     </div>
                     <div class="relative w-full">
-                        <input id="edit-date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                        <label for="edit-date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Date</label>
+                        <input id="edit-date" type="date" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                        <label for="edit-date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Date</label>
                     </div>
                 </div>
                 <div class="relative w-full">
-                    <input type="text" id="edit-additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                    <label for="edit-additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Additional Info</label>
+                    <input type="text" id="edit-additional-info" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                    <label for="edit-additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Additional Info</label>
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" id="cancel-edit-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" id="save-edit-btn" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
-                        <span class="btn-text transition-opacity">Save</span>
-                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </button>
+                
+                <!-- Swipe to Save Component -->
+                <div id="edit-expense-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none border border-indigo-100 touch-none mt-4">
+                    <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
+                        <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to save</span>
+                    </div>
+                    <div class="swipe-track absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-indigo-600 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
+                        <svg class="swipe-spinner w-5 h-5 animate-spin opacity-0 transition-opacity text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                    <div class="swipe-thumb absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-indigo-600 hover:scale-[1.02] transition-transform">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Edit Project Modal with Swipe-to-Save -->
     <div id="edit-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
+        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Edit Project</h3>
-                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </div>
+                <button id="close-edit-project-btn" class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             <form id="edit-project-form" class="space-y-4">
                 <input type="hidden" id="edit-project-id">
                 <div class="relative w-full">
-                    <input type="text" id="edit-project-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                    <label for="edit-project-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name</label>
+                    <input type="text" id="edit-project-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                    <label for="edit-project-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Project Name</label>
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" id="cancel-edit-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
-                        <span class="btn-text transition-opacity">Save</span>
-                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </button>
+                
+                <!-- Swipe to Save Component -->
+                <div id="edit-project-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none border border-indigo-100 touch-none mt-4">
+                    <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
+                        <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to save</span>
+                    </div>
+                    <div class="swipe-track absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-indigo-600 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
+                        <svg class="swipe-spinner w-5 h-5 animate-spin opacity-0 transition-opacity text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                    <div class="swipe-thumb absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-indigo-600 hover:scale-[1.02] transition-transform">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Add Project Modal with Swipe-to-Save -->
     <div id="add-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400  bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
+        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-xl font-bold text-slate-800">Add Project</h3>
-                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                </div>
+                <button id="close-add-project-btn" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
             <form id="add-project-form-modal" class="space-y-4 text-left">
                 <div class="relative w-full">
-                    <input type="text" id="new-project-name-modal" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-blue-600 peer" placeholder=" ">
-                    <label for="new-project-name-modal" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-2 peer-focus:text-blue-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Project Name (e.g. Home Renovation)</label>
+                    <input type="text" id="new-project-name-modal" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                    <label for="new-project-name-modal" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Project Name (e.g. Home)</label>
                 </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" id="cancel-add-project-btn" class="flex-1 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all active:scale-95">Cancel</button>
-                    <button type="submit" class="relative flex items-center justify-center flex-1 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
-                        <span class="btn-text transition-opacity">Create</span>
-                        <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </button>
+                
+                <!-- Swipe to Create Component -->
+                <div id="add-project-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none border border-indigo-100 touch-none mt-4">
+                    <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
+                        <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to add</span>
+                    </div>
+                    <div class="swipe-track absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-indigo-600 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
+                        <svg class="swipe-spinner w-5 h-5 animate-spin opacity-0 transition-opacity text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </div>
+                    <div class="swipe-thumb absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-indigo-600 hover:scale-[1.02] transition-transform">
+                        <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Info Modal -->
     <div id="info-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
             <div class="flex justify-between items-center mb-4">
@@ -501,7 +536,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
             </div>
-            <div id="info-modal-content" class="text-md text-slate-500 leading-relaxed max-h-60 overflow-y-auto no-scrollbar"></div>
+            <div id="info-modal-content" class="text-md text-slate-500 leading-relaxed overflow-y-auto no-scrollbar"></div>
             <div class="pt-6">
                 <button id="close-info-modal-btn" class="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-black shadow-lg shadow-slate-200 transition-all active:scale-95">Got it</button>
             </div>

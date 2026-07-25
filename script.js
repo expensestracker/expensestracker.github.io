@@ -1,30 +1,6 @@
-// Firebase Imports
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import {
-  getAuth,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import {
-  getFirestore,
-  collection,
-  onSnapshot,
-  query,
-  doc,
-  where,
-  orderBy,
-  getDocs,
-  writeBatch,
-  runTransaction,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, onSnapshot, query, doc, where, orderBy, getDocs, writeBatch, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
@@ -44,47 +20,41 @@ let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscri
 let showAllExpenses = false; 
 
 // --- DOM Elements ---
-const views = {
-  splash: document.getElementById('splash-view'),
-  auth: document.getElementById('auth-view'),
-  app: document.getElementById('app-view')
-};
+const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
 const headerAvatar = document.getElementById('header-avatar');
 const headerUserName = document.getElementById('header-user-name');
 const authTitle = document.getElementById('auth-title');
-const emailForm = document.getElementById('email-form');
-const emailInput = document.getElementById('email-input');
-const passwordInput = document.getElementById('password-input');
-const emailActionBtn = document.getElementById('email-action-btn');
-const btnText = document.getElementById('btn-text');
-const btnSpinner = document.getElementById('btn-spinner');
-const togglePasswordBtn = document.getElementById('toggle-password-btn');
-const eyeIcon = document.getElementById('eye-icon');
-const eyeSlashIcon = document.getElementById('eye-slash-icon');
-const forgotPasswordLink = document.getElementById('forgot-password-link');
-const googleSignInBtn = document.getElementById('google-signin-btn');
+const emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), emailActionBtn = document.getElementById('email-action-btn'), btnText = document.getElementById('btn-text'), btnSpinner = document.getElementById('btn-spinner'), togglePasswordBtn = document.getElementById('toggle-password-btn'), eyeIcon = document.getElementById('eye-icon'), eyeSlashIcon = document.getElementById('eye-slash-icon'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
 
 const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
 const userProfileMobile = document.getElementById('user-profile-mobile');
 const hamburgerBtn = document.getElementById('hamburger-btn'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
-const editModal = document.getElementById('edit-modal'), editExpenseForm = document.getElementById('edit-expense-form'), cancelEditBtn = document.getElementById('cancel-edit-btn');
+const editModal = document.getElementById('edit-modal'), editExpenseForm = document.getElementById('edit-expense-form');
 const searchInput = document.getElementById('search-input'), startDateInput = document.getElementById('start-date-input'), endDateInput = document.getElementById('end-date-input');
 const sidebarProjectList = document.getElementById('sidebar-project-list'), sidebarAddProjectBtn = document.getElementById('sidebar-add-project-btn');
-const editProjectModal = document.getElementById('edit-project-modal'), editProjectForm = document.getElementById('edit-project-form'), cancelEditProjectBtn = document.getElementById('cancel-edit-project-btn');
-const addProjectModal = document.getElementById('add-project-modal'), addProjectFormModal = document.getElementById('add-project-form-modal'), cancelAddProjectBtn = document.getElementById('cancel-add-project-btn');
+const editProjectModal = document.getElementById('edit-project-modal'), editProjectForm = document.getElementById('edit-project-form');
+const addProjectModal = document.getElementById('add-project-modal'), addProjectFormModal = document.getElementById('add-project-form-modal');
 const infoModal = document.getElementById('info-modal'), infoModalTitle = document.getElementById('info-modal-title'), infoModalContent = document.getElementById('info-modal-content'), closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 const projectSummaryTitle = document.getElementById('project-summary-title');
 const viewAllBtn = document.getElementById('view-all');
 const cardExpenseCopy = document.getElementById('card-expense-copy');
 
-// FAB DOM elements
-const fabAddExpense = document.getElementById('fab-add-expense');
-const addExpenseSheet = document.getElementById('add-expense-sheet');
-const closeAddExpenseBtn = document.getElementById('close-add-expense-btn');
+const fabAddExpense = document.getElementById('fab-add-expense'), addExpenseSheet = document.getElementById('add-expense-sheet');
+const goToAnalyticsBtnNav = document.getElementById('go-to-analytics-btn-nav'), goToAnalyticsBtn = document.getElementById('go-to-analytics-btn');
 
-// Nav Analytics
-const goToAnalyticsBtnNav = document.getElementById('go-to-analytics-btn-nav');
-const goToAnalyticsBtn = document.getElementById('go-to-analytics-btn');
+// --- Close Modal Buttons ---
+const closeAddExpenseBtn = document.getElementById('close-add-expense-btn');
+const closeEditBtn = document.getElementById('close-edit-btn');
+const closeEditProjectBtn = document.getElementById('close-edit-project-btn');
+const closeAddProjectBtn = document.getElementById('close-add-project-btn');
+
+// Stop Form default sumits for Swipe-To-Save modules
+expenseForm?.addEventListener('submit', e => e.preventDefault());
+editExpenseForm?.addEventListener('submit', e => e.preventDefault());
+editProjectForm?.addEventListener('submit', e => e.preventDefault());
+addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
+
+const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
 // --- Custom Native-Feel Toast Notification ---
 function showToast(message, type = 'error') {
@@ -115,25 +85,105 @@ function showToast(message, type = 'error') {
   }, 3000);
 }
 
-// --- Loading Helper for Forms ---
-function setButtonLoading(button, isLoading) {
-    if (!button) return;
-    const btnText = button.querySelector('.btn-text');
-    const btnSpinner = button.querySelector('.btn-spinner');
-    
-    if (isLoading) {
-        button.disabled = true;
-        if (btnText) btnText.classList.add('opacity-0');
-        if (btnSpinner) btnSpinner.classList.remove('opacity-0');
-    } else {
-        button.disabled = false;
-        if (btnText) btnText.classList.remove('opacity-0');
-        if (btnSpinner) btnSpinner.classList.add('opacity-0');
-    }
+function setAuthButtonLoading(isLoading) {
+  if (!emailActionBtn || !btnText || !btnSpinner) return;
+  if (isLoading) {
+    btnText.classList.add('opacity-0');
+    btnSpinner.classList.remove('opacity-0');
+    emailActionBtn.disabled = true;
+  } else {
+    btnText.classList.remove('opacity-0');
+    btnSpinner.classList.add('opacity-0');
+    emailActionBtn.disabled = false;
+  }
 }
 
-// --- Custom Native-Feel Confirmation Modal with Spinner Support ---
-function showConfirm(title, message, onConfirmAsync = null) {
+// --- Universal Swipe Logic Hook ---
+function initSwipeButton(containerId, onConfirmAsync) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const thumb = container.querySelector('.swipe-thumb');
+    const track = container.querySelector('.swipe-track');
+    const text = container.querySelector('.swipe-text');
+    const spinner = container.querySelector('.swipe-spinner');
+
+    let isDragging = false;
+    let isConfirmed = false;
+    let startX = 0;
+    let currentX = 0;
+
+    const reset = () => {
+        isConfirmed = false;
+        thumb.classList.remove('pointer-events-none');
+        spinner.classList.add('opacity-0');
+        text.style.opacity = '1';
+        thumb.style.transform = `translateX(0px)`;
+        track.style.width = `3.25rem`; // Matches initial CSS tailwind track width
+    };
+
+    const onDragStart = (e) => {
+        if (isConfirmed) return;
+        isDragging = true;
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        thumb.style.transition = 'none';
+        track.style.transition = 'none';
+        text.style.opacity = '0.3'; 
+    };
+
+    const onDragMove = (e) => {
+        if (!isDragging || isConfirmed) return;
+        const maxDrag = container.clientWidth - thumb.clientWidth - 8; 
+        const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        currentX = Math.max(0, Math.min(clientX - startX, maxDrag));
+        
+        thumb.style.transform = `translateX(${currentX}px)`;
+        track.style.width = `calc(3.25rem + ${currentX}px)`;
+    };
+
+    const onDragEnd = async () => {
+        if (!isDragging || isConfirmed) return;
+        isDragging = false;
+        const maxDrag = container.clientWidth - thumb.clientWidth - 8;
+        
+        thumb.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        track.style.transition = 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        
+        if (currentX >= maxDrag * 0.95) {
+            isConfirmed = true;
+            thumb.style.transform = `translateX(${maxDrag}px)`;
+            track.style.width = '100%';
+            thumb.classList.add('pointer-events-none');
+            
+            spinner.classList.remove('opacity-0');
+            
+            if (onConfirmAsync) {
+                try {
+                    await onConfirmAsync();
+                } catch (err) {
+                    reset();
+                }
+            }
+        } else {
+            thumb.style.transform = `translateX(0px)`;
+            track.style.width = `3.25rem`;
+            text.style.opacity = '1';
+        }
+    };
+
+    thumb.addEventListener('mousedown', onDragStart);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    
+    thumb.addEventListener('touchstart', onDragStart, {passive: true});
+    document.addEventListener('touchmove', onDragMove, {passive: false});
+    document.addEventListener('touchend', onDragEnd);
+    
+    return { reset };
+}
+
+
+// --- Swipe-To-Confirm Delete Modal (Dynamic Contextual UI) ---
+function showConfirm(title, onConfirmAsync = null) {
   return new Promise((resolve) => {
     const appContainer = document.querySelector('.max-w-md.relative');
     const targetParent = appContainer || document.body;
@@ -145,24 +195,42 @@ function showConfirm(title, message, onConfirmAsync = null) {
     modal.className = 'bg-white p-6 pb-14 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-slate-800 pr-4">${escapeHTML(title)}</h3>
-        <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        </div>
-    </div>
-    <p class="text-sm text-slate-500 mb-6 leading-relaxed">${escapeHTML(message)}</p>
-    <div class="flex gap-3">
-        <button id="confirm-cancel-btn" class="flex-1 px-4 py-3.5 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
-        <button id="confirm-delete-btn" class="flex-1 relative flex items-center justify-center px-4 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-lg shadow-red-200 disabled:opacity-70 disabled:cursor-not-allowed">
-            <span class="btn-text transition-opacity">Delete</span>
-            <svg class="btn-spinner w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+    <div class="flex justify-between items-start mb-6">
+        <h3 class="text-xl font-bold text-slate-800 pr-4 leading-snug">${title}</h3>
+        <button id="confirm-close-btn" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 hover:bg-slate-200 transition-colors focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+    </div>
+    
+    <div class="relative w-full h-[52px] bg-red-50 rounded-xl flex items-center overflow-hidden select-none border border-red-100 touch-none">
+        <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
+            <span id="swipe-text" class="swipe-text shimmer-text shimmer-red transition-opacity duration-300">Swipe to delete</span>
+        </div>
+        
+        <div id="swipe-track" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-red-500 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
+            <svg id="swipe-spinner" class="w-5 h-5 animate-spin opacity-0 transition-opacity text-white absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        </div>
+
+        <div id="swipe-thumb" class="absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-red-500 hover:scale-[1.02] transition-transform">
+            <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+        </div>
     </div>
     `;
 
     overlay.appendChild(modal);
     targetParent.appendChild(overlay);
+
+    const closeBtn = modal.querySelector('#confirm-close-btn');
+    const swipeThumb = modal.querySelector('#swipe-thumb');
+    const swipeTrack = modal.querySelector('#swipe-track');
+    const swipeText = modal.querySelector('#swipe-text');
+    const swipeSpinner = modal.querySelector('#swipe-spinner');
+    const sliderContainer = swipeThumb.parentElement;
+    
+    let isDragging = false;
+    let isConfirmed = false;
+    let startX = 0;
+    let currentX = 0;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -172,6 +240,11 @@ function showConfirm(title, message, onConfirmAsync = null) {
     });
 
     const closeAndResolve = (result) => {
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('touchend', onDragEnd);
+        
       overlay.classList.add('opacity-0');
       modal.classList.add('translate-y-full');
       setTimeout(() => {
@@ -180,30 +253,77 @@ function showConfirm(title, message, onConfirmAsync = null) {
       }, 300); 
     };
 
-    const cancelBtn = modal.querySelector('#confirm-cancel-btn');
-    const deleteBtn = modal.querySelector('#confirm-delete-btn');
+    closeBtn.addEventListener('click', () => closeAndResolve(false));
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeAndResolve(false);
+    });
 
-    cancelBtn.addEventListener('click', () => closeAndResolve(false));
-    
-    deleteBtn.addEventListener('click', async () => {
-        if (onConfirmAsync) {
-            setButtonLoading(deleteBtn, true);
-            cancelBtn.disabled = true;
-            try {
-                await onConfirmAsync();
+    const onDragStart = (e) => {
+        if (isConfirmed) return;
+        isDragging = true;
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        swipeThumb.style.transition = 'none';
+        swipeTrack.style.transition = 'none';
+        swipeText.style.opacity = '0.3'; 
+    };
+
+    const onDragMove = (e) => {
+        if (!isDragging || isConfirmed) return;
+        const maxDrag = sliderContainer.clientWidth - swipeThumb.clientWidth - 8; 
+        const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        currentX = Math.max(0, Math.min(clientX - startX, maxDrag));
+        
+        swipeThumb.style.transform = `translateX(${currentX}px)`;
+        swipeTrack.style.width = `calc(3.25rem + ${currentX}px)`;
+    };
+
+    const onDragEnd = async () => {
+        if (!isDragging || isConfirmed) return;
+        isDragging = false;
+        const maxDrag = sliderContainer.clientWidth - swipeThumb.clientWidth - 8;
+        
+        swipeThumb.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        swipeTrack.style.transition = 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        
+        if (currentX >= maxDrag * 0.95) {
+            isConfirmed = true;
+            swipeThumb.style.transform = `translateX(${maxDrag}px)`;
+            swipeTrack.style.width = '100%';
+            swipeThumb.classList.add('pointer-events-none');
+            
+            swipeSpinner.classList.remove('opacity-0');
+            
+            if (onConfirmAsync) {
+                try {
+                    await onConfirmAsync();
+                    closeAndResolve(true);
+                } catch (err) {
+                    isConfirmed = false;
+                    swipeThumb.classList.remove('pointer-events-none');
+                    swipeSpinner.classList.add('opacity-0');
+                    swipeText.style.opacity = '1';
+                    swipeThumb.style.transform = `translateX(0px)`;
+                    swipeTrack.style.width = `3.25rem`;
+                }
+            } else {
                 closeAndResolve(true);
-            } catch (err) {
-                // If it fails, stop loading spinner and let user try again
-                setButtonLoading(deleteBtn, false);
-                cancelBtn.disabled = false;
             }
         } else {
-            closeAndResolve(true);
+            swipeThumb.style.transform = `translateX(0px)`;
+            swipeTrack.style.width = `3.25rem`;
+            swipeText.style.opacity = '1';
         }
-    });
+    };
+
+    swipeThumb.addEventListener('mousedown', onDragStart);
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    
+    swipeThumb.addEventListener('touchstart', onDragStart, {passive: true});
+    document.addEventListener('touchmove', onDragMove, {passive: false});
+    document.addEventListener('touchend', onDragEnd);
   });
 }
-
 
 // --- View Management ---
 const showView = (viewName) => {
@@ -266,7 +386,7 @@ onAuthStateChanged(auth, user => {
 
 function setInputStatus(status) {
   if (!passwordInput) return;
-  passwordInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-green-500', 'ring-green-500', 'focus:ring-indigo-500', 'border-slate-200');
+  passwordInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-green-500', 'ring-green-500', 'focus:ring-indigo-600', 'border-gray-300');
 
   if (status === 'error') {
     passwordInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
@@ -274,20 +394,7 @@ function setInputStatus(status) {
   } else if (status === 'success') {
     passwordInput.classList.add('border-green-500', 'ring-1', 'ring-green-500');
   } else {
-    passwordInput.classList.add('border-slate-200', 'focus:ring-indigo-500');
-  }
-}
-
-function setAuthButtonLoading(isLoading) {
-  if (!emailActionBtn || !btnText || !btnSpinner) return;
-  if (isLoading) {
-    btnText.classList.add('opacity-0');
-    btnSpinner.classList.remove('opacity-0');
-    emailActionBtn.disabled = true;
-  } else {
-    btnText.classList.remove('opacity-0');
-    btnSpinner.classList.add('opacity-0');
-    emailActionBtn.disabled = false;
+    passwordInput.classList.add('border-gray-300', 'focus:ring-indigo-600');
   }
 }
 
@@ -406,14 +513,42 @@ mobileMenuBackdrop?.addEventListener('click', e => {
 });
 mobileSignOutBtn?.addEventListener('click', () => signOut(auth));
 
-// --- Projects ---
+// --- Projects & Skeleton Loading ---
+function renderProjectSkeleton() {
+    if (!sidebarProjectList) return;
+    sidebarProjectList.innerHTML = Array(3).fill(0).map(() => `
+        <div class="flex justify-between items-center py-2.5 px-3">
+            <div class="h-4 bg-slate-200 rounded animate-pulse w-2/3"></div>
+            <div class="h-6 w-6 bg-slate-200 rounded-full animate-pulse"></div>
+        </div>
+    `).join('');
+}
+
+function renderExpenseSkeleton() {
+    if (!expenseList) return;
+    expenseList.innerHTML = Array(4).fill(0).map(() => `
+        <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100">
+            <div class="flex items-center gap-3 w-2/3">
+                <div class="w-10 h-10 rounded-xl bg-slate-200 animate-pulse shrink-0"></div>
+                <div class="space-y-2 w-full">
+                    <div class="h-4 bg-slate-200 rounded animate-pulse w-3/4"></div>
+                    <div class="h-3 bg-slate-200 rounded animate-pulse w-1/2"></div>
+                </div>
+            </div>
+            <div class="space-y-2 text-right flex flex-col items-end w-1/4">
+                <div class="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
+                <div class="h-3 bg-slate-200 rounded animate-pulse w-3/4 mt-1"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
 function listenForProjects(uid) {
+  renderProjectSkeleton();
   const appId = "construction-expenses";
   const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
 
   projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
-    if (snapshot.metadata.fromCache) return;
-
     projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     if (projects.length === 0 && navigator.onLine) {
@@ -457,15 +592,14 @@ sidebarAddProjectBtn?.addEventListener('click', (e) => {
     }, 300);
 });
 
-addProjectFormModal?.addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
+// Swipe to save hook for Add Project
+let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
+    if (!addProjectFormModal.reportValidity()) throw new Error("Validation failed");
+    if (!navigator.onLine) { showToast("Please connect to internet", "error"); throw new Error("Offline"); }
     
-    const submitBtn = addProjectFormModal.querySelector('button[type="submit"]');
     const projectName = document.getElementById('new-project-name-modal').value.trim();
     
     if (projectName && currentUser) {
-        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
         try {
@@ -473,14 +607,14 @@ addProjectFormModal?.addEventListener('submit', async e => {
                 t.set(newProjRef, { name: projectName });
             });
             addProjectFormModal.reset();
-            addProjectModal.classList.add('hidden');
+            closeAddProjectModal();
             showToast(`Project "${projectName}" created!`, "success");
+            addProjectSwipeObj.reset();
         } catch (err) {
             showToast("Transaction failed: Check your connection.", "error");
-        } finally {
-            setButtonLoading(submitBtn, false);
+            throw err;
         }
-    }
+    } else { throw new Error("Invalid payload"); }
 });
 
 function populateSidebarProjects(projects) {
@@ -501,20 +635,28 @@ function populateSidebarProjects(projects) {
 
     document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => {
         e.preventDefault();
-        activeProjectId = e.target.dataset.projectId;
+        activeProjectId = e.currentTarget.dataset.projectId;
         localStorage.setItem('lastActiveProjectId', activeProjectId);
         showAllExpenses = false;
         if (viewAllBtn) viewAllBtn.style.display = 'block';
         updateActiveProject();
         closeMenu();
     }));
+    
     document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const { projectId, projectName } = e.currentTarget.dataset;
         closeMenu();
-        setTimeout(() => handleEditProject(e), 300);
+        setTimeout(() => handleEditProject(projectId, projectName), 300);
     }));
+    
     document.querySelectorAll('.delete-project-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const { projectId, projectName } = e.currentTarget.dataset;
         closeMenu();
-        setTimeout(() => handleDeleteProject(e), 300);
+        setTimeout(() => handleDeleteProject(projectId, projectName), 300);
     }));
 }
 
@@ -559,19 +701,25 @@ filterBtn?.addEventListener('click', () => {
 });
 
 function listenForExpenses(uid, projectId) {
-    if (expensesUnsubscribe) expensesUnsubscribe();
+    if (expensesUnsubscribe) {
+        expensesUnsubscribe();
+        expensesUnsubscribe = null;
+    }
+    
     if (!uid || !projectId) {
         allExpensesForProject = [];
         applyFilters();
         updateSummaries([]);
         return;
     }
+    
+    renderExpenseSkeleton();
+    
     const appId = "construction-expenses";
     const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
     const q = query(expensesRef, where("projectId", "==", projectId));
 
     expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-        if (snapshot.metadata.fromCache) return;
         allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
         applyFilters();
@@ -633,25 +781,17 @@ document.getElementById('last-week')?.addEventListener('click', () => setDateFil
 document.getElementById('last-month')?.addEventListener('click', () => setDateFilter('last-month'));
 document.getElementById('last-year')?.addEventListener('click', () => setDateFilter('last-year'));
 
-// --- Add Expense Modal Logic ---
-fabAddExpense?.addEventListener('click', () => {
-    addExpenseSheet.classList.remove('hidden');
-});
-closeAddExpenseBtn?.addEventListener('click', () => {
-    addExpenseSheet.classList.add('hidden');
-});
-addExpenseSheet?.addEventListener('click', e => {
-    if(e.target === addExpenseSheet) addExpenseSheet.classList.add('hidden');
-});
+// --- Modal Display Flows ---
+fabAddExpense?.addEventListener('click', () => { addExpenseSheet.classList.remove('hidden'); });
 
-expenseForm?.addEventListener('submit', async e => {
-    e.preventDefault();
+// Swipe to save hook for Add Expense
+let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
+    if (!expenseForm.reportValidity()) throw new Error("Validation failed");
     if (!currentUser || !activeProjectId || !navigator.onLine) {
         if (!navigator.onLine) showToast("Please connect to internet", "error");
-        return;
+        throw new Error("Offline or Unauthenticated");
     }
     
-    const submitBtn = expenseForm.querySelector('button[type="submit"]');
     const type = document.querySelector('input[name="entry-type"]:checked').value;
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
@@ -659,7 +799,6 @@ expenseForm?.addEventListener('submit', async e => {
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date) {
-        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
         try {
@@ -669,23 +808,23 @@ expenseForm?.addEventListener('submit', async e => {
             expenseForm.reset();
             document.querySelector('input[name="entry-type"][value="expense"]').checked = true;
             document.getElementById('date').valueAsDate = new Date();
-            addExpenseSheet.classList.add('hidden');
+            closeAddExpenseModal();
             showToast("Entry added successfully!", "success");
             
             document.getElementById('main-scroll').scrollTo({
                 top: document.getElementById('history-section').offsetTop - 20,
                 behavior: 'smooth'
             });
+            addExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Network Error: Data not saved.", "error");
-        } finally {
-            setButtonLoading(submitBtn, false);
+            throw err;
         }
-    }
+    } else { throw new Error("Invalid Payload"); }
 });
 
 
-// --- Render, CRUD, Utils ---
+// --- Render & CRUD ---
 function renderExpenses(expenses) {
     if (!expenseList) return;
     if (expenses.length === 0) {
@@ -731,15 +870,19 @@ function renderExpenses(expenses) {
 }
 
 async function handleDelete(event) {
-    const id = event.target.dataset.id;
+    const id = event.currentTarget.dataset.id;
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!id) return;
     
-    await showConfirm("Delete Entry", "Are you sure you want to delete this entry?", async () => {
-        if (!navigator.onLine) { 
-            showToast("Cannot delete while offline.", "error"); 
-            throw new Error("Offline"); 
-        }
+    const expense = allExpensesForProject.find(e => e.id === id);
+    if(!expense) return;
+    
+    const sign = expense.type === 'income' ? '+' : '-';
+    const costStr = `₹${expense.cost.toLocaleString('en-IN')}`;
+    const modalTitle = `Delete ${escapeHTML(expense.material)} (${sign}${costStr})?`;
+
+    await showConfirm(modalTitle, async () => {
+        if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
             const appId = "construction-expenses";
             const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
@@ -753,7 +896,7 @@ async function handleDelete(event) {
 }
 
 function handleEdit(event) {
-    const id = event.target.dataset.id;
+    const id = event.currentTarget.dataset.id;
     const expense = allExpensesForProject.find(e => e.id === id);
     if (!expense) return;
     
@@ -768,11 +911,11 @@ function handleEdit(event) {
     editModal.classList.remove('hidden');
 }
 
-editExpenseForm?.addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); return; }
+// Initialise generic Swipe-To-Save for Edit Entry
+let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
+    if (!editExpenseForm.reportValidity()) throw new Error("Validation failed");
+    if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); throw new Error("Offline"); }
     
-    const submitBtn = editExpenseForm.querySelector('button[type="submit"]');
     const id = document.getElementById('edit-expense-id').value;
     const updatedData = {
         type: document.querySelector('input[name="edit-entry-type"]:checked').value,
@@ -783,39 +926,32 @@ editExpenseForm?.addEventListener('submit', async e => {
     };
     
     if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
-        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
             await runTransaction(db, async (t) => { t.update(docRef, updatedData); });
             closeEditModal();
             showToast("Entry updated successfully!", "success");
+            editExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
-        } finally {
-            setButtonLoading(submitBtn, false);
+            throw err;
         }
-    }
+    } else { throw new Error("Invalid payload"); }
 });
 
-
-function handleEditProject(e) {
-    const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
+function handleEditProject(projectId, projectName) {
     document.getElementById('edit-project-id').value = projectId;
     document.getElementById('edit-project-name').value = projectName;
     editProjectModal.classList.remove('hidden');
 }
 
-async function handleDeleteProject(e) {
-    const projectId = e.target.dataset.projectId, projectName = e.target.dataset.projectName;
+async function handleDeleteProject(projectId, projectName) {
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
     if (!projectId) return;
 
-    await showConfirm("Delete Project", `Are you sure? All data in "${projectName}" will be permanently deleted.`, async () => {
-        if (!navigator.onLine) { 
-            showToast("Cannot delete while offline.", "error"); 
-            throw new Error("Offline"); 
-        }
+    await showConfirm(`Delete project "${escapeHTML(projectName)}"?`, async () => {
+        if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
             const appId = "construction-expenses";
             const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
@@ -847,41 +983,56 @@ async function handleDeleteProject(e) {
     });
 }
 
-editProjectForm?.addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
+// Initialise generic Swipe-To-Save for Edit Project
+let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
+    if (!editProjectForm.reportValidity()) throw new Error("Validation failed");
+    if (!navigator.onLine) { showToast("Please connect to internet", "error"); throw new Error("Offline"); }
     
-    const submitBtn = editProjectForm.querySelector('button[type="submit"]');
     const projectId = document.getElementById('edit-project-id').value,
     newName = document.getElementById('edit-project-name').value.trim();
     
     if (newName && projectId) {
-        setButtonLoading(submitBtn, true);
         const appId = "construction-expenses";
         const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
         try {
             await runTransaction(db, async (t) => { t.update(projectRef, { name: newName }); });
             closeEditProjectModal();
             showToast("Project renamed successfully!", "success");
+            editProjectSwipeObj.reset();
         } catch (err) {
             showToast("Rename failed.", "error");
-        } finally {
-            setButtonLoading(submitBtn, false);
+            throw err;
         }
-    }
+    } else { throw new Error("Invalid Payload"); }
 });
 
-// --- Modal Closers ---
-const closeEditModal = () => { editModal?.classList.add('hidden'); };
-cancelEditBtn?.addEventListener('click', closeEditModal);
+// --- Modal Closers via Top Header Icons ---
+const closeAddExpenseModal = () => { 
+    addExpenseSheet?.classList.add('hidden'); 
+    if(addExpenseSwipeObj) addExpenseSwipeObj.reset(); 
+};
+closeAddExpenseBtn?.addEventListener('click', closeAddExpenseModal);
+addExpenseSheet?.addEventListener('click', e => { if (e.target === addExpenseSheet) closeAddExpenseModal(); });
+
+const closeEditModal = () => { 
+    editModal?.classList.add('hidden'); 
+    if(editExpenseSwipeObj) editExpenseSwipeObj.reset();
+};
+closeEditBtn?.addEventListener('click', closeEditModal);
 editModal?.addEventListener('click', e => { if (e.target === editModal) closeEditModal(); });
 
-const closeEditProjectModal = () => { editProjectModal?.classList.add('hidden'); };
-cancelEditProjectBtn?.addEventListener('click', closeEditProjectModal);
+const closeEditProjectModal = () => { 
+    editProjectModal?.classList.add('hidden'); 
+    if(editProjectSwipeObj) editProjectSwipeObj.reset();
+};
+closeEditProjectBtn?.addEventListener('click', closeEditProjectModal);
 editProjectModal?.addEventListener('click', e => { if (e.target === editProjectModal) closeEditProjectModal(); });
 
-const closeAddProjectModal = () => { addProjectModal?.classList.add('hidden'); };
-cancelAddProjectBtn?.addEventListener('click', closeAddProjectModal);
+const closeAddProjectModal = () => { 
+    addProjectModal?.classList.add('hidden'); 
+    if(addProjectSwipeObj) addProjectSwipeObj.reset();
+};
+closeAddProjectBtn?.addEventListener('click', closeAddProjectModal);
 addProjectModal?.addEventListener('click', e => { if (e.target === addProjectModal) closeAddProjectModal(); });
 
 // --- Info Modals ---
@@ -960,10 +1111,6 @@ function updateSummaries(expenses) {
         }).join('');
     }
 }
-
-const escapeHTML = (str) => {
-    const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML;
-};
 
 
 // --- Analytics Nav Binding & Modal Rendering ---
@@ -1135,6 +1282,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.2.1";
+const APP_VERSION = "1.4.0: Universal Swipe UI & Modernized Inputs";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
