@@ -367,6 +367,10 @@ onAuthStateChanged(auth, user => {
     if (user) {
       showView('app');
       setupUIForUser(user);
+      // Immediately render skeletons so there is zero flash of static UI components
+      renderProjectSkeleton();
+      renderDashboardSkeleton();
+      renderExpenseSkeleton();
       listenForProjects(user.uid);
     } else {
       showView('auth');
