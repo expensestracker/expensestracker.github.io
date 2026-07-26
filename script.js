@@ -192,7 +192,7 @@ function showConfirm(title, onConfirmAsync = null) {
     overlay.className = 'absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-white p-6 pb-10 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-white p-6 pb-6 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
     <div class="flex justify-between items-start">
