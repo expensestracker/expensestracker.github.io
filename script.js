@@ -192,17 +192,17 @@ function showConfirm(title, onConfirmAsync = null) {
     overlay.className = 'absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-white p-6 pb-14 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-white p-6 pb-10 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
-    <div class="flex justify-between items-start mb-6">
+    <div class="flex justify-between items-start">
         <h3 class="text-xl font-bold text-slate-800 pr-4 leading-snug">${title}</h3>
         <button id="confirm-close-btn" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 hover:bg-slate-200 transition-colors focus:outline-none">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
     
-    <div class="relative w-full h-[52px] bg-red-50 rounded-xl flex items-center overflow-hidden select-none border border-red-100 touch-none">
+    <div class="relative w-full h-[52px] bg-red-50 rounded-xl flex items-center overflow-hidden select-none border border-red-100 touch-none mt-2">
         <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
             <span id="swipe-text" class="swipe-text shimmer-text shimmer-red transition-opacity duration-300">Swipe to delete</span>
         </div>
@@ -543,6 +543,23 @@ function renderExpenseSkeleton() {
     `).join('');
 }
 
+function renderDashboardSkeleton() {
+    if (finalExpensesEl) finalExpensesEl.innerHTML = '<div class="h-10 bg-white/20 rounded-lg animate-pulse w-1/2 mb-2"></div>';
+    const cardIncomeCopy = document.getElementById('card-income-copy');
+    if (cardIncomeCopy) cardIncomeCopy.innerHTML = '<div class="h-5 bg-white/20 rounded animate-pulse w-20"></div>';
+    const cardExpenseCopy = document.getElementById('card-expense-copy');
+    if (cardExpenseCopy) cardExpenseCopy.innerHTML = '<div class="h-5 bg-white/20 rounded animate-pulse w-20"></div>';
+    
+    if (materialSummaryEl) {
+        materialSummaryEl.innerHTML = Array(3).fill(0).map(() => `
+            <div class="flex justify-between items-center py-2.5">
+                <div class="h-4 bg-slate-200 rounded animate-pulse w-1/3"></div>
+                <div class="h-4 bg-slate-200 rounded animate-pulse w-1/4"></div>
+            </div>
+        `).join('');
+    }
+}
+
 function listenForProjects(uid) {
   renderProjectSkeleton();
   const appId = "construction-expenses";
@@ -713,6 +730,7 @@ function listenForExpenses(uid, projectId) {
         return;
     }
     
+    renderDashboardSkeleton();
     renderExpenseSkeleton();
     
     const appId = "construction-expenses";
@@ -834,7 +852,7 @@ function renderExpenses(expenses) {
     
     expenseList.innerHTML = expenses.map(expense => {
         const isIncome = expense.type === 'income';
-        const costSign = isIncome ? '+' : '-';
+        const costSign = ''; // Requested no +/- prefix
         const costColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
         const iconBgColor = isIncome ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500';
         const iconSvg = isIncome 
@@ -843,20 +861,20 @@ function renderExpenses(expenses) {
         
         return `
         <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-all hover:border-indigo-100">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
                 <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
                     ${iconSvg}
                 </div>
-                <div class="overflow-hidden">
-                    <h4 class="font-bold text-slate-700 truncate">${escapeHTML(expense.material)}</h4>
+                <div class="overflow-hidden flex-1">
+                    <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
                     <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
                         ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}
                     </p>
                     ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
                 </div>
             </div>
-            <div class="text-right shrink-0 ml-2">
-                <p class="font-bold ${costColor}">${costSign}₹${expense.cost.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+            <div class="text-right shrink-0 ml-3">
+                <p class="font-bold ${costColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                 <div class="flex gap-4 mt-1 justify-end">
                     <button data-id="${expense.id}" class="edit-btn text-sm text-indigo-600 hover:text-slate-700 font-bold tracking-wider">Edit</button>
                     <button data-id="${expense.id}" class="delete-btn text-sm text-rose-600 hover:text-slate-600 font-bold tracking-wider">Delete</button>
@@ -877,8 +895,8 @@ async function handleDelete(event) {
     const expense = allExpensesForProject.find(e => e.id === id);
     if(!expense) return;
     
-    const sign = expense.type === 'income' ? '+' : '-';
-    const costStr = `₹${expense.cost.toLocaleString('en-IN')}`;
+    const sign = ''; // Requested no +/- prefix
+    const costStr = `₹${Math.abs(expense.cost).toLocaleString('en-IN')}`;
     const modalTitle = `Delete ${escapeHTML(expense.material)} (${sign}${costStr})?`;
 
     await showConfirm(modalTitle, async () => {
@@ -1081,11 +1099,11 @@ function updateSummaries(expenses) {
 
     const netBalance = totalIncome - totalExpense;
     
-    finalExpensesEl.textContent = `₹${netBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    finalExpensesEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     
     const cardIncomeCopy = document.getElementById('card-income-copy');
-    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${totalExpense.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${Math.abs(totalIncome).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${Math.abs(totalExpense).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
     const materialTotals = expenses.reduce((acc, exp) => {
         const key = exp.material.trim().toLowerCase();
@@ -1103,11 +1121,10 @@ function updateSummaries(expenses) {
     if (materialSummaryEl) {
         materialSummaryEl.innerHTML = sorted.map(key => {
             const netAmount = materialTotals[key];
-            const isPositive = netAmount >= 0;
+            const colorClass = netAmount > 0 ? 'text-red-500' : (netAmount < 0 ? 'text-green-700' : 'text-slate-900');
             const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-            const colorClass = isPositive ? 'text-emerald-600' : 'text-slate-900';
-            const sign = isPositive ? '+' : '';
-            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass}">${sign}₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            const sign = ''; // Requested no +/- prefix
+            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">${sign}₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
         }).join('');
     }
 }
@@ -1282,6 +1299,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.4.0: Universal Swipe UI & Modernized Inputs";
+const APP_VERSION = "1.5.0: Enhanced UI & Visual Polish";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;

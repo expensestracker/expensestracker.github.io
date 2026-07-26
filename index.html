@@ -33,7 +33,8 @@
       touch-action: pan-x pan-y;
     }
 
-    .pb-safe { padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem); }
+    /* Standardized bottom padding equal to side padding (1.5rem/p-6) but honors Safe Areas on mobile */
+    .pb-safe {}
     
     @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
     .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
@@ -226,7 +227,7 @@
 
                 <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
                     <h2 class="text-md font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <span class="w-1.5 h-4 bg-indigo-500 rounded-full"></span> Item Summary
+                        Item Summary
                     </h2>
                     <div id="material-summary" class="space-y-3 max-h-40 overflow-y-auto pr-2 no-scrollbar text-sm"></div>
                 </div>
@@ -319,15 +320,15 @@
 
         <!-- Analytics Modal -->
         <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]" style="padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem))">
-                <div class="flex justify-between items-center mb-6 shrink-0">
+            <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]">
+                <div class="flex justify-between items-center mb-3 shrink-0">
                     <h3 class="text-xl font-bold text-slate-800">Project Stats</h3>
                     <button id="close-analytics-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 
-                <div class="overflow-y-auto no-scrollbar flex-grow pb-6 space-y-4">
+                <div class="overflow-y-auto no-scrollbar flex-grow pb-2 space-y-4">
                     <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-sm">
                         <div class="relative w-full">
                             <canvas id="category-chart"></canvas>
@@ -345,8 +346,8 @@
 
         <!-- Add Entry Sheet with Universal Swipe -->
         <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
-            <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
-                <div class="flex justify-between items-center mb-6">
+            <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up overflow-y-auto no-scrollbar">
+                <div class="flex justify-between items-center mb-3">
                     <h3 class="text-xl font-bold text-slate-800">Add Entry</h3>
                     <button id="close-add-expense-btn" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -406,8 +407,8 @@
 
     <!-- Edit Entry Modal with Swipe-to-Save -->
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up max-h-[90dvh] overflow-y-auto no-scrollbar" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom, 2.5rem))">
-            <div class="flex justify-between items-center mb-6">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center mb-3">
                 <h3 class="text-xl font-bold text-slate-800">Edit Entry</h3>
                 <button id="close-edit-btn" class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -467,8 +468,8 @@
 
     <!-- Edit Project Modal with Swipe-to-Save -->
     <div id="edit-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
-            <div class="flex justify-between items-center mb-6">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="flex justify-between items-center mb-3">
                 <h3 class="text-xl font-bold text-slate-800">Edit Project</h3>
                 <button id="close-edit-project-btn" class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -499,8 +500,8 @@
 
     <!-- Add Project Modal with Swipe-to-Save -->
     <div id="add-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400 bg-white w-full p-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up" style="padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem))">
-            <div class="flex justify-between items-center mb-6">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="flex justify-between items-center mb-3">
                 <h3 class="text-xl font-bold text-slate-800">Add Project</h3>
                 <button id="close-add-project-btn" class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 hover:bg-indigo-100 flex items-center justify-center shrink-0 transition-colors focus:outline-none">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -530,8 +531,8 @@
 
     <!-- Info Modal -->
     <div id="info-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
-        <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
-            <div class="flex justify-between items-center mb-4">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-safe rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="flex justify-between items-center mb-3">
                 <h3 id="info-modal-title" class="text-xl font-bold text-slate-800">Info</h3>
                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-indigo-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
