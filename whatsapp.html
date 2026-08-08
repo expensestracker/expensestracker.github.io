@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Direct Message</title>
+    <style>
+        /* CSS Styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 350px;
+        }
+
+        h2 {
+            color: #25D366;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #25D366;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #128C7E;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: -15px;
+            margin-bottom: 15px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>WhatsApp Direct</h2>
+        <form id="waForm">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" placeholder="e.g. 919876543210" required>
+            <span class="hint">Include country code without '+' (e.g., 91 for India)</span>
+
+            <label for="message">Message (Optional):</label>
+            <textarea id="message" rows="4" placeholder="Type your message here..."></textarea>
+
+            <button type="submit">Open in WhatsApp</button>
+        </form>
+    </div>
+
+    <script>
+        /* JavaScript Logic */
+        document.getElementById('waForm').addEventListener('submit', function(e) {
+            // Prevent the form from refreshing the page
+            e.preventDefault();
+
+            // 1. Get the values from the inputs
+            let phone = document.getElementById('phone').value;
+            let message = document.getElementById('message').value;
+
+            // 2. Clean the phone number (removes any +, -, spaces, or letters)
+            phone = phone.replace(/\D/g, '');
+
+            // 3. Build the official WhatsApp API URL
+            let url = `https://wa.me/${phone}`;
+
+            // 4. Append the encoded message if the user typed one
+            if (message.trim() !== '') {
+                url += `?text=${encodeURIComponent(message)}`;
+            }
+
+            // 5. Open the URL in a new tab
+            window.open(url, '_blank');
+        });
+    </script>
+
+</body>
+</html>
