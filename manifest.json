@@ -23,9 +23,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Timeline",
-      "short_name": "Timeline",
-      "description": "View your timeline",
+      "name": "Loans",
+      "short_name": "Loans",
+      "description": "View loans",
       "url": "/notes/index.html",
       "icons": [
         {
