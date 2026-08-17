@@ -285,34 +285,40 @@ function listenForLoans(uid) {
   loansUnsubscribe = onSnapshot(query(loansRef), (snapshot) => {
     loans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Sort logic
+    // Sort logic (Bulletproofed with optional chaining and defensive arrays)
     loans.sort((a, b) => {
+        const schedA = a.schedule || [];
+        const schedB = b.schedule || [];
+        
         const isAFlex = a.type === 'flexible';
         const isBFlex = b.type === 'flexible';
-        const paidA = a.schedule ? a.schedule.reduce((sum, s) => sum + s.amount, 0) : 0;
-        const paidB = b.schedule ? b.schedule.reduce((sum, s) => sum + s.amount, 0) : 0;
         
-        const aSettled = a.type === 'standard' ? !a.schedule.find(s => s.status === 'pending') : (paidA >= a.payable);
-        const bSettled = b.type === 'standard' ? !b.schedule.find(s => s.status === 'pending') : (paidB >= b.payable);
+        // Explicitly sum ONLY paid amounts to evaluate status accurately
+        const paidA = schedA.filter(s => s.status === 'paid').reduce((sum, s) => sum + s.amount, 0);
+        const paidB = schedB.filter(s => s.status === 'paid').reduce((sum, s) => sum + s.amount, 0);
+        
+        const aSettled = isAFlex ? (paidA >= (a.payable || 0)) : !schedA.find(s => s.status === 'pending');
+        const bSettled = isBFlex ? (paidB >= (b.payable || 0)) : !schedB.find(s => s.status === 'pending');
 
-        // 1. Settled Loans always at the very bottom
-        if (aSettled && bSettled) return new Date(b.createdAt) - new Date(a.createdAt);
-        if (aSettled) return 1;
-        if (bSettled) return -1;
+        // Settled ones move strictly to the bottom of the stack
+        if (aSettled && !bSettled) return 1;
+        if (!aSettled && bSettled) return -1;
+        if (aSettled && bSettled) return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         
-        // 2. Active Loans: Flexible loans are pushed to the bottom of the active list
-        if (isAFlex && !isBFlex) return 1;
-        if (!isAFlex && isBFlex) return -1;
-        
-        // 3. Active Loans: Both Standard - Sort by closest due date first
-        if (!isAFlex && !isBFlex) {
-            const nextA = a.schedule.find(s => s.status === 'pending');
-            const nextB = b.schedule.find(s => s.status === 'pending');
-            if(nextA && nextB) return new Date(nextA.date) - new Date(nextB.date);
+        // Both are active. Find nearest pending due dates.
+        const nextA = !isAFlex ? schedA.find(s => s.status === 'pending') : null;
+        const nextB = !isBFlex ? schedB.find(s => s.status === 'pending') : null;
+
+        // Use MAX_SAFE_INTEGER for flexible loans (or missing dates) so they fall beneath scheduled dates natively without causing NaN
+        const timeA = nextA?.date ? new Date(nextA.date).getTime() : Number.MAX_SAFE_INTEGER;
+        const timeB = nextB?.date ? new Date(nextB.date).getTime() : Number.MAX_SAFE_INTEGER;
+
+        if (timeA !== timeB) {
+            return timeA - timeB; // Nearest upcoming due date (or overdue dates) surface to the top first
         }
         
-        // 4. Fallback for both flexible or missing dates
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        // If they share the exact same due date (or both are flexible), sort by creation date
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
 
     renderHomeDashboard();
@@ -338,12 +344,13 @@ function renderHomeDashboard() {
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
     loansContainer.innerHTML = loans.map(loan => {
+        const schedule = loan.schedule || [];
         const isFlexible = loan.type === 'flexible';
-        const paidAmount = loan.schedule ? loan.schedule.filter(s => s.status === 'paid').reduce((sum, s) => sum + s.amount, 0) : 0;
+        const paidAmount = schedule.filter(s => s.status === 'paid').reduce((sum, s) => sum + s.amount, 0);
         const currentPayable = loan.principal - paidAmount;
         const progressPercent = loan.payable > 0 ? Math.min(100, Math.round((paidAmount / loan.payable) * 100)) : 0;
         
-        const isSettled = isFlexible ? (paidAmount >= loan.payable) : !loan.schedule.find(s => s.status === 'pending');
+        const isSettled = isFlexible ? (paidAmount >= loan.payable) : !schedule.find(s => s.status === 'pending');
         
         // ONLY aggregate for Active Loans in the Global Top Dashboard
         if (!isSettled) {
@@ -353,7 +360,7 @@ function renderHomeDashboard() {
             
             // Calculate Total Due within 30 days & Overdue (Only for standard loans)
             if (!isFlexible) {
-                loan.schedule.forEach(s => {
+                schedule.forEach(s => {
                     if (s.status === 'pending') {
                         const d = new Date(s.date);
                         if (d < today) {
@@ -367,7 +374,7 @@ function renderHomeDashboard() {
             }
         }
 
-        const nextInst = !isFlexible ? loan.schedule.find(s => s.status === 'pending') : null;
+        const nextInst = !isFlexible ? schedule.find(s => s.status === 'pending') : null;
         let daysLeftInfo = getDaysLeftDetails(nextInst ? nextInst.date : null);
         if (isFlexible) {
              daysLeftInfo = isSettled 
@@ -378,7 +385,7 @@ function renderHomeDashboard() {
         const nextDateStr = nextInst ? new Date(nextInst.date).toLocaleDateString('en-IN', {month:'short', day:'numeric', year:'numeric'}) : '';
         const startDateObj = loan.startDate ? new Date(loan.startDate) : new Date(loan.createdAt);
         const startDateStr = startDateObj.toLocaleDateString('en-IN', {month:'short', day:'numeric', year:'numeric'});
-        const emiAmount = isFlexible ? "Flexible" : (loan.schedule.length > 0 ? `₹${loan.schedule[0].amount.toLocaleString('en-IN', {maximumFractionDigits:0})}` : '0');
+        const emiAmount = isFlexible ? "Flexible" : (schedule.length > 0 ? `₹${schedule[0].amount.toLocaleString('en-IN', {maximumFractionDigits:0})}` : '0');
 
         return `
         <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 cursor-pointer loan-card transition-all duration-200 hover:border-indigo-200 hover:shadow-md relative overflow-hidden active:scale-[0.98]" data-id="${loan.id}">
@@ -433,7 +440,7 @@ function renderHomeDashboard() {
     let globalTotalExpected = 0;
     loans.forEach(l => {
         const isFlex = l.type === 'flexible';
-        const isSettled = isFlex ? (l.schedule.reduce((acc,s)=>acc+s.amount,0) >= l.payable) : !l.schedule.find(s=>s.status==='pending');
+        const isSettled = isFlex ? ((l.schedule||[]).reduce((acc,s)=>acc+s.amount,0) >= l.payable) : !(l.schedule||[]).find(s=>s.status==='pending');
         if (!isSettled) globalTotalExpected += l.payable;
     });
     
@@ -460,19 +467,20 @@ function openLoanDetail(loanId) {
     const loan = loans.find(l => l.id === loanId);
     if(!loan) return;
 
+    const schedule = loan.schedule || [];
     const isFlexible = loan.type === 'flexible';
     
     // Status Computations
-    const paidArr = loan.schedule ? loan.schedule.filter(s => s.status === 'paid') : [];
+    const paidArr = schedule.filter(s => s.status === 'paid');
     const paidCount = paidArr.length;
     const paidTotal = paidArr.reduce((sum, s) => sum + s.amount, 0);
     
-    const totalInst = isFlexible ? '-' : loan.schedule.length;
+    const totalInst = isFlexible ? '-' : schedule.length;
     const pendingCount = isFlexible ? '-' : (totalInst - paidCount);
     
     const currentPayable = loan.principal - paidTotal;
     const progressPercent = loan.payable > 0 ? Math.min(100, Math.round((paidTotal / loan.payable) * 100)) : 0;
-    const isSettled = isFlexible ? (paidTotal >= loan.payable) : !loan.schedule.find(s => s.status === 'pending');
+    const isSettled = isFlexible ? (paidTotal >= loan.payable) : !schedule.find(s => s.status === 'pending');
 
     // Headings & Monetary Values
     document.getElementById('detail-loan-name').textContent = loan.name;
@@ -485,10 +493,10 @@ function openLoanDetail(loanId) {
     const roi = isFlexible ? 'N/A' : `${(((loan.payable - loan.principal) / loan.principal) * 100).toFixed(1)}%`;
     document.getElementById('detail-roi').textContent = roi;
     
-    const emiAmount = isFlexible ? 'Flexible' : (loan.schedule.length > 0 ? `₹${loan.schedule[0].amount.toLocaleString('en-IN', {maximumFractionDigits:0})}` : '0');
+    const emiAmount = isFlexible ? 'Flexible' : (schedule.length > 0 ? `₹${schedule[0].amount.toLocaleString('en-IN', {maximumFractionDigits:0})}` : '0');
     document.getElementById('detail-emi-amount').textContent = emiAmount;
     
-    const nextInst = !isFlexible ? loan.schedule.find(s => s.status === 'pending') : null;
+    const nextInst = !isFlexible ? schedule.find(s => s.status === 'pending') : null;
     let daysLeftInfo = getDaysLeftDetails(nextInst ? nextInst.date : null);
     if(isFlexible) {
         daysLeftInfo = isSettled 
@@ -527,14 +535,14 @@ function openLoanDetail(loanId) {
     // Render Flexbox Timeline
     const timelineContainer = document.getElementById('timeline-container');
     
-    if (!loan.schedule || loan.schedule.length === 0) {
+    if (schedule.length === 0) {
         timelineContainer.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-bold border-l-2 border-slate-100 ml-4 pl-4">No payments recorded.</div>`;
     } else {
         // Sequential Integrity Logic for Standard
-        const firstPendingId = !isFlexible ? loan.schedule.find(s => s.status === 'pending')?.id : null;
+        const firstPendingId = !isFlexible ? schedule.find(s => s.status === 'pending')?.id : null;
         
         // Reverse array for Flexible so newest payments are on top. Keep Standard chronological.
-        const scheduleToRender = isFlexible ? [...loan.schedule].reverse() : loan.schedule;
+        const scheduleToRender = isFlexible ? [...schedule].reverse() : schedule;
 
         timelineContainer.innerHTML = scheduleToRender.map((inst, index) => {
             const isPaid = inst.status === 'paid';
@@ -543,7 +551,7 @@ function openLoanDetail(loanId) {
             const isLast = index === scheduleToRender.length - 1;
             
             // Logic to determine if this item is eligible for Undo
-            const canUndo = isFlexible ? (index === 0) : (inst.id === [...loan.schedule].reverse().find(s => s.status === 'paid')?.id);
+            const canUndo = isFlexible ? (index === 0) : (inst.id === [...schedule].reverse().find(s => s.status === 'paid')?.id);
             
             let actionHtml = '';
             if (isPaid) {
@@ -608,11 +616,11 @@ async function handleMarkInst(e) {
             
             if (action === 'flex-undo') {
                 // Completely remove the payment from the array
-                const updatedSchedule = loanData.schedule.filter(inst => inst.id !== iId);
+                const updatedSchedule = (loanData.schedule || []).filter(inst => inst.id !== iId);
                 t.update(loanRef, { schedule: updatedSchedule });
             } else {
                 // Standard Status flip
-                const updatedSchedule = loanData.schedule.map(inst => {
+                const updatedSchedule = (loanData.schedule || []).map(inst => {
                     if (inst.id === iId) {
                         return action === 'paid' 
                             ? { ...inst, status: 'paid', paidDate: new Date().toISOString() }
@@ -623,7 +631,7 @@ async function handleMarkInst(e) {
                 t.update(loanRef, { schedule: updatedSchedule });
             }
         });
-        showToast(action === 'paid' ? "Payment registered!" : "Payment reversed.", "success");
+        showToast(action === 'paid' ? "Payment registered" : "Payment reversed", "success");
     } catch (err) {
         showToast("Transaction sync failed.", "error");
     }
