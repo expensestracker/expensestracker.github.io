@@ -1,22 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, query, doc, where, orderBy, getDocs, writeBatch, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
-  authDomain: "construction-expenses-app.firebaseapp.com",
-  projectId: "construction-expenses-app",
-  storageBucket: "construction-expenses-app.firebasestorage.app",
-  messagingSenderId: "944353147981",
-  appId: "1:944353147981:web:36ff635b184d5eac69b004"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Global State ---
-let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
+let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
 
 // --- DOM Elements ---
@@ -360,22 +349,22 @@ const showView = (viewName) => {
 // --- Authentication ---
 let isInitialLoad = true;
 
-onAuthStateChanged(auth, user => {
+supabase.auth.onAuthStateChange((event, session) => {
+  const user = session?.user;
   currentUser = user;
 
   const routeUser = () => {
     if (user) {
       showView('app');
       setupUIForUser(user);
-      // Immediately render skeletons so there is zero flash of static UI components
       renderProjectSkeleton();
       renderDashboardSkeleton();
       renderExpenseSkeleton();
-      listenForProjects(user.uid);
+      listenForProjects(user.id);
     } else {
       showView('auth');
-      if (projectsUnsubscribe) projectsUnsubscribe();
-      if (expensesUnsubscribe) expensesUnsubscribe();
+      if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
+      if (expensesUnsubscribe) supabase.removeChannel(expensesUnsubscribe);
       activeProjectId = null;
     }
   };
@@ -427,70 +416,60 @@ emailForm?.addEventListener('submit', async e => {
 
   setAuthButtonLoading(true);
 
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
+  // Attempt login
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (!loginError) {
     setInputStatus('success');
     showToast("Login successful!", "success");
     setAuthButtonLoading(false);
-  } catch (loginError) {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const appId = "construction-expenses";
-      await setDoc(doc(db, `artifacts/${appId}/users`, userCredential.user.uid), {
-        email: email, status: "active", createdAt: new Date().toISOString()
-      });
-      setInputStatus('success');
-      showToast("Account created successfully!", "success");
-      setAuthButtonLoading(false);
-    } catch (signupError) {
-      setInputStatus('error');
-      setAuthButtonLoading(false);
-      let friendlyMessage = "Something went wrong. Please try again.";
-      const errCode = signupError.code || loginError.code;
-      switch (errCode) {
-        case 'auth/email-already-in-use': friendlyMessage = "Incorrect password for this email."; break;
-        case 'auth/invalid-credential':
-        case 'auth/wrong-password': friendlyMessage = "Incorrect email or password."; break;
-        case 'auth/invalid-email': friendlyMessage = "Please enter a valid email address."; break;
-        case 'auth/weak-password': friendlyMessage = "Password should be at least 6 characters."; break;
-        case 'auth/network-request-failed': friendlyMessage = "Network error. Please check your connection."; break;
-        case 'auth/too-many-requests': friendlyMessage = "Too many failed attempts. Try again later."; break;
-      }
-      showToast(friendlyMessage, 'error');
+  } else {
+    // If login failed, attempt signup
+    if (loginError.message.includes("Invalid login")) {
+        const { error: signupError } = await supabase.auth.signUp({ email, password });
+        if (!signupError) {
+            setInputStatus('success');
+            showToast("Account created successfully!", "success");
+            setAuthButtonLoading(false);
+        } else {
+            setInputStatus('error');
+            setAuthButtonLoading(false);
+            showToast(signupError.message || "Something went wrong.", 'error');
+        }
+    } else {
+        setInputStatus('error');
+        setAuthButtonLoading(false);
+        showToast(loginError.message, 'error');
     }
   }
 });
 
 googleSignInBtn?.addEventListener('click', () => {
   if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
-  signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
-    showToast("Google Sign-In failed or was cancelled.", "error");
-  });
+  supabase.auth.signInWithOAuth({ provider: 'google' });
 });
 
 forgotPasswordLink?.addEventListener('click', async e => {
   e.preventDefault();
   const email = emailInput.value;
   if (!email) { showToast('Please enter your email address first.', 'error'); return; }
-  try {
-    await sendPasswordResetEmail(auth, email);
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    showToast(error.message, 'error');
+  } else {
     showToast('Password reset email sent!', 'success');
-  } catch (error) {
-    let msg = "Failed to send reset email.";
-    if (error.code === 'auth/invalid-email') msg = "Please enter a valid email.";
-    if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
-    showToast(msg, 'error');
   }
 });
 
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
-  const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
+  const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
 
   if (headerAvatar) headerAvatar.src = photo;
-  if (headerUserName) headerUserName.textContent = escapeHTML(user.displayName || user.email.split('@')[0] || 'User');
+  if (headerUserName) headerUserName.textContent = escapeHTML(user.user_metadata?.full_name || user.email.split('@')[0] || 'User');
   
-  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.displayName || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
 
   if (navigator.onLine) {
     updateStatusUI('welcome');
@@ -515,7 +494,7 @@ closeMenuBtn?.addEventListener('click', closeMenu);
 mobileMenuBackdrop?.addEventListener('click', e => {
   if (e.target === mobileMenuBackdrop) closeMenu();
 });
-mobileSignOutBtn?.addEventListener('click', () => signOut(auth));
+mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
 
 // --- Projects & Skeleton Loading ---
 function renderProjectSkeleton() {
@@ -564,35 +543,51 @@ function renderDashboardSkeleton() {
     }
 }
 
-function listenForProjects(uid) {
+async function fetchProjects(uid) {
+  const { data } = await supabase.from('projects').select('*').eq('user_id', uid).order('created_at', { ascending: true });
+  return data || [];
+}
+
+async function processProjects(uid, fetchedProjects) {
+  projects = fetchedProjects;
+  if (projects.length === 0 && navigator.onLine) {
+    const { data: newProject } = await supabase.from('projects').insert([{ name: "General Project", user_id: uid }]).select();
+    if(newProject && newProject.length > 0) {
+        projects = newProject;
+    }
+  }
+  
+  populateSidebarProjects(projects);
+
+  const savedProjectId = localStorage.getItem('lastActiveProjectId');
+  if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
+    activeProjectId = savedProjectId;
+  } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+    activeProjectId = projects[0]?.id;
+  }
+
+  if (activeProjectId) {
+    localStorage.setItem('lastActiveProjectId', activeProjectId);
+    updateActiveProject();
+  }
+}
+
+async function listenForProjects(uid) {
   renderProjectSkeleton();
-  const appId = "construction-expenses";
-  const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+  
+  // Initial fetch
+  const initialProjects = await fetchProjects(uid);
+  await processProjects(uid, initialProjects);
 
-  projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
-    projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (projects.length === 0 && navigator.onLine) {
-      const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
-      await runTransaction(db, async (t) => {
-        t.set(newProjectRef, { name: "General Project" });
-      });
-      return;
-    }
-    populateSidebarProjects(projects);
-
-    const savedProjectId = localStorage.getItem('lastActiveProjectId');
-    if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
-      activeProjectId = savedProjectId;
-    } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
-      activeProjectId = projects[0]?.id;
-    }
-
-    if (activeProjectId) {
-      localStorage.setItem('lastActiveProjectId', activeProjectId);
-      updateActiveProject();
-    }
-  });
+  // Subscribe to realtime changes
+  if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
+  
+  projectsUnsubscribe = supabase.channel('public:projects')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${uid}` }, async (payload) => {
+        const updatedProjects = await fetchProjects(uid);
+        processProjects(uid, updatedProjects);
+    })
+    .subscribe();
 }
 
 function updateActiveProject() {
@@ -602,7 +597,7 @@ function updateActiveProject() {
     }
     updateSidebarSelection();
     toggleDashboardVisibility(true);
-    listenForExpenses(currentUser.uid, activeProjectId);
+    listenForExpenses(currentUser.id, activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
@@ -621,12 +616,10 @@ let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
     const projectName = document.getElementById('new-project-name-modal').value.trim();
     
     if (projectName && currentUser) {
-        const appId = "construction-expenses";
-        const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
         try {
-            await runTransaction(db, async (t) => {
-                t.set(newProjRef, { name: projectName });
-            });
+            const { error } = await supabase.from('projects').insert([{ name: projectName, user_id: currentUser.id }]);
+            if (error) throw error;
+
             addProjectFormModal.reset();
             closeAddProjectModal();
             showToast(`Project "${projectName}" created!`, "success");
@@ -641,7 +634,6 @@ let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
 function populateSidebarProjects(projects) {
     if (!sidebarProjectList) return;
     sidebarProjectList.innerHTML = projects.map(p => {
-        // Edit & Delete Buttons are now enabled universally for all projects
         const buttonsHTML = `
             <div class="flex items-center space-x-1">
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
@@ -721,9 +713,14 @@ filterBtn?.addEventListener('click', () => {
     }
 });
 
-function listenForExpenses(uid, projectId) {
+async function fetchExpenses(projectId) {
+    const { data } = await supabase.from('expenses').select('*').eq('project_id', projectId).order('date', { ascending: false });
+    return data || [];
+}
+
+async function listenForExpenses(uid, projectId) {
     if (expensesUnsubscribe) {
-        expensesUnsubscribe();
+        supabase.removeChannel(expensesUnsubscribe);
         expensesUnsubscribe = null;
     }
     
@@ -737,16 +734,19 @@ function listenForExpenses(uid, projectId) {
     renderDashboardSkeleton();
     renderExpenseSkeleton();
     
-    const appId = "construction-expenses";
-    const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-    const q = query(expensesRef, where("projectId", "==", projectId));
+    // Initial fetch
+    allExpensesForProject = await fetchExpenses(projectId);
+    applyFilters();
+    updateSummaries(allExpensesForProject);
 
-    expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-        allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
-        applyFilters();
-        updateSummaries(allExpensesForProject);
-    });
+    // Subscribe to realtime changes
+    expensesUnsubscribe = supabase.channel('public:expenses')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
+            allExpensesForProject = await fetchExpenses(projectId);
+            applyFilters();
+            updateSummaries(allExpensesForProject);
+        })
+        .subscribe();
 }
 
 const applyFilters = () => {
@@ -821,12 +821,12 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date) {
-        const appId = "construction-expenses";
-        const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
         try {
-            await runTransaction(db, async (t) => {
-                t.set(newRef, { material, cost, date, type, info, projectId: activeProjectId });
-            });
+            const { error } = await supabase.from('expenses').insert([{ 
+                material, cost, date, type, info, project_id: activeProjectId, user_id: currentUser.id 
+            }]);
+            if (error) throw error;
+
             expenseForm.reset();
             document.querySelector('input[name="entry-type"][value="expense"]').checked = true;
             document.getElementById('date').valueAsDate = new Date();
@@ -899,16 +899,15 @@ async function handleDelete(event) {
     const expense = allExpensesForProject.find(e => e.id === id);
     if(!expense) return;
     
-    const sign = ''; // Requested no +/- prefix
+    const sign = ''; 
     const costStr = `₹${Math.abs(expense.cost).toLocaleString('en-IN')}`;
     const modalTitle = `Delete ${escapeHTML(expense.material)} (${sign}${costStr})?`;
 
     await showConfirm(modalTitle, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
-            const appId = "construction-expenses";
-            const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
-            await runTransaction(db, async (t) => { t.delete(docRef); });
+            const { error } = await supabase.from('expenses').delete().eq('id', id);
+            if (error) throw error;
             showToast("Entry deleted", "success");
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
@@ -948,10 +947,10 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
     };
     
     if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
-        const appId = "construction-expenses";
-        const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
-            await runTransaction(db, async (t) => { t.update(docRef, updatedData); });
+            const { error } = await supabase.from('expenses').update(updatedData).eq('id', id);
+            if (error) throw error;
+
             closeEditModal();
             showToast("Entry updated successfully!", "success");
             editExpenseSwipeObj.reset();
@@ -975,15 +974,13 @@ async function handleDeleteProject(projectId, projectName) {
     await showConfirm(`Delete project "${escapeHTML(projectName)}"?`, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
-            const appId = "construction-expenses";
-            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-            const q = query(expensesRef, where("projectId", "==", projectId));
-            
-            const snapshot = await getDocs(q);
-            const batch = writeBatch(db);
-            snapshot.forEach(d => batch.delete(d.ref));
-            batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
-            await batch.commit();
+            // Delete project. Associated expenses will cascade delete if table is configured to CASCADE
+            // But we will delete them explicitly just to be safe
+            const { error: expError } = await supabase.from('expenses').delete().eq('project_id', projectId);
+            if (expError) throw expError;
+
+            const { error: projError } = await supabase.from('projects').delete().eq('id', projectId);
+            if (projError) throw projError;
             
             showToast("Project deleted", "success");
             
@@ -1016,10 +1013,10 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
     newName = document.getElementById('edit-project-name').value.trim();
     
     if (newName && projectId) {
-        const appId = "construction-expenses";
-        const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
         try {
-            await runTransaction(db, async (t) => { t.update(projectRef, { name: newName }); });
+            const { error } = await supabase.from('projects').update({ name: newName }).eq('id', projectId);
+            if (error) throw error;
+
             closeEditProjectModal();
             showToast("Project renamed successfully!", "success");
             editProjectSwipeObj.reset();
@@ -1067,7 +1064,7 @@ const infoContent = {
     },
     'privacy-link': {
         title: 'Privacy Policy',
-        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Google Firebase, accessible only by you.</p>`
+        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
     },
     'contact-link': {
         title: 'Contact Us',
@@ -1273,7 +1270,7 @@ function updateStatusUI(state) {
             `;
             statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
         } else if (state === 'welcome') {
-            const name = currentUser?.displayName || 'User';
+            const name = currentUser?.user_metadata?.full_name || currentUser?.email.split('@')[0] || 'User';
             userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
         }
 
@@ -1305,6 +1302,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.5.0: Enhanced UI & Visual Polish";
+const APP_VERSION = "1.6.0: Supabase Migration Complete";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
