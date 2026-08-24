@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg';
+const supabaseUrl = 'YOUR_SUPABASE_URL';
+const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Global State ---
@@ -26,7 +26,6 @@ const addProjectModal = document.getElementById('add-project-modal'), addProject
 const infoModal = document.getElementById('info-modal'), infoModalTitle = document.getElementById('info-modal-title'), infoModalContent = document.getElementById('info-modal-content'), closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 const projectSummaryTitle = document.getElementById('project-summary-title');
 const viewAllBtn = document.getElementById('view-all');
-const cardExpenseCopy = document.getElementById('card-expense-copy');
 
 const fabAddExpense = document.getElementById('fab-add-expense'), addExpenseSheet = document.getElementById('add-expense-sheet');
 const goToAnalyticsBtnNav = document.getElementById('go-to-analytics-btn-nav'), goToAnalyticsBtn = document.getElementById('go-to-analytics-btn');
@@ -416,7 +415,6 @@ emailForm?.addEventListener('submit', async e => {
 
   setAuthButtonLoading(true);
 
-  // Attempt login
   const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
   
   if (!loginError) {
@@ -424,7 +422,6 @@ emailForm?.addEventListener('submit', async e => {
     showToast("Login successful!", "success");
     setAuthButtonLoading(false);
   } else {
-    // If login failed, attempt signup
     if (loginError.message.includes("Invalid login")) {
         const { error: signupError } = await supabase.auth.signUp({ email, password });
         if (!signupError) {
@@ -718,6 +715,15 @@ async function fetchExpenses(projectId) {
     return data || [];
 }
 
+async function fetchServerSummaries(projectId) {
+    const { data, error } = await supabase.rpc('get_project_summary', { p_project_id: projectId });
+    if (error) {
+        console.error("Error fetching summaries:", error);
+        return;
+    }
+    renderSummaries(data);
+}
+
 async function listenForExpenses(uid, projectId) {
     if (expensesUnsubscribe) {
         supabase.removeChannel(expensesUnsubscribe);
@@ -727,24 +733,24 @@ async function listenForExpenses(uid, projectId) {
     if (!uid || !projectId) {
         allExpensesForProject = [];
         applyFilters();
-        updateSummaries([]);
+        renderSummaries({ total_income: 0, total_expense: 0, net_balance: 0, material_totals: [] });
         return;
     }
     
     renderDashboardSkeleton();
     renderExpenseSkeleton();
     
-    // Initial fetch
+    // Initial fetch of Data AND Server-side Calculated Totals
     allExpensesForProject = await fetchExpenses(projectId);
     applyFilters();
-    updateSummaries(allExpensesForProject);
+    await fetchServerSummaries(projectId);
 
     // Subscribe to realtime changes
     expensesUnsubscribe = supabase.channel('public:expenses')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
             allExpensesForProject = await fetchExpenses(projectId);
             applyFilters();
-            updateSummaries(allExpensesForProject);
+            await fetchServerSummaries(projectId); // Refresh pre-calculated data
         })
         .subscribe();
 }
@@ -974,8 +980,6 @@ async function handleDeleteProject(projectId, projectName) {
     await showConfirm(`Delete project "${escapeHTML(projectName)}"?`, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
-            // Delete project. Associated expenses will cascade delete if table is configured to CASCADE
-            // But we will delete them explicitly just to be safe
             const { error: expError } = await supabase.from('expenses').delete().eq('project_id', projectId);
             if (expError) throw expError;
 
@@ -984,7 +988,6 @@ async function handleDeleteProject(projectId, projectName) {
             
             showToast("Project deleted", "success");
             
-            // Graceful active project fallback
             if (activeProjectId === projectId) {
                 const remainingProjects = projects.filter(p => p.id !== projectId);
                 if (remainingProjects.length > 0) {
@@ -1087,93 +1090,65 @@ const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
-// --- Summaries ---
-function updateSummaries(expenses) {
+// --- Summaries UI Renderer (Data is pre-calculated by Postgres) ---
+function renderSummaries(data) {
     if (!finalExpensesEl) return;
     
-    let totalIncome = 0;
-    let totalExpense = 0;
-
-    expenses.forEach(exp => {
-        const amount = parseFloat(exp.cost) || 0;
-        if (exp.type === 'income') totalIncome += amount;
-        else totalExpense += amount;
-    });
-
-    const netBalance = totalIncome - totalExpense;
-    
-    finalExpensesEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    finalExpensesEl.textContent = `₹${Math.abs(data.net_balance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     
     const cardIncomeCopy = document.getElementById('card-income-copy');
-    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${Math.abs(totalIncome).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${Math.abs(totalExpense).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${Math.abs(data.total_income).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const cardExpenseCopy = document.getElementById('card-expense-copy');
+    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${Math.abs(data.total_expense).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
-    const materialTotals = expenses.reduce((acc, exp) => {
-        const key = exp.material.trim().toLowerCase();
-        const amount = exp.type === 'income' ? exp.cost : -exp.cost;
-        acc[key] = (acc[key] || 0) + amount;
-        return acc;
-    }, {});
-
-    const sorted = Object.keys(materialTotals).sort((a, b) => Math.abs(materialTotals[b]) - Math.abs(materialTotals[a]));
-    if (sorted.length === 0) {
+    if (data.material_totals.length === 0) {
         if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
         return;
     }
 
     if (materialSummaryEl) {
-        materialSummaryEl.innerHTML = sorted.map(key => {
-            const netAmount = materialTotals[key];
+        materialSummaryEl.innerHTML = data.material_totals.map(item => {
+            const netAmount = item.net_amount;
             const colorClass = netAmount > 0 ? 'text-red-500' : (netAmount < 0 ? 'text-green-700' : 'text-slate-900');
-            const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-            const sign = ''; // Requested no +/- prefix
-            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">${sign}₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            const displayName = item.material_name;
+            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
         }).join('');
     }
 }
 
 
-// --- Analytics Nav Binding & Modal Rendering ---
+// --- Analytics Server-Side Rendering via Postgres ---
 const analyticsModal = document.getElementById('analytics-modal');
 const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
 
-const routeToAnalytics = () => {
+const routeToAnalytics = async () => {
     if (!activeProjectId) { 
         showToast("Please select a project first.", "error"); 
         return; 
     }
     
-    const categoryTotals = {};
-    const monthlyExpenseTotals = {};
-    const monthlyIncomeTotals = {};
-    
-    allExpensesForProject.forEach(exp => {
-        const monthKey = exp.date.substring(0, 7); 
-        monthlyExpenseTotals[monthKey] = monthlyExpenseTotals[monthKey] || 0;
-        monthlyIncomeTotals[monthKey] = monthlyIncomeTotals[monthKey] || 0;
-        
-        if (exp.type === 'income') {
-            monthlyIncomeTotals[monthKey] += exp.cost;
-        } else {
-            const mat = exp.material.trim().charAt(0).toUpperCase() + exp.material.trim().slice(1).toLowerCase();
-            categoryTotals[mat] = (categoryTotals[mat] || 0) + exp.cost;
-            monthlyExpenseTotals[monthKey] += exp.cost;
-        }
-    });
+    analyticsModal.classList.remove('hidden');
 
-    const sortedMonths = [...new Set([...Object.keys(monthlyExpenseTotals), ...Object.keys(monthlyIncomeTotals)])].sort();
+    const { data, error } = await supabase.rpc('get_project_analytics', { p_project_id: activeProjectId });
+    if (error) {
+        showToast("Failed to load analytics data", "error");
+        return;
+    }
+
+    const categoryTotals = data.category_totals;
+    const sortedMonths = Object.keys(data.monthly_data).sort();
+    
     const finalMonthlyExp = {};
     const finalMonthlyInc = {};
+    
     sortedMonths.forEach(m => {
-        finalMonthlyExp[m] = monthlyExpenseTotals[m];
-        finalMonthlyInc[m] = monthlyIncomeTotals[m];
+        finalMonthlyExp[m] = data.monthly_data[m].expense;
+        finalMonthlyInc[m] = data.monthly_data[m].income;
     });
 
     renderCharts(categoryTotals, finalMonthlyExp, finalMonthlyInc);
-    
-    analyticsModal.classList.remove('hidden');
 };
 
 const renderCharts = (categoryTotals, monthlyExpenseTotals, monthlyIncomeTotals) => {
@@ -1302,6 +1277,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.6.0: Supabase Migration Complete";
+const APP_VERSION = "1.7.0: Server-Side Calculations Active";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
