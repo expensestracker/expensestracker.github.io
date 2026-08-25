@@ -7,7 +7,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
-// FIX: Token to prevent race conditions during rapid data fetches
 let activeDataRequest = 0;
 
 // --- DOM Elements ---
@@ -21,7 +20,15 @@ const expenseDashboard = document.getElementById('expense-dashboard'), noProject
 const userProfileMobile = document.getElementById('user-profile-mobile');
 const hamburgerBtn = document.getElementById('hamburger-btn'), mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop'), mobileMenu = document.getElementById('mobile-menu'), closeMenuBtn = document.getElementById('close-menu-btn'), mobileSignOutBtn = document.getElementById('mobile-sign-out-btn');
 const editModal = document.getElementById('edit-modal'), editExpenseForm = document.getElementById('edit-expense-form');
-const searchInput = document.getElementById('search-input'), startDateInput = document.getElementById('start-date-input'), endDateInput = document.getElementById('end-date-input');
+
+const searchInput = document.getElementById('search-input'), 
+      startDateInput = document.getElementById('start-date-input'), 
+      endDateInput = document.getElementById('end-date-input'),
+      startTimeInput = document.getElementById('start-time-input'),
+      endTimeInput = document.getElementById('end-time-input'),
+      minAmountInput = document.getElementById('min-amount-input'),
+      maxAmountInput = document.getElementById('max-amount-input');
+
 const sidebarProjectList = document.getElementById('sidebar-project-list'), sidebarAddProjectBtn = document.getElementById('sidebar-add-project-btn');
 const editProjectModal = document.getElementById('edit-project-modal'), editProjectForm = document.getElementById('edit-project-form');
 const addProjectModal = document.getElementById('add-project-modal'), addProjectFormModal = document.getElementById('add-project-form-modal');
@@ -37,7 +44,9 @@ const closeEditBtn = document.getElementById('close-edit-btn');
 const closeEditProjectBtn = document.getElementById('close-edit-project-btn');
 const closeAddProjectBtn = document.getElementById('close-add-project-btn');
 
-// Stop Form default submits for Swipe-To-Save modules
+const toggleAddOptional = document.getElementById('toggle-add-optional');
+const addOptionalFields = document.getElementById('add-optional-fields');
+
 expenseForm?.addEventListener('submit', e => e.preventDefault());
 editExpenseForm?.addEventListener('submit', e => e.preventDefault());
 editProjectForm?.addEventListener('submit', e => e.preventDefault());
@@ -45,19 +54,19 @@ addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
-// FIX: Track active requestAnimationFrame calls to prevent overlapping flashes
-const activeAnimations = new Map();
+// FIX: Global date formatter enforcing Local Timezone
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
-// --- Animation Helper: Growing Numbers ---
+// --- Animation Helper ---
+const activeAnimations = new Map();
 function animateNumber(element, start, end, duration = 800) {
     if (!element) return;
-    
-    // FIX: Cancel previous animation if a new one starts on the same element
-    if (activeAnimations.has(element)) {
-        cancelAnimationFrame(activeAnimations.get(element));
-    }
-
-    // FIX: If value hasn't changed, skip animation entirely
+    if (activeAnimations.has(element)) cancelAnimationFrame(activeAnimations.get(element));
     if (start === end) {
         element.textContent = `₹${end.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
         return;
@@ -67,7 +76,6 @@ function animateNumber(element, start, end, duration = 800) {
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        // easeOutQuart
         const easeOut = 1 - Math.pow(1 - progress, 4);
         const current = Math.floor(easeOut * (end - start) + start);
         element.textContent = `₹${current.toLocaleString('en-IN')}`;
@@ -82,7 +90,7 @@ function animateNumber(element, start, end, duration = 800) {
     activeAnimations.set(element, window.requestAnimationFrame(step));
 }
 
-// --- Custom Native-Feel Toast Notification ---
+// --- Custom Toast Notification ---
 function showToast(message, type = 'error') {
   const toastContainer = document.getElementById('toast-container');
   if (!toastContainer) return;
@@ -207,7 +215,6 @@ function initSwipeButton(containerId, onConfirmAsync) {
     return { reset };
 }
 
-// --- Swipe-To-Confirm Delete Modal ---
 function showConfirm(title, onConfirmAsync = null) {
   return new Promise((resolve) => {
     const appContainer = document.querySelector('.max-w-md.relative');
@@ -506,6 +513,62 @@ forgotPasswordLink?.addEventListener('click', async e => {
   }
 });
 
+// --- Focus Next Autocomplete Function ---
+const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    let timeout;
+
+    input?.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        const term = e.target.value.trim();
+        if (!term || !activeProjectId) {
+            dropdown.classList.add('hidden');
+            return;
+        }
+        timeout = setTimeout(async () => {
+            const { data } = await supabase.rpc('get_item_suggestions', { p_project_id: activeProjectId, p_search_term: term });
+            if (data && data.length > 0) {
+                dropdown.innerHTML = data.map(d => `<li class="px-4 py-2 hover:bg-indigo-50 cursor-pointer text-sm font-semibold text-slate-700">${escapeHTML(d.material)}</li>`).join('');
+                dropdown.classList.remove('hidden');
+                
+                dropdown.querySelectorAll('li').forEach(li => {
+                    li.addEventListener('click', () => {
+                        input.value = li.textContent;
+                        dropdown.classList.add('hidden');
+                        if (onSelectCallback) onSelectCallback();
+                    });
+                });
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }, 300);
+    });
+    
+    document.addEventListener('click', (e) => {
+        if (e.target !== input && e.target !== dropdown) {
+            dropdown?.classList.add('hidden');
+        }
+    });
+};
+
+setupAutocomplete('material-name', 'add-material-suggestions', () => document.getElementById('cost').focus());
+setupAutocomplete('edit-material-name', 'edit-material-suggestions', () => document.getElementById('edit-cost').focus());
+setupAutocomplete('search-input', 'search-suggestions', () => debouncedApplyFilters(true));
+
+// --- Toggle Hide/Show Fields Logic ---
+toggleAddOptional?.addEventListener('click', () => {
+    const isHidden = addOptionalFields.classList.contains('hidden');
+    if (isHidden) {
+        addOptionalFields.classList.remove('hidden');
+        toggleAddOptional.innerHTML = `<span>Hide options</span><svg class="w-4 h-4 transform rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    } else {
+        addOptionalFields.classList.add('hidden');
+        toggleAddOptional.innerHTML = `<span>Show more options (Date, Time, Info)</span><svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    }
+});
+
+
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
   const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
@@ -520,9 +583,10 @@ function setupUIForUser(user) {
   } else {
     updateStatusUI('offline');
   }
-
+  
+  // FIX: Formats to exact current local date instead of defaulting to UTC
   const dateInput = document.getElementById('date');
-  if (dateInput) dateInput.valueAsDate = new Date();
+  if (dateInput) dateInput.value = formatDate(new Date());
 }
 
 const openMenu = () => {
@@ -540,35 +604,91 @@ mobileMenuBackdrop?.addEventListener('click', e => {
 });
 mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
 
-// --- Core Helper Functions to GUARANTEE UI Updates ---
+// --- Core Helper Functions ---
 async function reloadProjectsData() {
     if(!currentUser) return;
     const updated = await fetchProjects(currentUser.id);
     await processProjects(currentUser.id, updated);
 }
 
-// FIX: Added parameter to toggle animation logic for realtime updates
-async function reloadExpensesData(isRealtimeUpdate = false) {
+// Backend-Powered Unified Fetch
+const applyFilters = async (animate = false) => {
     if (!activeProjectId) return;
-    
-    // Increment request token to avoid race conditions
     const currentRequestId = ++activeDataRequest;
-    
-    // Concurrently fetch list data and summaries
-    const [expensesRes, summaryRes] = await Promise.all([
-        fetchExpenses(activeProjectId),
-        fetchServerSummaries(activeProjectId)
-    ]);
 
-    // If another fetch started while this one was pending, discard this response
+    const searchTerm = searchInput?.value.trim() || null;
+    const startDate = startDateInput?.value || null;
+    const endDate = endDateInput?.value || null;
+    const startTime = startTimeInput?.value || null;
+    const endTime = endTimeInput?.value || null;
+    const minAmount = minAmountInput?.value || null;
+    const maxAmount = maxAmountInput?.value || null;
+
+    const isFiltering = searchTerm || startDate || endDate || startTime || endTime || minAmount || maxAmount;
+    
+    // Build List Query via PostgREST
+    let query = supabase.from('expenses').select('*', { count: 'exact' }).eq('project_id', activeProjectId);
+    
+    if (searchTerm) {
+        let orQuery = `material.ilike.%${searchTerm}%,info.ilike.%${searchTerm}%`;
+        if (!isNaN(parseFloat(searchTerm)) && isFinite(searchTerm)) {
+            orQuery += `,cost.eq.${parseFloat(searchTerm)}`;
+        }
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(searchTerm)) {
+            orQuery += `,date.eq.${searchTerm}`;
+        }
+        query = query.or(orQuery);
+    }
+
+    if (startDate) query = query.gte('date', startDate);
+    if (endDate) query = query.lte('date', endDate);
+    if (startTime) query = query.gte('time', startTime);
+    if (endTime) query = query.lte('time', endTime);
+    if (minAmount) query = query.gte('cost', minAmount);
+    if (maxAmount) query = query.lte('cost', maxAmount);
+    
+    query = query.order('date', { ascending: false }).order('time', { ascending: false });
+
+    if (!isFiltering && !showAllExpenses) query = query.limit(5);
+
+    // Fetch Aggregations via Backend RPC
+    const summaryPromise = supabase.rpc('get_filtered_summary', {
+        p_project_id: activeProjectId,
+        p_search_term: searchTerm,
+        p_start_date: startDate,
+        p_end_date: endDate,
+        p_start_time: startTime,
+        p_end_time: endTime,
+        p_min_amount: minAmount ? parseFloat(minAmount) : null,
+        p_max_amount: maxAmount ? parseFloat(maxAmount) : null
+    });
+
+    const [expensesRes, summaryRes] = await Promise.all([query, summaryPromise]);
+
     if (currentRequestId !== activeDataRequest) return;
 
-    allExpensesForProject = expensesRes;
+    allExpensesForProject = expensesRes.data || [];
+    const exactCount = expensesRes.count || 0;
     
-    // Do not animate fade-in on every realtime refresh
-    applyFilters(!isRealtimeUpdate);
-    renderSummaries(summaryRes, !isRealtimeUpdate);
-}
+    if (!isFiltering && !showAllExpenses && exactCount > 5) {
+        if (viewAllBtn) viewAllBtn.style.display = 'block';
+    } else {
+        if (viewAllBtn) viewAllBtn.style.display = 'none';
+    }
+
+    renderExpenses(allExpensesForProject, animate);
+    renderSummaries(summaryRes.data, animate);
+};
+
+// Debounce filter inputs
+let filterTimeout;
+const debouncedApplyFilters = (animate = false) => {
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => applyFilters(animate), 300);
+};
+[searchInput, startDateInput, endDateInput, startTimeInput, endTimeInput, minAmountInput, maxAmountInput].forEach(el => el?.addEventListener('input', () => debouncedApplyFilters(false)));
+
 
 async function fetchProjects(uid) {
   const { data } = await supabase.from('projects').select('*').eq('user_id', uid).order('created_at', { ascending: true });
@@ -618,18 +738,15 @@ async function updateActiveProject() {
     updateSidebarSelection();
     toggleDashboardVisibility(true);
     
-    await listenForExpenses(currentUser.id, activeProjectId);
+    await listenForExpenses(activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     closeMenu();
-    setTimeout(() => {
-        addProjectModal.classList.remove('hidden');
-    }, 300);
+    setTimeout(() => { addProjectModal.classList.remove('hidden'); }, 300);
 });
 
-// Swipe to save hook for Add Project
 let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
     if (!addProjectFormModal.reportValidity()) throw new Error("Validation failed");
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); throw new Error("Offline"); }
@@ -677,9 +794,7 @@ function populateSidebarProjects(projects) {
         activeProjectId = newProjectId;
         localStorage.setItem('lastActiveProjectId', activeProjectId);
         showAllExpenses = false;
-        if (viewAllBtn) viewAllBtn.style.display = 'block';
         
-        // Slightly dim the dashboard while switching projects
         const dash = document.getElementById('expense-dashboard');
         if (dash) dash.style.opacity = '0.5';
         
@@ -723,11 +838,9 @@ const toggleDashboardVisibility = (hasProjects) => {
     if (noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none' : 'block';
 };
 
-// --- View All & Filtering ---
 viewAllBtn?.addEventListener('click', () => {
     showAllExpenses = true;
-    applyFilters(false); // No animation needed for expanding list
-    if (viewAllBtn) viewAllBtn.style.display = 'none';
+    applyFilters(false);
 });
 
 const filterBtn = document.getElementById('filter-btn');
@@ -746,79 +859,26 @@ filterBtn?.addEventListener('click', () => {
     }
 });
 
-async function fetchExpenses(projectId) {
-    const { data } = await supabase.from('expenses').select('*').eq('project_id', projectId).order('date', { ascending: false });
-    return data || [];
-}
-
-async function fetchServerSummaries(projectId) {
-    const { data, error } = await supabase.rpc('get_project_summary', { p_project_id: projectId });
-    if (error) {
-        console.error("Error fetching summaries:", error);
-        return null;
-    }
-    return data;
-}
-
-async function listenForExpenses(uid, projectId) {
+async function listenForExpenses(projectId) {
     if (expensesUnsubscribe) {
         supabase.removeChannel(expensesUnsubscribe);
         expensesUnsubscribe = null;
     }
-    
-    if (!uid || !projectId) {
+    if (!projectId) {
         allExpensesForProject = [];
-        applyFilters(false);
+        renderExpenses([], false);
         renderSummaries(null, false);
         return;
     }
     
-    // Initial fetch for this project (animate on load)
-    await reloadExpensesData(false);
+    await applyFilters(false);
     
     expensesUnsubscribe = supabase.channel('public:expenses')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
-            await reloadExpensesData(true); 
+            await applyFilters(false); 
         })
         .subscribe();
 }
-
-const applyFilters = (animate = false) => {
-    if (!searchInput) return;
-    const searchTerm = searchInput.value.toLowerCase();
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-
-    const isFiltering = searchTerm !== '' || startDate !== '' || endDate !== '';
-    let filtered = allExpensesForProject;
-
-    if (isFiltering) {
-        filtered = allExpensesForProject.filter(exp =>
-            (exp.material.toLowerCase().includes(searchTerm)) &&
-            (!startDate || exp.date >= startDate) &&
-            (!endDate || exp.date <= endDate)
-        );
-    } else {
-        filtered = showAllExpenses ? allExpensesForProject : allExpensesForProject.slice(0, 5);
-    }
-
-    if (!isFiltering && !showAllExpenses && allExpensesForProject.length > 5) {
-        if (viewAllBtn) viewAllBtn.style.display = 'block';
-    } else {
-        if (viewAllBtn) viewAllBtn.style.display = 'none';
-    }
-
-    renderExpenses(filtered, animate);
-};
-
-[searchInput, startDateInput, endDateInput].forEach(el => el?.addEventListener('input', () => applyFilters(false)));
-
-const formatDate = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
 
 const setDateFilter = (timeframe) => {
     const endDate = new Date();
@@ -838,9 +898,14 @@ document.getElementById('last-month')?.addEventListener('click', () => setDateFi
 document.getElementById('last-year')?.addEventListener('click', () => setDateFilter('last-year'));
 
 // --- Modal Display Flows ---
-fabAddExpense?.addEventListener('click', () => { addExpenseSheet.classList.remove('hidden'); });
+fabAddExpense?.addEventListener('click', () => { 
+    // FIX: Force population based on current local device time every time FAB is clicked
+    const now = new Date();
+    document.getElementById('date').value = formatDate(now);
+    document.getElementById('time').value = now.toTimeString().slice(0, 5);
+    addExpenseSheet.classList.remove('hidden'); 
+});
 
-// Swipe to save hook for Add Expense
 let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     if (!expenseForm.reportValidity()) throw new Error("Validation failed");
     if (!currentUser || !activeProjectId || !navigator.onLine) {
@@ -852,23 +917,22 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
     const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
     const info = document.getElementById('additional-info').value.trim();
 
-    if (material && !isNaN(cost) && date) {
+    if (material && !isNaN(cost) && date && time) {
         try {
             const { error } = await supabase.from('expenses').insert([{ 
-                material, cost, date, type, info, project_id: activeProjectId, user_id: currentUser.id 
+                material, cost, date, time, type, info, project_id: activeProjectId, user_id: currentUser.id 
             }]);
             if (error) throw error;
 
             expenseForm.reset();
             document.querySelector('input[name="entry-type"][value="expense"]').checked = true;
-            document.getElementById('date').valueAsDate = new Date();
             closeAddExpenseModal();
             showToast("Entry added successfully!", "success");
             
-            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
-            await reloadExpensesData(true);
+            await applyFilters(false);
             
             document.getElementById('main-scroll').scrollTo({
                 top: document.getElementById('history-section').offsetTop - 20,
@@ -883,8 +947,14 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     } else { throw new Error("Invalid Payload"); }
 });
 
+const formatDisplayTime = (timeStr) => {
+    if(!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const d = new Date();
+    d.setHours(h, m);
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
 
-// --- Render & CRUD ---
 function renderExpenses(expenses, animate = false) {
     if (!expenseList) return;
     if (expenses.length === 0) {
@@ -913,7 +983,7 @@ function renderExpenses(expenses, animate = false) {
                 <div class="overflow-hidden flex-1">
                     <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
                     <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
-                        ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}
+                        ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
                     </p>
                     ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
                 </div>
@@ -950,9 +1020,7 @@ async function handleDelete(event) {
             const { error } = await supabase.from('expenses').delete().eq('id', id);
             if (error) throw error;
             showToast("Entry deleted", "success");
-            
-            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
-            await reloadExpensesData(true);
+            await applyFilters(false);
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
             throw err;
@@ -970,13 +1038,13 @@ function handleEdit(event) {
     document.getElementById('edit-material-name').value = expense.material;
     document.getElementById('edit-cost').value = expense.cost;
     document.getElementById('edit-date').value = expense.date;
+    document.getElementById('edit-time').value = expense.time ? expense.time.slice(0, 5) : '';
     const infoInput = document.getElementById('edit-additional-info');
     if(infoInput) infoInput.value = expense.info || '';
     
     editModal.classList.remove('hidden');
 }
 
-// Initialise generic Swipe-To-Save for Edit Entry
 let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
     if (!editExpenseForm.reportValidity()) throw new Error("Validation failed");
     if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); throw new Error("Offline"); }
@@ -987,20 +1055,18 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
         material: document.getElementById('edit-material-name').value.trim(),
         cost: parseFloat(document.getElementById('edit-cost').value),
         date: document.getElementById('edit-date').value,
+        time: document.getElementById('edit-time').value,
         info: document.getElementById('edit-additional-info').value.trim()
     };
     
-    if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
+    if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date && updatedData.time) {
         try {
             const { error } = await supabase.from('expenses').update(updatedData).eq('id', id);
             if (error) throw error;
 
             closeEditModal();
             showToast("Entry updated successfully!", "success");
-            
-            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
-            await reloadExpensesData(true);
-            
+            await applyFilters(false);
             editExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
@@ -1050,7 +1116,6 @@ async function handleDeleteProject(projectId, projectName) {
     });
 }
 
-// Initialise generic Swipe-To-Save for Edit Project
 let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
     if (!editProjectForm.reportValidity()) throw new Error("Validation failed");
     if (!navigator.onLine) { showToast("Please connect to internet", "error"); throw new Error("Offline"); }
@@ -1075,9 +1140,13 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
     } else { throw new Error("Invalid Payload"); }
 });
 
-// --- Modal Closers via Top Header Icons ---
 const closeAddExpenseModal = () => { 
     addExpenseSheet?.classList.add('hidden'); 
+    
+    // Reset toggle fields UI state
+    addOptionalFields?.classList.add('hidden');
+    if (toggleAddOptional) toggleAddOptional.innerHTML = `<span>Show more options (Date, Time, Info)</span><svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    
     if(addExpenseSwipeObj) addExpenseSwipeObj.reset(); 
 };
 closeAddExpenseBtn?.addEventListener('click', closeAddExpenseModal);
@@ -1104,7 +1173,6 @@ const closeAddProjectModal = () => {
 closeAddProjectBtn?.addEventListener('click', closeAddProjectModal);
 addProjectModal?.addEventListener('click', e => { if (e.target === addProjectModal) closeAddProjectModal(); });
 
-// --- Info Modals ---
 const infoContent = {
     'about-link': {
         title: 'About Us',
@@ -1135,7 +1203,6 @@ const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
-// --- Summaries UI Renderer ---
 function renderSummaries(data, animate = false) {
     if (!finalExpensesEl) return;
     
@@ -1176,7 +1243,6 @@ function renderSummaries(data, animate = false) {
     }
 }
 
-// --- Analytics Server-Side Rendering via Postgres ---
 const analyticsModal = document.getElementById('analytics-modal');
 const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
 let categoryChartInstance = null;
@@ -1337,6 +1403,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.8.3: Instant CRUD Updates";
+const APP_VERSION = "2.2.0: Local Timezone Enforcement";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
