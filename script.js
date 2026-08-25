@@ -1,22 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, query, doc, where, orderBy, getDocs, writeBatch, runTransaction, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
-  authDomain: "construction-expenses-app.firebaseapp.com",
-  projectId: "construction-expenses-app",
-  storageBucket: "construction-expenses-app.firebasestorage.app",
-  messagingSenderId: "944353147981",
-  appId: "1:944353147981:web:36ff635b184d5eac69b004"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co';
+const supabaseKey = 'EyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Global State ---
-let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [], isSigningUp = false;
+let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
 
 // --- DOM Elements ---
@@ -37,18 +26,16 @@ const addProjectModal = document.getElementById('add-project-modal'), addProject
 const infoModal = document.getElementById('info-modal'), infoModalTitle = document.getElementById('info-modal-title'), infoModalContent = document.getElementById('info-modal-content'), closeInfoModalBtn = document.getElementById('close-info-modal-btn');
 const projectSummaryTitle = document.getElementById('project-summary-title');
 const viewAllBtn = document.getElementById('view-all');
-const cardExpenseCopy = document.getElementById('card-expense-copy');
 
 const fabAddExpense = document.getElementById('fab-add-expense'), addExpenseSheet = document.getElementById('add-expense-sheet');
 const goToAnalyticsBtnNav = document.getElementById('go-to-analytics-btn-nav'), goToAnalyticsBtn = document.getElementById('go-to-analytics-btn');
 
-// --- Close Modal Buttons ---
 const closeAddExpenseBtn = document.getElementById('close-add-expense-btn');
 const closeEditBtn = document.getElementById('close-edit-btn');
 const closeEditProjectBtn = document.getElementById('close-edit-project-btn');
 const closeAddProjectBtn = document.getElementById('close-add-project-btn');
 
-// Stop Form default sumits for Swipe-To-Save modules
+// Stop Form default submits for Swipe-To-Save modules
 expenseForm?.addEventListener('submit', e => e.preventDefault());
 editExpenseForm?.addEventListener('submit', e => e.preventDefault());
 editProjectForm?.addEventListener('submit', e => e.preventDefault());
@@ -118,7 +105,7 @@ function initSwipeButton(containerId, onConfirmAsync) {
         spinner.classList.add('opacity-0');
         text.style.opacity = '1';
         thumb.style.transform = `translateX(0px)`;
-        track.style.width = `3.25rem`; // Matches initial CSS tailwind track width
+        track.style.width = `3.25rem`;
     };
 
     const onDragStart = (e) => {
@@ -181,8 +168,7 @@ function initSwipeButton(containerId, onConfirmAsync) {
     return { reset };
 }
 
-
-// --- Swipe-To-Confirm Delete Modal (Dynamic Contextual UI) ---
+// --- Swipe-To-Confirm Delete Modal ---
 function showConfirm(title, onConfirmAsync = null) {
   return new Promise((resolve) => {
     const appContainer = document.querySelector('.max-w-md.relative');
@@ -201,21 +187,17 @@ function showConfirm(title, onConfirmAsync = null) {
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
     </div>
-    
     <div class="relative w-full h-[52px] bg-red-50 rounded-xl flex items-center overflow-hidden select-none border border-red-100 touch-none mt-2">
         <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
             <span id="swipe-text" class="swipe-text shimmer-text shimmer-red transition-opacity duration-300">Swipe to delete</span>
         </div>
-        
         <div id="swipe-track" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-red-500 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
             <svg id="swipe-spinner" class="w-5 h-5 animate-spin opacity-0 transition-opacity text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         </div>
-
         <div id="swipe-thumb" class="absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-red-500 hover:scale-[1.02] transition-transform">
             <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
         </div>
-    </div>
-    `;
+    </div>`;
 
     overlay.appendChild(modal);
     targetParent.appendChild(overlay);
@@ -356,26 +338,25 @@ const showView = (viewName) => {
   }
 };
 
-
 // --- Authentication ---
 let isInitialLoad = true;
 
-onAuthStateChanged(auth, user => {
+supabase.auth.onAuthStateChange((event, session) => {
+  const user = session?.user;
   currentUser = user;
 
   const routeUser = () => {
     if (user) {
       showView('app');
       setupUIForUser(user);
-      // Immediately render skeletons so there is zero flash of static UI components
       renderProjectSkeleton();
       renderDashboardSkeleton();
       renderExpenseSkeleton();
-      listenForProjects(user.uid);
+      listenForProjects(user.id);
     } else {
       showView('auth');
-      if (projectsUnsubscribe) projectsUnsubscribe();
-      if (expensesUnsubscribe) expensesUnsubscribe();
+      if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
+      if (expensesUnsubscribe) supabase.removeChannel(expensesUnsubscribe);
       activeProjectId = null;
     }
   };
@@ -427,70 +408,58 @@ emailForm?.addEventListener('submit', async e => {
 
   setAuthButtonLoading(true);
 
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (!loginError) {
     setInputStatus('success');
     showToast("Login successful!", "success");
     setAuthButtonLoading(false);
-  } catch (loginError) {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const appId = "construction-expenses";
-      await setDoc(doc(db, `artifacts/${appId}/users`, userCredential.user.uid), {
-        email: email, status: "active", createdAt: new Date().toISOString()
-      });
-      setInputStatus('success');
-      showToast("Account created successfully!", "success");
-      setAuthButtonLoading(false);
-    } catch (signupError) {
-      setInputStatus('error');
-      setAuthButtonLoading(false);
-      let friendlyMessage = "Something went wrong. Please try again.";
-      const errCode = signupError.code || loginError.code;
-      switch (errCode) {
-        case 'auth/email-already-in-use': friendlyMessage = "Incorrect password for this email."; break;
-        case 'auth/invalid-credential':
-        case 'auth/wrong-password': friendlyMessage = "Incorrect email or password."; break;
-        case 'auth/invalid-email': friendlyMessage = "Please enter a valid email address."; break;
-        case 'auth/weak-password': friendlyMessage = "Password should be at least 6 characters."; break;
-        case 'auth/network-request-failed': friendlyMessage = "Network error. Please check your connection."; break;
-        case 'auth/too-many-requests': friendlyMessage = "Too many failed attempts. Try again later."; break;
-      }
-      showToast(friendlyMessage, 'error');
+  } else {
+    if (loginError.message.includes("Invalid login")) {
+        const { error: signupError } = await supabase.auth.signUp({ email, password });
+        if (!signupError) {
+            setInputStatus('success');
+            showToast("Account created successfully!", "success");
+            setAuthButtonLoading(false);
+        } else {
+            setInputStatus('error');
+            setAuthButtonLoading(false);
+            showToast(signupError.message || "Something went wrong.", 'error');
+        }
+    } else {
+        setInputStatus('error');
+        setAuthButtonLoading(false);
+        showToast(loginError.message, 'error');
     }
   }
 });
 
 googleSignInBtn?.addEventListener('click', () => {
   if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
-  signInWithPopup(auth, new GoogleAuthProvider()).catch(() => {
-    showToast("Google Sign-In failed or was cancelled.", "error");
-  });
+  supabase.auth.signInWithOAuth({ provider: 'google' });
 });
 
 forgotPasswordLink?.addEventListener('click', async e => {
   e.preventDefault();
   const email = emailInput.value;
   if (!email) { showToast('Please enter your email address first.', 'error'); return; }
-  try {
-    await sendPasswordResetEmail(auth, email);
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    showToast(error.message, 'error');
+  } else {
     showToast('Password reset email sent!', 'success');
-  } catch (error) {
-    let msg = "Failed to send reset email.";
-    if (error.code === 'auth/invalid-email') msg = "Please enter a valid email.";
-    if (error.code === 'auth/user-not-found') msg = "No account found with this email.";
-    showToast(msg, 'error');
   }
 });
 
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
-  const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
+  const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
 
   if (headerAvatar) headerAvatar.src = photo;
-  if (headerUserName) headerUserName.textContent = escapeHTML(user.displayName || user.email.split('@')[0] || 'User');
+  if (headerUserName) headerUserName.textContent = escapeHTML(user.user_metadata?.full_name || user.email.split('@')[0] || 'User');
   
-  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.displayName || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
 
   if (navigator.onLine) {
     updateStatusUI('welcome');
@@ -515,7 +484,21 @@ closeMenuBtn?.addEventListener('click', closeMenu);
 mobileMenuBackdrop?.addEventListener('click', e => {
   if (e.target === mobileMenuBackdrop) closeMenu();
 });
-mobileSignOutBtn?.addEventListener('click', () => signOut(auth));
+mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
+
+// --- Core Helper Functions to GUARANTEE UI Updates ---
+async function reloadProjectsData() {
+    if(!currentUser) return;
+    const updated = await fetchProjects(currentUser.id);
+    await processProjects(currentUser.id, updated);
+}
+
+async function reloadExpensesData() {
+    if (!activeProjectId) return;
+    allExpensesForProject = await fetchExpenses(activeProjectId);
+    applyFilters();
+    await fetchServerSummaries(activeProjectId);
+}
 
 // --- Projects & Skeleton Loading ---
 function renderProjectSkeleton() {
@@ -564,35 +547,48 @@ function renderDashboardSkeleton() {
     }
 }
 
-function listenForProjects(uid) {
+async function fetchProjects(uid) {
+  const { data } = await supabase.from('projects').select('*').eq('user_id', uid).order('created_at', { ascending: true });
+  return data || [];
+}
+
+async function processProjects(uid, fetchedProjects) {
+  projects = fetchedProjects;
+  if (projects.length === 0 && navigator.onLine) {
+    const { data: newProject } = await supabase.from('projects').insert([{ name: "General Project", user_id: uid }]).select();
+    if(newProject && newProject.length > 0) {
+        projects = newProject;
+    }
+  }
+  
+  populateSidebarProjects(projects);
+
+  const savedProjectId = localStorage.getItem('lastActiveProjectId');
+  if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
+    activeProjectId = savedProjectId;
+  } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
+    activeProjectId = projects[0]?.id;
+  }
+
+  if (activeProjectId) {
+    localStorage.setItem('lastActiveProjectId', activeProjectId);
+    updateActiveProject();
+  }
+}
+
+async function listenForProjects(uid) {
   renderProjectSkeleton();
-  const appId = "construction-expenses";
-  const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`);
+  
+  // Initial fetch
+  await reloadProjectsData();
 
-  projectsUnsubscribe = onSnapshot(query(projectsRef, orderBy("name")), async (snapshot) => {
-    projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (projects.length === 0 && navigator.onLine) {
-      const newProjectRef = doc(collection(db, `artifacts/${appId}/users/${uid}/projects`));
-      await runTransaction(db, async (t) => {
-        t.set(newProjectRef, { name: "General Project" });
-      });
-      return;
-    }
-    populateSidebarProjects(projects);
-
-    const savedProjectId = localStorage.getItem('lastActiveProjectId');
-    if (savedProjectId && projects.find(p => p.id === savedProjectId)) {
-      activeProjectId = savedProjectId;
-    } else if (!activeProjectId || !projects.find(p => p.id === activeProjectId)) {
-      activeProjectId = projects[0]?.id;
-    }
-
-    if (activeProjectId) {
-      localStorage.setItem('lastActiveProjectId', activeProjectId);
-      updateActiveProject();
-    }
-  });
+  // Subscribe to realtime changes (acts as backup to explicit refetches)
+  if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
+  projectsUnsubscribe = supabase.channel('public:projects')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${uid}` }, async (payload) => {
+        await reloadProjectsData();
+    })
+    .subscribe();
 }
 
 function updateActiveProject() {
@@ -602,7 +598,7 @@ function updateActiveProject() {
     }
     updateSidebarSelection();
     toggleDashboardVisibility(true);
-    listenForExpenses(currentUser.uid, activeProjectId);
+    listenForExpenses(currentUser.id, activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
@@ -621,15 +617,16 @@ let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
     const projectName = document.getElementById('new-project-name-modal').value.trim();
     
     if (projectName && currentUser) {
-        const appId = "construction-expenses";
-        const newProjRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/projects`));
         try {
-            await runTransaction(db, async (t) => {
-                t.set(newProjRef, { name: projectName });
-            });
+            const { error } = await supabase.from('projects').insert([{ name: projectName, user_id: currentUser.id }]);
+            if (error) throw error;
+
             addProjectFormModal.reset();
             closeAddProjectModal();
             showToast(`Project "${projectName}" created!`, "success");
+            
+            // Explicit Refetch
+            await reloadProjectsData(); 
             addProjectSwipeObj.reset();
         } catch (err) {
             showToast("Transaction failed: Check your connection.", "error");
@@ -641,7 +638,6 @@ let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
 function populateSidebarProjects(projects) {
     if (!sidebarProjectList) return;
     sidebarProjectList.innerHTML = projects.map(p => {
-        // Edit & Delete Buttons are now enabled universally for all projects
         const buttonsHTML = `
             <div class="flex items-center space-x-1">
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
@@ -721,32 +717,46 @@ filterBtn?.addEventListener('click', () => {
     }
 });
 
-function listenForExpenses(uid, projectId) {
+async function fetchExpenses(projectId) {
+    const { data } = await supabase.from('expenses').select('*').eq('project_id', projectId).order('date', { ascending: false });
+    return data || [];
+}
+
+async function fetchServerSummaries(projectId) {
+    const { data, error } = await supabase.rpc('get_project_summary', { p_project_id: projectId });
+    if (error) {
+        console.error("Error fetching summaries:", error);
+        renderSummaries(null); // Force render empty state
+        return;
+    }
+    renderSummaries(data);
+}
+
+async function listenForExpenses(uid, projectId) {
     if (expensesUnsubscribe) {
-        expensesUnsubscribe();
+        supabase.removeChannel(expensesUnsubscribe);
         expensesUnsubscribe = null;
     }
     
     if (!uid || !projectId) {
         allExpensesForProject = [];
         applyFilters();
-        updateSummaries([]);
+        renderSummaries(null);
         return;
     }
     
     renderDashboardSkeleton();
     renderExpenseSkeleton();
     
-    const appId = "construction-expenses";
-    const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`);
-    const q = query(expensesRef, where("projectId", "==", projectId));
+    // Initial Explicit Fetch
+    await reloadExpensesData();
 
-    expensesUnsubscribe = onSnapshot(q, (snapshot) => {
-        allExpensesForProject = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        allExpensesForProject.sort((a, b) => new Date(b.date) - new Date(a.date));
-        applyFilters();
-        updateSummaries(allExpensesForProject);
-    });
+    // Subscribe to realtime changes (acts as backup)
+    expensesUnsubscribe = supabase.channel('public:expenses')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
+            await reloadExpensesData();
+        })
+        .subscribe();
 }
 
 const applyFilters = () => {
@@ -821,17 +831,20 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date) {
-        const appId = "construction-expenses";
-        const newRef = doc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`));
         try {
-            await runTransaction(db, async (t) => {
-                t.set(newRef, { material, cost, date, type, info, projectId: activeProjectId });
-            });
+            const { error } = await supabase.from('expenses').insert([{ 
+                material, cost, date, type, info, project_id: activeProjectId, user_id: currentUser.id 
+            }]);
+            if (error) throw error;
+
             expenseForm.reset();
             document.querySelector('input[name="entry-type"][value="expense"]').checked = true;
             document.getElementById('date').valueAsDate = new Date();
             closeAddExpenseModal();
             showToast("Entry added successfully!", "success");
+            
+            // Explicit Refetch
+            await reloadExpensesData();
             
             document.getElementById('main-scroll').scrollTo({
                 top: document.getElementById('history-section').offsetTop - 20,
@@ -899,17 +912,19 @@ async function handleDelete(event) {
     const expense = allExpensesForProject.find(e => e.id === id);
     if(!expense) return;
     
-    const sign = ''; // Requested no +/- prefix
+    const sign = ''; 
     const costStr = `₹${Math.abs(expense.cost).toLocaleString('en-IN')}`;
     const modalTitle = `Delete ${escapeHTML(expense.material)} (${sign}${costStr})?`;
 
     await showConfirm(modalTitle, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
-            const appId = "construction-expenses";
-            const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
-            await runTransaction(db, async (t) => { t.delete(docRef); });
+            const { error } = await supabase.from('expenses').delete().eq('id', id);
+            if (error) throw error;
             showToast("Entry deleted", "success");
+            
+            // Explicit Refetch
+            await reloadExpensesData();
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
             throw err;
@@ -948,12 +963,15 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
     };
     
     if (updatedData.material && !isNaN(updatedData.cost) && updatedData.date) {
-        const appId = "construction-expenses";
-        const docRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`, id);
         try {
-            await runTransaction(db, async (t) => { t.update(docRef, updatedData); });
+            const { error } = await supabase.from('expenses').update(updatedData).eq('id', id);
+            if (error) throw error;
+
             closeEditModal();
             showToast("Entry updated successfully!", "success");
+            
+            // Explicit Refetch
+            await reloadExpensesData();
             editExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
@@ -975,19 +993,14 @@ async function handleDeleteProject(projectId, projectName) {
     await showConfirm(`Delete project "${escapeHTML(projectName)}"?`, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
         try {
-            const appId = "construction-expenses";
-            const expensesRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/expenses`);
-            const q = query(expensesRef, where("projectId", "==", projectId));
-            
-            const snapshot = await getDocs(q);
-            const batch = writeBatch(db);
-            snapshot.forEach(d => batch.delete(d.ref));
-            batch.delete(doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId));
-            await batch.commit();
+            const { error: expError } = await supabase.from('expenses').delete().eq('project_id', projectId);
+            if (expError) throw expError;
+
+            const { error: projError } = await supabase.from('projects').delete().eq('id', projectId);
+            if (projError) throw projError;
             
             showToast("Project deleted", "success");
             
-            // Graceful active project fallback
             if (activeProjectId === projectId) {
                 const remainingProjects = projects.filter(p => p.id !== projectId);
                 if (remainingProjects.length > 0) {
@@ -1000,6 +1013,8 @@ async function handleDeleteProject(projectId, projectName) {
                     toggleDashboardVisibility(false);
                 }
             }
+            // Explicit Refetch
+            await reloadProjectsData();
         } catch (error) {
             showToast("Delete failed: Network error.", "error");
             throw error;
@@ -1016,12 +1031,15 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
     newName = document.getElementById('edit-project-name').value.trim();
     
     if (newName && projectId) {
-        const appId = "construction-expenses";
-        const projectRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/projects`, projectId);
         try {
-            await runTransaction(db, async (t) => { t.update(projectRef, { name: newName }); });
+            const { error } = await supabase.from('projects').update({ name: newName }).eq('id', projectId);
+            if (error) throw error;
+
             closeEditProjectModal();
             showToast("Project renamed successfully!", "success");
+            
+            // Explicit Refetch
+            await reloadProjectsData();
             editProjectSwipeObj.reset();
         } catch (err) {
             showToast("Rename failed.", "error");
@@ -1067,7 +1085,7 @@ const infoContent = {
     },
     'privacy-link': {
         title: 'Privacy Policy',
-        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Google Firebase, accessible only by you.</p>`
+        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
     },
     'contact-link': {
         title: 'Contact Us',
@@ -1090,93 +1108,69 @@ const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
-// --- Summaries ---
-function updateSummaries(expenses) {
+// --- Summaries UI Renderer (Data is pre-calculated by Postgres) ---
+function renderSummaries(data) {
     if (!finalExpensesEl) return;
     
-    let totalIncome = 0;
-    let totalExpense = 0;
-
-    expenses.forEach(exp => {
-        const amount = parseFloat(exp.cost) || 0;
-        if (exp.type === 'income') totalIncome += amount;
-        else totalExpense += amount;
-    });
-
-    const netBalance = totalIncome - totalExpense;
+    // Safely fallback if data is null/undefined
+    if (!data) data = { net_balance: 0, total_income: 0, total_expense: 0, material_totals: [] };
     
-    finalExpensesEl.textContent = `₹${Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    finalExpensesEl.textContent = `₹${Math.abs(data.net_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
     
     const cardIncomeCopy = document.getElementById('card-income-copy');
-    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${Math.abs(totalIncome).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${Math.abs(totalExpense).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    if(cardIncomeCopy) cardIncomeCopy.textContent = `₹${Math.abs(data.total_income || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    const cardExpenseCopy = document.getElementById('card-expense-copy');
+    if(cardExpenseCopy) cardExpenseCopy.textContent = `₹${Math.abs(data.total_expense || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 
-    const materialTotals = expenses.reduce((acc, exp) => {
-        const key = exp.material.trim().toLowerCase();
-        const amount = exp.type === 'income' ? exp.cost : -exp.cost;
-        acc[key] = (acc[key] || 0) + amount;
-        return acc;
-    }, {});
-
-    const sorted = Object.keys(materialTotals).sort((a, b) => Math.abs(materialTotals[b]) - Math.abs(materialTotals[a]));
-    if (sorted.length === 0) {
+    const matTotals = data.material_totals || [];
+    if (matTotals.length === 0) {
         if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
         return;
     }
 
     if (materialSummaryEl) {
-        materialSummaryEl.innerHTML = sorted.map(key => {
-            const netAmount = materialTotals[key];
+        materialSummaryEl.innerHTML = matTotals.map(item => {
+            const netAmount = item.net_amount;
             const colorClass = netAmount > 0 ? 'text-red-500' : (netAmount < 0 ? 'text-green-700' : 'text-slate-900');
-            const displayName = key.charAt(0).toUpperCase() + key.slice(1);
-            const sign = ''; // Requested no +/- prefix
-            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">${sign}₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            const displayName = item.material_name;
+            return `<div class="flex justify-between items-center py-1"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
         }).join('');
     }
 }
 
-
-// --- Analytics Nav Binding & Modal Rendering ---
+// --- Analytics Server-Side Rendering via Postgres ---
 const analyticsModal = document.getElementById('analytics-modal');
 const closeAnalyticsBtn = document.getElementById('close-analytics-btn');
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
 
-const routeToAnalytics = () => {
+const routeToAnalytics = async () => {
     if (!activeProjectId) { 
         showToast("Please select a project first.", "error"); 
         return; 
     }
     
-    const categoryTotals = {};
-    const monthlyExpenseTotals = {};
-    const monthlyIncomeTotals = {};
-    
-    allExpensesForProject.forEach(exp => {
-        const monthKey = exp.date.substring(0, 7); 
-        monthlyExpenseTotals[monthKey] = monthlyExpenseTotals[monthKey] || 0;
-        monthlyIncomeTotals[monthKey] = monthlyIncomeTotals[monthKey] || 0;
-        
-        if (exp.type === 'income') {
-            monthlyIncomeTotals[monthKey] += exp.cost;
-        } else {
-            const mat = exp.material.trim().charAt(0).toUpperCase() + exp.material.trim().slice(1).toLowerCase();
-            categoryTotals[mat] = (categoryTotals[mat] || 0) + exp.cost;
-            monthlyExpenseTotals[monthKey] += exp.cost;
-        }
-    });
+    analyticsModal.classList.remove('hidden');
 
-    const sortedMonths = [...new Set([...Object.keys(monthlyExpenseTotals), ...Object.keys(monthlyIncomeTotals)])].sort();
+    const { data, error } = await supabase.rpc('get_project_analytics', { p_project_id: activeProjectId });
+    if (error || !data) {
+        showToast("Failed to load analytics data", "error");
+        return;
+    }
+
+    const categoryTotals = data.category_totals || {};
+    const monthlyData = data.monthly_data || {};
+    const sortedMonths = Object.keys(monthlyData).sort();
+    
     const finalMonthlyExp = {};
     const finalMonthlyInc = {};
+    
     sortedMonths.forEach(m => {
-        finalMonthlyExp[m] = monthlyExpenseTotals[m];
-        finalMonthlyInc[m] = monthlyIncomeTotals[m];
+        finalMonthlyExp[m] = monthlyData[m].expense;
+        finalMonthlyInc[m] = monthlyData[m].income;
     });
 
     renderCharts(categoryTotals, finalMonthlyExp, finalMonthlyInc);
-    
-    analyticsModal.classList.remove('hidden');
 };
 
 const renderCharts = (categoryTotals, monthlyExpenseTotals, monthlyIncomeTotals) => {
@@ -1273,7 +1267,7 @@ function updateStatusUI(state) {
             `;
             statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
         } else if (state === 'welcome') {
-            const name = currentUser?.displayName || 'User';
+            const name = currentUser?.user_metadata?.full_name || currentUser?.email.split('@')[0] || 'User';
             userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
         }
 
@@ -1305,6 +1299,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.5.0: Enhanced UI & Visual Polish";
+const APP_VERSION = "1.7.5: Explicit Post-Mutation Refetch Logic";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
