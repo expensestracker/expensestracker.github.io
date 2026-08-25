@@ -23,6 +23,8 @@
     .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
     .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+    @keyframes dashboardReveal { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+    .dashboard-reveal { animation: dashboardReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
   </style>
 </head>
 <body class="flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
@@ -48,10 +50,11 @@
         </div>
     </div>
 
-<div id="auth-view" class="view hidden absolute inset-0 z-[80] flex flex-col bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100 to-slate-50 overflow-y-auto no-scrollbar">
+    <!-- Auth View -->
+    <div id="auth-view" class="view hidden absolute inset-0 z-[80] flex flex-col bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100 to-slate-50 overflow-y-auto no-scrollbar">
         <div class="px-8 pt-14 pb-14 flex-shrink-0">
           <h1 class="text-4xl font-extrabold text-[#1e293b] tracking-tight leading-tight mb-2">LoanBook</h1>
-          <p class="text-md text-slate-500 font-medium">Track loans, manage loans, and gain clarity on your payments.</p>
+          <p class="text-md text-slate-500 font-medium">Track loans, manage EMIs, and gain clarity on your payments.</p>
         </div>
         
         <div class="w-full bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.08)] border-t border-sky-300 flex-1 p-8 flex flex-col">
@@ -92,24 +95,25 @@
               </button>
             </div>
           </form>
-          <div class="text-center mt-6 mb-4">
-            <a href="#" id="forgot-password-link" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">Forgot Password?</a>
-          </div>
         </div>
     </div>
 
     <!-- Main App View -->
     <div id="app-view" class="view hidden flex-col h-full bg-slate-50 relative z-10">
         
-        <header class="px-6 pt-3 pb-3 flex justify-between items-center bg-slate-50/80 backdrop-blur-md z-20 sticky top-0 border-b border-slate-200/50">
-            <div>
-                <div id="user-status-display" class="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-0.5">
-                    <span class="w-2 h-2 bg-slate-300 rounded-full"></span> Loading...
+        <!-- EXPENSE TRACKER HEADER DESIGN MATCH -->
+        <header class="px-6 py-2 flex justify-between items-center bg-slate-50 z-20 sticky top-0 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <img id="header-avatar" src="" alt="User" class="w-10 h-10 rounded-full border-2 border-white shadow-sm object-cover hidden">
+                <div>
+                    <div id="user-status-display" class="flex items-center gap-1.5 text-sm text-slate-500 font-bold tracking-wider">
+                        <span class="w-2 h-2 bg-slate-300 rounded-full"></span> Loading...
+                    </div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">LoanBook</h1>
                 </div>
-                <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-none">My Portfolio</h1>
             </div>
-            <button id="mobile-sign-out-btn" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-rose-500 flex items-center justify-center transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            <button id="mobile-sign-out-btn" class="p-2 rounded-full bg-white shadow-sm text-slate-600 hover:text-rose-600 transition focus:outline-none">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
             </button>
         </header>
 
@@ -179,7 +183,6 @@
                 </div>
                 <form id="add-loan-form" class="space-y-5">
                     
-                    <!-- Toggle Type -->
                     <div class="flex gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/50 mb-2">
                         <label class="flex-1 cursor-pointer">
                             <input type="radio" name="loan-type" value="standard" checked class="peer sr-only">
@@ -191,13 +194,11 @@
                         </label>
                     </div>
 
-                    <!-- Single Flow Grid for Auto-Alignment -->
                     <div class="relative w-full">
                         <input type="text" id="loan-name" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
                         <label for="loan-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Profile Name (e.g. Home Loan)</label>
                     </div>
 
-                    <!-- CSS Grid naturally reflows the Start Date when middle fields are hidden -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="relative w-full" id="loan-principal-group">
                             <input type="number" id="loan-principal" required min="1" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
@@ -215,14 +216,16 @@
                         </div>
 
                         <div class="relative w-full" id="loan-start-date-group">
-                            <!-- Input swaps type to trigger native picker, seamlessly falling back -->
                             <input type="text" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'" id="loan-start-date" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
                             <label for="loan-start-date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Start Date</label>
                         </div>
                     </div>
 
                     <div class="pt-6">
-                        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200">Initialize Tracker</button>
+                        <button type="submit" id="init-loan-btn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-slate-200 relative flex justify-center items-center">
+                            <span id="init-loan-text" class="transition-opacity">Initialize Tracker</span>
+                            <svg id="init-loan-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -242,7 +245,6 @@
 
             <main class="flex-1 overflow-y-auto no-scrollbar px-6 pb-10 pt-4">
                 
-                <!-- Advanced Detail Summary Card -->
                 <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
                     <div class="flex justify-between items-center mb-6 relative z-10">
                         <div id="detail-days-left-container">
@@ -298,7 +300,6 @@
                     </div>
                 </div>
 
-                <!-- Flexible Payment Section (Hidden by default) -->
                 <div id="flexible-payment-section" class="mb-8 bg-white p-6 rounded-[2rem] border border-indigo-100 shadow-sm hidden relative overflow-hidden">
                     <div class="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-full blur-[40px] pointer-events-none"></div>
                     <h4 class="text-[10px] font-black uppercase tracking-wider text-indigo-600 mb-4 relative z-10">Record Ad-hoc Payment</h4>
@@ -315,21 +316,25 @@
                                 <label for="flex-pay-date" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Date</label>
                             </div>
                         </div>
-                        <button id="btn-flex-pay" class="w-full bg-indigo-600 text-white px-5 py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-colors active:scale-95 shrink-0 uppercase tracking-wider text-xs">Add Payment</button>
+                        <button id="btn-flex-pay" class="w-full bg-indigo-600 text-white px-5 py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-md transition-colors active:scale-95 shrink-0 uppercase tracking-wider text-xs relative flex justify-center items-center">
+                            <span id="flex-btn-text" class="transition-opacity">Add Payment</span>
+                            <svg id="flex-btn-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Timeline -->
                 <h3 class="text-lg font-black text-slate-900 tracking-tight mb-5" id="timeline-header">Payment Schedule</h3>
                 <div id="timeline-container" class="pl-1 space-y-4 relative">
                     <!-- Timeline Items Injected Here -->
                 </div>
 
-                <!-- Delete Loan Section -->
                 <div class="mt-8 pt-6 border-t border-slate-100">
-                    <button id="btn-delete-loan" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-4 rounded-2xl transition-all shadow-sm border border-rose-100 active:scale-[0.98] uppercase tracking-wider text-sm flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        Delete Profile
+                    <button id="btn-delete-loan" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-4 rounded-2xl transition-all shadow-sm border border-rose-100 active:scale-[0.98] uppercase tracking-wider text-sm flex items-center justify-center gap-2 relative">
+                        <span id="delete-btn-text" class="flex items-center gap-2 transition-opacity">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            Delete Profile
+                        </span>
+                        <svg id="delete-btn-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </button>
                 </div>
             </main>
@@ -338,6 +343,6 @@
     </div>
   </div> 
 
-  <script type="module" src="script.js"></script>
+  <script type="module" src="script-loan.js"></script>
 </body>
 </html>
