@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase to Supabase Migration Tool</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f1f5f9; padding: 2rem; max-width: 700px; margin: 0 auto; color: #334155; }
+        .card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 1.5rem; }
+        h2 { margin-top: 0; color: #0f172a; }
+        input { display: block; width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
+        button { background: #4f46e5; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; transition: background 0.2s; }
+        button:hover { background: #4338ca; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        #log { background: #1e293b; color: #10b981; padding: 1rem; border-radius: 8px; font-family: monospace; white-space: pre-wrap; height: 350px; overflow-y: auto; font-size: 0.875rem; line-height: 1.5; }
+        .error { color: #ef4444; }
+        .warn { color: #f59e0b; }
+    </style>
+</head>
+<body>
+
+    <h2>Database Migration Tool</h2>
+    
+    <div class="card" id="auth-section">
+        <h3>1. Authenticate with Firebase</h3>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">Sign in with the Firebase account whose data you want to migrate.</p>
+        <input type="email" id="email" placeholder="Email address">
+        <input type="password" id="password" placeholder="Password">
+        <button id="login-btn">Sign In to Firebase</button>
+    </div>
+
+    <div class="card" id="migrate-section" style="display: none;">
+        <h3>2. Start Migration</h3>
+        <p>Logged in as: <strong id="user-email"></strong></p>
+        <p class="warn" style="font-size: 0.85rem; font-weight: bold;">⚠️ Ensure Row Level Security (RLS) is temporarily disabled in Supabase before clicking this.</p>
+        <button id="migrate-btn">Migrate Data to Supabase</button>
+    </div>
+
+    <div id="log">Awaiting action...</div>
+
+    <script type="module">
+        // Import Firebase V11[span_3](start_span)[span_3](end_span)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Import Supabase[span_4](start_span)[span_4](end_span)
+        import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+        // --- 1. CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+            authDomain: "construction-expenses-app.firebaseapp.com",
+            projectId: "construction-expenses-app",
+        }; //[span_5](start_span)[span_5](end_span)
+
+        const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co'; //[span_6](start_span)[span_6](end_span)
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg'; //[span_7](start_span)[span_7](end_span)
+        const appId = "construction-expenses"; //[span_8](start_span)[span_8](end_span)
+
+        // --- 2. INITIALIZATION ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        // --- DOM ELEMENTS ---
+        const logEl = document.getElementById('log');
+        const loginBtn = document.getElementById('login-btn');
+        const migrateBtn = document.getElementById('migrate-btn');
+        const authSection = document.getElementById('auth-section');
+        const migrateSection = document.getElementById('migrate-section');
+
+        // --- LOGGER ---
+        function log(msg, type = 'info') {
+            const span = document.createElement('span');
+            span.textContent = `> ${msg}\n`;
+            if (type === 'error') span.className = 'error';
+            if (type === 'success') span.style.color = '#3b82f6';
+            logEl.appendChild(span);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // --- AUTHENTICATION ---
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if(!email || !password) return log('Please enter email and password', 'error');
+            
+            try {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Signing in...';
+                
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                log(`Successfully signed in to Firebase: ${userCredential.user.uid}`, 'success');
+                
+                document.getElementById('user-email').textContent = userCredential.user.email;
+                authSection.style.display = 'none';
+                migrateSection.style.display = 'block';
+            } catch (error) {
+                log(`Login failed: ${error.message}`, 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In to Firebase';
+            }
+        });
+
+        // --- MIGRATION LOGIC ---
+        migrateBtn.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return log('No authenticated user found.', 'error');
+
+            const uid = user.uid;
+            migrateBtn.disabled = true;
+            migrateBtn.textContent = 'Migrating... Do not close window.';
+            
+            log(`\n🚀 Starting migration for user ID: ${uid}...`);
+
+            try {
+                // 1. Migrate Projects
+                log(`Fetching Firebase projects...`);
+                const projectsRef = collection(db, `artifacts/${appId}/users/${uid}/projects`); //[span_9](start_span)[span_9](end_span)
+                const projectsSnapshot = await getDocs(projectsRef);
+                
+                if (!projectsSnapshot.empty) {
+                    const projectsData = projectsSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        name: doc.data().name,
+                        user_id: uid
+                    })); //[span_10](start_span)[span_10](end_span)[span_11](start_span)[span_11](end_span)
+
+                    log(`Found ${projectsData.length} projects. Inserting to Supabase...`);
+                    const { error: projErr } = await supabase.from('projects').upsert(projectsData); //[span_12](start_span)[span_12](end_span)
+                    
+                    if (projErr) throw new Error(`Project Insert Error: ${projErr.message}`);
+                    log(`✅ Successfully migrated ${projectsData.length} projects.`, 'success');
+                } else {
+                    log(`No projects found for this user.`);
+                }
+
+                // 2. Migrate Expenses
+                log(`\nFetching Firebase expenses...`);
+                const expensesRef = collection(db, `artifacts/${appId}/users/${uid}/expenses`); //[span_13](start_span)[span_13](end_span)
+                const expensesSnapshot = await getDocs(expensesRef);
+
+                if (!expensesSnapshot.empty) {
+                    const expensesData = expensesSnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            material: data.material,
+                            cost: data.cost,
+                            date: data.date,
+                            type: data.type,
+                            info: data.info || null,
+                            project_id: data.projectId, 
+                            user_id: uid
+                        };
+                    }); //[span_14](start_span)[span_14](end_span)[span_15](start_span)[span_15](end_span)
+
+                    log(`Found ${expensesData.length} expenses. Inserting to Supabase...`);
+                    // Using Upsert prevents duplicate rows if clicked multiple times
+                    const { error: expErr } = await supabase.from('expenses').upsert(expensesData); //[span_16](start_span)[span_16](end_span)
+                    
+                    if (expErr) throw new Error(`Expense Insert Error: ${expErr.message}`);
+                    log(`✅ Successfully migrated ${expensesData.length} expenses.`, 'success');
+                } else {
+                    log(`No expenses found for this user.`);
+                }
+
+                log(`\n🎉 All data migrated successfully! You can now use your Supabase app.`, 'success');
+                migrateBtn.textContent = 'Migration Complete';
+
+            } catch (error) {
+                log(`\n❌ Migration failed: ${error.message}`, 'error');
+                migrateBtn.disabled = false;
+                migrateBtn.textContent = 'Retry Migration';
+            }
+        });
+    </script>
+</body>
+</html>
