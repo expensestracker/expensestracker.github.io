@@ -7,6 +7,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
+// FIX: Token to prevent race conditions during rapid data fetches
+let activeDataRequest = 0;
 
 // --- DOM Elements ---
 const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
@@ -43,9 +45,24 @@ addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
+// FIX: Track active requestAnimationFrame calls to prevent overlapping flashes
+const activeAnimations = new Map();
+
 // --- Animation Helper: Growing Numbers ---
 function animateNumber(element, start, end, duration = 800) {
     if (!element) return;
+    
+    // FIX: Cancel previous animation if a new one starts on the same element
+    if (activeAnimations.has(element)) {
+        cancelAnimationFrame(activeAnimations.get(element));
+    }
+
+    // FIX: If value hasn't changed, skip animation entirely
+    if (start === end) {
+        element.textContent = `₹${end.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+        return;
+    }
+
     let startTimestamp = null;
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
@@ -56,12 +73,13 @@ function animateNumber(element, start, end, duration = 800) {
         element.textContent = `₹${current.toLocaleString('en-IN')}`;
         
         if (progress < 1) {
-            window.requestAnimationFrame(step);
+            activeAnimations.set(element, window.requestAnimationFrame(step));
         } else {
             element.textContent = `₹${end.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+            activeAnimations.delete(element);
         }
     };
-    window.requestAnimationFrame(step);
+    activeAnimations.set(element, window.requestAnimationFrame(step));
 }
 
 // --- Custom Native-Feel Toast Notification ---
@@ -361,17 +379,25 @@ const showView = (viewName) => {
 
 // --- Authentication ---
 let isInitialLoad = true;
+let isAppInitialized = false; 
 
-supabase.auth.onAuthStateChange((event, session) => {
+supabase.auth.onAuthStateChange(async (event, session) => {
   const user = session?.user;
   currentUser = user;
 
-  const routeUser = () => {
+  const routeUser = async () => {
     if (user) {
-      showView('app');
       setupUIForUser(user);
-      listenForProjects(user.id);
+      
+      await listenForProjects(user.id);
+      
+      if (!isAppInitialized) {
+          showView('app');
+          isAppInitialized = true;
+          document.getElementById('expense-dashboard')?.classList.add('dashboard-reveal');
+      }
     } else {
+      isAppInitialized = false;
       showView('auth');
       if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
       if (expensesUnsubscribe) supabase.removeChannel(expensesUnsubscribe);
@@ -381,7 +407,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 
   if (isInitialLoad) {
     isInitialLoad = false;
-    setTimeout(routeUser, 1000);
+    await routeUser();
   } else {
     routeUser();
   }
@@ -452,7 +478,6 @@ emailForm?.addEventListener('submit', async e => {
   }
 });
 
-// Added redirectTo option so it successfully lands back on your app domain[span_2](start_span)[span_2](end_span)
 googleSignInBtn?.addEventListener('click', async () => {
   if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
   
@@ -522,17 +547,27 @@ async function reloadProjectsData() {
     await processProjects(currentUser.id, updated);
 }
 
-async function reloadExpensesData() {
+// FIX: Added parameter to toggle animation logic for realtime updates
+async function reloadExpensesData(isRealtimeUpdate = false) {
     if (!activeProjectId) return;
     
-    // Concurrently fetch list data and summaries to slash load time
-    await Promise.all([
-        fetchExpenses(activeProjectId).then(res => {
-            allExpensesForProject = res;
-            applyFilters();
-        }),
+    // Increment request token to avoid race conditions
+    const currentRequestId = ++activeDataRequest;
+    
+    // Concurrently fetch list data and summaries
+    const [expensesRes, summaryRes] = await Promise.all([
+        fetchExpenses(activeProjectId),
         fetchServerSummaries(activeProjectId)
     ]);
+
+    // If another fetch started while this one was pending, discard this response
+    if (currentRequestId !== activeDataRequest) return;
+
+    allExpensesForProject = expensesRes;
+    
+    // Do not animate fade-in on every realtime refresh
+    applyFilters(!isRealtimeUpdate);
+    renderSummaries(summaryRes, !isRealtimeUpdate);
 }
 
 async function fetchProjects(uid) {
@@ -560,7 +595,7 @@ async function processProjects(uid, fetchedProjects) {
 
   if (activeProjectId) {
     localStorage.setItem('lastActiveProjectId', activeProjectId);
-    updateActiveProject();
+    await updateActiveProject();
   }
 }
 
@@ -575,14 +610,15 @@ async function listenForProjects(uid) {
     .subscribe();
 }
 
-function updateActiveProject() {
+async function updateActiveProject() {
     const activeProject = projects.find(p => p.id === activeProjectId);
     if (activeProject && projectSummaryTitle) {
         projectSummaryTitle.textContent = activeProject.name;
     }
     updateSidebarSelection();
     toggleDashboardVisibility(true);
-    listenForExpenses(currentUser.id, activeProjectId);
+    
+    await listenForExpenses(currentUser.id, activeProjectId);
 }
 
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
@@ -627,20 +663,30 @@ function populateSidebarProjects(projects) {
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </div>`;
         return `
-            <div class="flex justify-between items-center group rounded-xl hover:bg-slate-50 transition-colors animate-fade-in" style="animation-fill-mode: both; animation-delay: ${index * 30}ms">
+            <div class="flex justify-between items-center group rounded-xl hover:bg-slate-50 transition-colors">
                 <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2.5 px-3 text-sm font-semibold flex-grow truncate text-slate-600">${escapeHTML(p.name)}</a>
                 ${buttonsHTML}
             </div>`;
     }).join('');
 
-    document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', e => {
+    document.querySelectorAll('.sidebar-project-link').forEach(link => link.addEventListener('click', async e => {
         e.preventDefault();
-        activeProjectId = e.currentTarget.dataset.projectId;
+        const newProjectId = e.currentTarget.dataset.projectId;
+        if (newProjectId === activeProjectId) return;
+        
+        activeProjectId = newProjectId;
         localStorage.setItem('lastActiveProjectId', activeProjectId);
         showAllExpenses = false;
         if (viewAllBtn) viewAllBtn.style.display = 'block';
-        updateActiveProject();
+        
+        // Slightly dim the dashboard while switching projects
+        const dash = document.getElementById('expense-dashboard');
+        if (dash) dash.style.opacity = '0.5';
+        
+        await updateActiveProject();
         closeMenu();
+        
+        if (dash) dash.style.opacity = '1';
     }));
     
     document.querySelectorAll('.edit-project-btn').forEach(btn => btn.addEventListener('click', (e) => {
@@ -680,7 +726,7 @@ const toggleDashboardVisibility = (hasProjects) => {
 // --- View All & Filtering ---
 viewAllBtn?.addEventListener('click', () => {
     showAllExpenses = true;
-    applyFilters();
+    applyFilters(false); // No animation needed for expanding list
     if (viewAllBtn) viewAllBtn.style.display = 'none';
 });
 
@@ -709,10 +755,9 @@ async function fetchServerSummaries(projectId) {
     const { data, error } = await supabase.rpc('get_project_summary', { p_project_id: projectId });
     if (error) {
         console.error("Error fetching summaries:", error);
-        renderSummaries(null); 
-        return;
+        return null;
     }
-    renderSummaries(data);
+    return data;
 }
 
 async function listenForExpenses(uid, projectId) {
@@ -723,21 +768,22 @@ async function listenForExpenses(uid, projectId) {
     
     if (!uid || !projectId) {
         allExpensesForProject = [];
-        applyFilters();
-        renderSummaries(null);
+        applyFilters(false);
+        renderSummaries(null, false);
         return;
     }
     
-    await reloadExpensesData();
+    // Initial fetch for this project (animate on load)
+    await reloadExpensesData(false);
     
     expensesUnsubscribe = supabase.channel('public:expenses')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
-            await reloadExpensesData(); 
+            await reloadExpensesData(true); 
         })
         .subscribe();
 }
 
-const applyFilters = () => {
+const applyFilters = (animate = false) => {
     if (!searchInput) return;
     const searchTerm = searchInput.value.toLowerCase();
     const startDate = startDateInput.value;
@@ -762,10 +808,10 @@ const applyFilters = () => {
         if (viewAllBtn) viewAllBtn.style.display = 'none';
     }
 
-    renderExpenses(filtered, !isFiltering);
+    renderExpenses(filtered, animate);
 };
 
-[searchInput, startDateInput, endDateInput].forEach(el => el?.addEventListener('input', applyFilters));
+[searchInput, startDateInput, endDateInput].forEach(el => el?.addEventListener('input', () => applyFilters(false)));
 
 const formatDate = (date) => {
     const year = date.getFullYear();
@@ -784,7 +830,7 @@ const setDateFilter = (timeframe) => {
     }
     if (startDateInput) startDateInput.value = formatDate(startDate);
     if (endDateInput) endDateInput.value = formatDate(endDate);
-    applyFilters();
+    applyFilters(false);
 };
 
 document.getElementById('last-week')?.addEventListener('click', () => setDateFilter('last-week'));
@@ -821,12 +867,14 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
             closeAddExpenseModal();
             showToast("Entry added successfully!", "success");
             
-            await reloadExpensesData();
+            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
+            await reloadExpensesData(true);
             
             document.getElementById('main-scroll').scrollTo({
                 top: document.getElementById('history-section').offsetTop - 20,
                 behavior: 'smooth'
             });
+            
             addExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Network Error: Data not saved.", "error");
@@ -837,10 +885,10 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
 
 
 // --- Render & CRUD ---
-function renderExpenses(expenses, animate = true) {
+function renderExpenses(expenses, animate = false) {
     if (!expenseList) return;
     if (expenses.length === 0) {
-        expenseList.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-medium animate-fade-in">No transactions found.</div>`;
+        expenseList.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-medium">No transactions found.</div>`;
         return;
     }
     
@@ -853,7 +901,6 @@ function renderExpenses(expenses, animate = true) {
             ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
             : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>';
         
-        // Cascading smooth transition classes
         const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms;"` : '';
         const animationClass = animate ? `animate-fade-in` : '';
 
@@ -904,7 +951,8 @@ async function handleDelete(event) {
             if (error) throw error;
             showToast("Entry deleted", "success");
             
-            await reloadExpensesData();
+            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
+            await reloadExpensesData(true);
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
             throw err;
@@ -950,7 +998,9 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
             closeEditModal();
             showToast("Entry updated successfully!", "success");
             
-            await reloadExpensesData();
+            // FIX: Manually trigger UI update instantly (pass true to avoid flicker)
+            await reloadExpensesData(true);
+            
             editExpenseSwipeObj.reset();
         } catch (err) {
             showToast("Update failed: Check connection.", "error");
@@ -985,7 +1035,7 @@ async function handleDeleteProject(projectId, projectName) {
                 if (remainingProjects.length > 0) {
                     activeProjectId = remainingProjects[0].id;
                     localStorage.setItem('lastActiveProjectId', activeProjectId);
-                    updateActiveProject();
+                    await updateActiveProject();
                 } else {
                     activeProjectId = null;
                     localStorage.removeItem('lastActiveProjectId');
@@ -1086,12 +1136,11 @@ closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
 // --- Summaries UI Renderer ---
-function renderSummaries(data) {
+function renderSummaries(data, animate = false) {
     if (!finalExpensesEl) return;
     
     if (!data) data = { net_balance: 0, total_income: 0, total_expense: 0, material_totals: [] };
     
-    // Animate Dashboard Numbers instead of showing skeleton or instant-replacing
     const currentFinal = parseFloat(finalExpensesEl.textContent.replace(/[^\d.-]/g, '') || 0);
     animateNumber(finalExpensesEl, currentFinal, Math.abs(data.net_balance || 0));
     
@@ -1109,7 +1158,7 @@ function renderSummaries(data) {
 
     const matTotals = data.material_totals || [];
     if (matTotals.length === 0) {
-        if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2 animate-fade-in">No summary available yet.</p>`;
+        if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
         return;
     }
 
@@ -1118,7 +1167,11 @@ function renderSummaries(data) {
             const netAmount = item.net_amount;
             const colorClass = netAmount > 0 ? 'text-red-500' : (netAmount < 0 ? 'text-green-700' : 'text-slate-900');
             const displayName = item.material_name;
-            return `<div class="flex justify-between items-center py-1 animate-fade-in" style="animation-fill-mode: both; animation-delay: ${index * 30}ms"><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            
+            const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms"` : '';
+            const animationClass = animate ? `animate-fade-in` : '';
+
+            return `<div class="flex justify-between items-center py-1 ${animationClass}" ${animationStyle}><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
         }).join('');
     }
 }
@@ -1284,6 +1337,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.8.1: No Skeletons & Fixed OAuth";
+const APP_VERSION = "1.8.3: Instant CRUD Updates";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;

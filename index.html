@@ -39,6 +39,13 @@
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
     .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
 
+    /* FIX: Prevent loading flicker with a one-time smooth dashboard reveal */
+    @keyframes dashboardReveal { 
+      0% { opacity: 0; transform: translateY(15px); } 
+      100% { opacity: 1; transform: translateY(0); } 
+    }
+    .dashboard-reveal { animation: dashboardReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
     @keyframes slideInRight { 
       0% { opacity: 0; transform: translateX(20px); } 
       100% { opacity: 1; transform: translateX(0); } 
@@ -69,6 +76,16 @@
         background-image: linear-gradient(90deg, #ef4444 0%, #fecaca 50%, #ef4444 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+    }
+
+    /* FIX: Respect user accessibility preferences */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
   </style>
 </head>
