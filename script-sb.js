@@ -45,6 +45,27 @@ addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
+// --- Animation Helper: Growing Numbers ---
+function animateNumber(element, start, end, duration = 800) {
+    if (!element) return;
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        // easeOutQuart
+        const easeOut = 1 - Math.pow(1 - progress, 4);
+        const current = Math.floor(easeOut * (end - start) + start);
+        element.textContent = `₹${current.toLocaleString('en-IN')}`;
+        
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        } else {
+            element.textContent = `₹${end.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
 // --- Custom Native-Feel Toast Notification ---
 function showToast(message, type = 'error') {
   const toastContainer = document.getElementById('toast-container');
@@ -351,7 +372,6 @@ supabase.auth.onAuthStateChange((event, session) => {
     if (user) {
       showView('app');
       setupUIForUser(user);
-      // Removed immediate forced skeletons here; let listenForProjects manage it intelligently.
       listenForProjects(user.id);
     } else {
       showView('auth');
@@ -496,7 +516,7 @@ async function reloadProjectsData() {
 async function reloadExpensesData() {
     if (!activeProjectId) return;
     
-    // Concurrently fetch lists and summaries for faster perceived load times
+    // Concurrently fetch list data and summaries to slash load time
     await Promise.all([
         fetchExpenses(activeProjectId).then(res => {
             allExpensesForProject = res;
@@ -506,7 +526,7 @@ async function reloadExpensesData() {
     ]);
 }
 
-// --- Projects & Redesigned Skeleton Loaders ---
+// --- Projects & Redesigned Smart Skeleton Loaders ---
 function renderProjectSkeleton() {
     if (!sidebarProjectList) return;
     sidebarProjectList.innerHTML = Array(3).fill(0).map((_, i) => `
@@ -537,15 +557,10 @@ function renderExpenseSkeleton() {
 }
 
 function renderDashboardSkeleton() {
-    if (finalExpensesEl) finalExpensesEl.innerHTML = '<div class="h-10 bg-white/40 rounded-lg animate-pulse w-32 mb-2"></div>';
-    const cardIncomeCopy = document.getElementById('card-income-copy');
-    if (cardIncomeCopy) cardIncomeCopy.innerHTML = '<div class="h-5 bg-white/40 rounded-md animate-pulse w-20"></div>';
-    const cardExpenseCopy = document.getElementById('card-expense-copy');
-    if (cardExpenseCopy) cardExpenseCopy.innerHTML = '<div class="h-5 bg-white/40 rounded-md animate-pulse w-20"></div>';
-    
+    // Only applied to material summary. Dashboard main numbers removed per instructions.
     if (materialSummaryEl) {
         materialSummaryEl.innerHTML = Array(3).fill(0).map((_, i) => `
-            <div class="flex justify-between items-center py-2 animate-pulse" style="animation-delay: ${i * 75}ms">
+            <div class="flex justify-between items-center py-2.5 animate-pulse" style="animation-delay: ${i * 75}ms">
                 <div class="h-4 bg-slate-200 rounded-md w-1/3 opacity-70"></div>
                 <div class="h-4 bg-slate-200 rounded-md w-1/4 opacity-70"></div>
             </div>
@@ -589,18 +604,15 @@ async function listenForProjects(uid) {
       if (isFetching) renderProjectSkeleton();
   }, 150);
   
-  // Initial fetch
   await reloadProjectsData();
   
-  // Clear timer in case of fast fetch
   isFetching = false;
   clearTimeout(projectsSkeletonTimer);
 
-  // Subscribe to realtime changes (acts as backup to explicit refetches)
   if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
   projectsUnsubscribe = supabase.channel('public:projects')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${uid}` }, async (payload) => {
-        await reloadProjectsData(); // Background update won't flash skeletons!
+        await reloadProjectsData(); 
     })
     .subscribe();
 }
@@ -639,7 +651,6 @@ let addProjectSwipeObj = initSwipeButton('add-project-swipe', async () => {
             closeAddProjectModal();
             showToast(`Project "${projectName}" created!`, "success");
             
-            // Explicit Refetch
             await reloadProjectsData(); 
             addProjectSwipeObj.reset();
         } catch (err) {
@@ -657,6 +668,7 @@ function populateSidebarProjects(projects) {
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </div>`;
+        // Added smooth fade-in animation to items
         return `
             <div class="flex justify-between items-center group rounded-xl hover:bg-slate-50 transition-colors animate-fade-in" style="animation-fill-mode: both; animation-delay: ${index * 30}ms">
                 <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2.5 px-3 text-sm font-semibold flex-grow truncate text-slate-600">${escapeHTML(p.name)}</a>
@@ -740,7 +752,7 @@ async function fetchServerSummaries(projectId) {
     const { data, error } = await supabase.rpc('get_project_summary', { p_project_id: projectId });
     if (error) {
         console.error("Error fetching summaries:", error);
-        renderSummaries(null); // Force render empty state
+        renderSummaries(null); 
         return;
     }
     renderSummaries(data);
@@ -759,7 +771,7 @@ async function listenForExpenses(uid, projectId) {
         return;
     }
     
-    // Smart Loader: Delay Skeletons to prevent flicker on fast loads/cache
+    // Smart Loader: Delay Skeletons to prevent flicker on fast loads
     let isFetching = true;
     expensesSkeletonTimer = setTimeout(() => {
         if (isFetching) {
@@ -768,16 +780,14 @@ async function listenForExpenses(uid, projectId) {
         }
     }, 150);
     
-    // Initial Explicit Fetch
     await reloadExpensesData();
     
     isFetching = false;
     clearTimeout(expensesSkeletonTimer);
 
-    // Subscribe to realtime changes (acts as backup)
     expensesUnsubscribe = supabase.channel('public:expenses')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
-            await reloadExpensesData(); // Background trigger won't run skeleton code
+            await reloadExpensesData(); 
         })
         .subscribe();
 }
@@ -807,7 +817,6 @@ const applyFilters = () => {
         if (viewAllBtn) viewAllBtn.style.display = 'none';
     }
 
-    // Only apply cascading animations when NOT typing in search to keep instant-search snappy
     renderExpenses(filtered, !isFiltering);
 };
 
@@ -867,7 +876,6 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
             closeAddExpenseModal();
             showToast("Entry added successfully!", "success");
             
-            // Explicit Refetch
             await reloadExpensesData();
             
             document.getElementById('main-scroll').scrollTo({
@@ -893,13 +901,14 @@ function renderExpenses(expenses, animate = true) {
     
     expenseList.innerHTML = expenses.map((expense, index) => {
         const isIncome = expense.type === 'income';
-        const costSign = ''; // Requested no +/- prefix
+        const costSign = '';
         const costColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
         const iconBgColor = isIncome ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500';
         const iconSvg = isIncome 
             ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
             : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>';
         
+        // Cascading smooth transition classes
         const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms;"` : '';
         const animationClass = animate ? `animate-fade-in` : '';
 
@@ -950,7 +959,6 @@ async function handleDelete(event) {
             if (error) throw error;
             showToast("Entry deleted", "success");
             
-            // Explicit Refetch
             await reloadExpensesData();
         } catch (err) {
             showToast("Delete failed: Network error.", "error");
@@ -997,7 +1005,6 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
             closeEditModal();
             showToast("Entry updated successfully!", "success");
             
-            // Explicit Refetch
             await reloadExpensesData();
             editExpenseSwipeObj.reset();
         } catch (err) {
@@ -1040,7 +1047,6 @@ async function handleDeleteProject(projectId, projectName) {
                     toggleDashboardVisibility(false);
                 }
             }
-            // Explicit Refetch
             await reloadProjectsData();
         } catch (error) {
             showToast("Delete failed: Network error.", "error");
@@ -1065,7 +1071,6 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
             closeEditProjectModal();
             showToast("Project renamed successfully!", "success");
             
-            // Explicit Refetch
             await reloadProjectsData();
             editProjectSwipeObj.reset();
         } catch (err) {
@@ -1135,19 +1140,27 @@ const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
-// --- Summaries UI Renderer (Data is pre-calculated by Postgres) ---
+// --- Summaries UI Renderer ---
 function renderSummaries(data) {
     if (!finalExpensesEl) return;
     
-    // Safely fallback if data is null/undefined
     if (!data) data = { net_balance: 0, total_income: 0, total_expense: 0, material_totals: [] };
     
-    finalExpensesEl.innerHTML = `<span class="inline-block animate-fade-in">₹${Math.abs(data.net_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>`;
+    // Animate Dashboard Numbers instead of showing skeleton or instant-replacing
+    const currentFinal = parseFloat(finalExpensesEl.textContent.replace(/[^\d.-]/g, '') || 0);
+    animateNumber(finalExpensesEl, currentFinal, Math.abs(data.net_balance || 0));
     
     const cardIncomeCopy = document.getElementById('card-income-copy');
-    if(cardIncomeCopy) cardIncomeCopy.innerHTML = `<span class="inline-block animate-fade-in">₹${Math.abs(data.total_income || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>`;
+    if(cardIncomeCopy) {
+        const currentInc = parseFloat(cardIncomeCopy.textContent.replace(/[^\d.-]/g, '') || 0);
+        animateNumber(cardIncomeCopy, currentInc, Math.abs(data.total_income || 0));
+    }
+    
     const cardExpenseCopy = document.getElementById('card-expense-copy');
-    if(cardExpenseCopy) cardExpenseCopy.innerHTML = `<span class="inline-block animate-fade-in">₹${Math.abs(data.total_expense || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>`;
+    if(cardExpenseCopy) {
+        const currentExp = parseFloat(cardExpenseCopy.textContent.replace(/[^\d.-]/g, '') || 0);
+        animateNumber(cardExpenseCopy, currentExp, Math.abs(data.total_expense || 0));
+    }
 
     const matTotals = data.material_totals || [];
     if (matTotals.length === 0) {
@@ -1326,6 +1339,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.8.0: Delayed Skeleton Hooks & UX Cascade";
+const APP_VERSION = "1.8.0: Data Counting & Anti-Flicker Animations";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
