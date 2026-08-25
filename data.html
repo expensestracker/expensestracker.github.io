@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Migration: Firebase to Supabase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen py-10 px-4">
+  <div class="max-w-2xl mx-auto bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+    
+    <!-- Header -->
+    <div class="border-b border-slate-700 pb-4">
+      <h1 class="text-2xl font-bold text-indigo-400">Database Migration Assistant</h1>
+      <p class="text-sm text-slate-400 mt-1">
+        Seamlessly transfer your projects and expense history from Firebase to Supabase.
+      </p>
+    </div>
+
+    <!-- Step 1: Firebase Authentication & Fetch -->
+    <div id="step-1" class="bg-slate-900/60 p-5 rounded-xl border border-slate-700/60 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg text-slate-200">1. Connect & Extract from Firebase</h2>
+        <span id="fb-badge" class="text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-medium">Pending Login</span>
+      </div>
+      
+      <form id="fb-auth-form" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Firebase Email</label>
+          <input type="email" id="fb-email" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" required placeholder="user@example.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Firebase Password</label>
+          <input type="password" id="fb-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" required placeholder="••••••••" />
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit" id="fb-login-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 px-4 rounded-lg text-sm transition">
+            Sign In & Fetch Firebase Data
+          </button>
+          <button type="button" id="fb-google-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 px-3 rounded-lg text-sm transition">
+            Google Sign-In
+          </button>
+        </div>
+      </form>
+
+      <div id="fb-summary" class="hidden text-xs bg-slate-800 p-3 rounded-lg border border-slate-700 text-slate-300"></div>
+    </div>
+
+    <!-- Step 2: Supabase Authentication -->
+    <div id="step-2" class="bg-slate-900/60 p-5 rounded-xl border border-slate-700/60 space-y-4 opacity-50 pointer-events-none transition-opacity">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg text-slate-200">2. Connect to Supabase</h2>
+        <span id="sb-badge" class="text-xs bg-slate-700 text-slate-400 px-2.5 py-1 rounded-full font-medium">Locked</span>
+      </div>
+
+      <form id="sb-auth-form" class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Account Email</label>
+          <input type="email" id="sb-email" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" required placeholder="user@example.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Supabase Password</label>
+          <input type="password" id="sb-password" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" required placeholder="••••••••" />
+        </div>
+        <button type="submit" id="sb-login-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 px-4 rounded-lg text-sm transition">
+          Sign In / Create Supabase Account
+        </button>
+      </form>
+    </div>
+
+    <!-- Step 3: Migration Execution -->
+    <div id="step-3" class="bg-slate-900/60 p-5 rounded-xl border border-slate-700/60 space-y-4 opacity-50 pointer-events-none transition-opacity">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold text-lg text-slate-200">3. Map & Push Data</h2>
+        <span id="migration-badge" class="text-xs bg-slate-700 text-slate-400 px-2.5 py-1 rounded-full font-medium">Ready</span>
+      </div>
+
+      <p class="text-xs text-slate-400">
+        This will map your Firebase project IDs to new Supabase projects and import all associated income and expense records.
+      </p>
+
+      <button type="button" id="start-migration-btn" class="w-full bg-gradient-to-r from-indigo-500 to-emerald-500 hover:from-indigo-600 hover:to-emerald-600 text-white font-bold py-3 px-4 rounded-lg text-sm shadow-lg transition">
+        Execute Migration
+      </button>
+    </div>
+
+    <!-- Live Console Output -->
+    <div class="space-y-2">
+      <div class="flex justify-between items-center text-xs text-slate-400">
+        <span>Migration Activity Log</span>
+        <button id="clear-log-btn" class="hover:text-slate-200">Clear</button>
+      </div>
+      <div id="console-log" class="bg-black/80 font-mono text-xs text-emerald-400 p-4 rounded-xl h-44 overflow-y-auto space-y-1 border border-slate-700/80">
+        <div>[Ready] Please sign in with Firebase to begin data extraction.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modules & Migration Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    // --- Configurations ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAEZsRWj_7ZAVfwW8PR7Nj4c2rR3gbeGw0",
+      authDomain: "construction-expenses-app.firebaseapp.com",
+      projectId: "construction-expenses-app",
+      storageBucket: "construction-expenses-app.firebasestorage.app",
+      messagingSenderId: "944353147981",
+      appId: "1:944353147981:web:36ff635b184d5eac69b004"
+    };
+
+    const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg';
+
+    // --- Clients ---
+    const fbApp = initializeApp(firebaseConfig);
+    const fbAuth = getAuth(fbApp);
+    const fbDb = getFirestore(fbApp);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // --- Migration State ---
+    let fbUserData = null;
+    let fetchedProjects = [];
+    let fetchedExpenses = [];
+    let sbUserData = null;
+
+    // --- Logging Helper ---
+    const logBox = document.getElementById('console-log');
+    function log(msg, type = 'info') {
+      const entry = document.createElement('div');
+      const time = new Date().toLocaleTimeString();
+      if (type === 'error') entry.className = 'text-red-400 font-semibold';
+      else if (type === 'success') entry.className = 'text-green-300 font-semibold';
+      else if (type === 'warn') entry.className = 'text-amber-300';
+      else entry.className = 'text-slate-300';
+
+      entry.textContent = `[${time}] ${msg}`;
+      logBox.appendChild(entry);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    document.getElementById('clear-log-btn').onclick = () => { logBox.innerHTML = ''; };
+
+    // --- Step 1: Firebase Auth & Data Fetching ---
+    async function handleFirebaseSuccess(user) {
+      fbUserData = user;
+      document.getElementById('fb-badge').className = 'text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-medium';
+      document.getElementById('fb-badge').textContent = 'Connected: ' + (user.email || user.uid);
+      log(`Firebase authenticated: ${user.email || user.uid}`, 'success');
+
+      log('Fetching projects and expenses from Firestore...', 'info');
+      const appId = "construction-expenses";
+      
+      try {
+        // Fetch Projects
+        const projectsRef = collection(fbDb, `artifacts/${appId}/users/${user.uid}/projects`);
+        const projSnap = await getDocs(projectsRef);
+        fetchedProjects = projSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Fetch Expenses
+        const expensesRef = collection(fbDb, `artifacts/${appId}/users/${user.uid}/expenses`);
+        const expSnap = await getDocs(expensesRef);
+        fetchedExpenses = expSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        log(`Extracted ${fetchedProjects.length} project(s) and ${fetchedExpenses.length} expense record(s).`, 'success');
+
+        const summaryEl = document.getElementById('fb-summary');
+        summaryEl.classList.remove('hidden');
+        summaryEl.innerHTML = `
+          <div class="font-bold text-slate-200 mb-1">Fetched Records Summary:</div>
+          <div>• Projects: <strong>${fetchedProjects.length}</strong></div>
+          <div>• Expenses / Entries: <strong>${fetchedExpenses.length}</strong></div>
+        `;
+
+        // Unlock Step 2
+        const step2 = document.getElementById('step-2');
+        step2.classList.remove('opacity-50', 'pointer-events-none');
+        document.getElementById('sb-badge').textContent = 'Ready for Login';
+        document.getElementById('sb-badge').className = 'text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-medium';
+
+        // Pre-fill email
+        if (user.email) {
+          document.getElementById('sb-email').value = user.email;
+        }
+      } catch (err) {
+        log(`Failed to fetch Firestore data: ${err.message}`, 'error');
+      }
+    }
+
+    document.getElementById('fb-auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('fb-email').value.trim();
+      const password = document.getElementById('fb-password').value;
+      const btn = document.getElementById('fb-login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+
+      try {
+        const creds = await signInWithEmailAndPassword(fbAuth, email, password);
+        await handleFirebaseSuccess(creds.user);
+      } catch (err) {
+        log(`Firebase Login Error: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In & Fetch Firebase Data';
+      }
+    });
+
+    document.getElementById('fb-google-btn').addEventListener('click', async () => {
+      try {
+        const creds = await signInWithPopup(fbAuth, new GoogleAuthProvider());
+        await handleFirebaseSuccess(creds.user);
+      } catch (err) {
+        log(`Firebase Google Sign-In Error: ${err.message}`, 'error');
+      }
+    });
+
+    // --- Step 2: Supabase Authentication ---
+    document.getElementById('sb-auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('sb-email').value.trim();
+      const password = document.getElementById('sb-password').value;
+      const btn = document.getElementById('sb-login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+
+      try {
+        // Attempt Sign-In
+        let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (error && error.message.includes("Invalid login")) {
+          log('Supabase user not found. Attempting to create account...', 'warn');
+          const signUpRes = await supabase.auth.signUp({ email, password });
+          if (signUpRes.error) throw signUpRes.error;
+          data = signUpRes.data;
+          log('Supabase account registered automatically.', 'success');
+        } else if (error) {
+          throw error;
+        }
+
+        sbUserData = data.user;
+        log(`Supabase authenticated as: ${sbUserData.email} (ID: ${sbUserData.id})`, 'success');
+
+        document.getElementById('sb-badge').className = 'text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-medium';
+        document.getElementById('sb-badge').textContent = 'Connected';
+
+        // Unlock Step 3
+        const step3 = document.getElementById('step-3');
+        step3.classList.remove('opacity-50', 'pointer-events-none');
+      } catch (err) {
+        log(`Supabase Auth Error: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In / Create Supabase Account';
+      }
+    });
+
+    // --- Step 3: Migration Execution Engine ---
+    document.getElementById('start-migration-btn').addEventListener('click', async () => {
+      if (!fbUserData || !sbUserData) {
+        log('Error: Both Firebase and Supabase sessions are required.', 'error');
+        return;
+      }
+
+      const runBtn = document.getElementById('start-migration-btn');
+      runBtn.disabled = true;
+      runBtn.textContent = 'Migrating...';
+      document.getElementById('migration-badge').className = 'text-xs bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full font-medium';
+      document.getElementById('migration-badge').textContent = 'In Progress';
+
+      const projectIdMapping = {}; // Firebase Project ID -> Supabase Project ID
+
+      try {
+        // 1. Migrate Projects
+        log('--- Phase 1: Migrating Projects ---', 'info');
+
+        // Check for existing projects in Supabase to prevent unintentional duplicates
+        const { data: existingProjects, error: fetchErr } = await supabase
+          .from('projects')
+          .select('id, name')
+          .eq('user_id', sbUserData.id);
+
+        if (fetchErr) throw fetchErr;
+
+        for (const fbProj of fetchedProjects) {
+          const matched = existingProjects?.find(p => p.name.trim().toLowerCase() === (fbProj.name || 'Untitled').trim().toLowerCase());
+          
+          if (matched) {
+            projectIdMapping[fbProj.id] = matched.id;
+            log(`Project "${fbProj.name}" already exists in Supabase. Mapped to ${matched.id}.`, 'warn');
+          } else {
+            const { data: insertedProj, error: insertErr } = await supabase
+              .from('projects')
+              .insert([{ name: fbProj.name || 'General Project', user_id: sbUserData.id }])
+              .select()
+              .single();
+
+            if (insertErr) throw insertErr;
+
+            projectIdMapping[fbProj.id] = insertedProj.id;
+            log(`Created project "${insertedProj.name}" -> Supabase ID: ${insertedProj.id}`, 'success');
+          }
+        }
+
+        // Handle case where user had no projects in Firebase
+        if (Object.keys(projectIdMapping).length === 0) {
+          log('No projects found in Firebase. Checking/Creating "General Project"...', 'warn');
+          let generalProj = existingProjects?.find(p => p.name === 'General Project');
+          if (!generalProj) {
+            const { data: newProj, error: genErr } = await supabase
+              .from('projects')
+              .insert([{ name: 'General Project', user_id: sbUserData.id }])
+              .select()
+              .single();
+            if (genErr) throw genErr;
+            generalProj = newProj;
+          }
+          projectIdMapping['__default__'] = generalProj.id;
+        }
+
+        // 2. Migrate Expenses
+        log('--- Phase 2: Mapping & Inserting Expenses ---', 'info');
+        const defaultProjectId = Object.values(projectIdMapping)[0];
+
+        const mappedExpenses = fetchedExpenses.map(exp => {
+          const targetProjectId = projectIdMapping[exp.projectId] || defaultProjectId;
+          return {
+            material: exp.material || 'Unnamed Expense',
+            cost: parseFloat(exp.cost) || 0,
+            date: exp.date || new Date().toISOString().split('T')[0],
+            type: exp.type === 'income' ? 'income' : 'expense',
+            info: exp.info || null,
+            project_id: targetProjectId,
+            user_id: sbUserData.id
+          };
+        });
+
+        // Batch upload (chunks of 100 to stay within limits)
+        const CHUNK_SIZE = 100;
+        let insertedCount = 0;
+
+        for (let i = 0; i < mappedExpenses.length; i += CHUNK_SIZE) {
+          const chunk = mappedExpenses.slice(i, i + CHUNK_SIZE);
+          const { error: batchErr } = await supabase.from('expenses').insert(chunk);
+          if (batchErr) throw batchErr;
+          insertedCount += chunk.length;
+          log(`Uploaded ${insertedCount}/${mappedExpenses.length} transactions...`);
+        }
+
+        log('====================================', 'success');
+        log(`Migration Complete! Successfully transferred ${Object.keys(projectIdMapping).length} project(s) and ${insertedCount} expense records.`, 'success');
+        log('You can now log in to the new Supabase-powered app.', 'success');
+        
+        document.getElementById('migration-badge').className = 'text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-medium';
+        document.getElementById('migration-badge').textContent = 'Completed';
+        runBtn.textContent = 'Migration Completed Successfully';
+      } catch (err) {
+        log(`Migration Failed: ${err.message}`, 'error');
+        document.getElementById('migration-badge').className = 'text-xs bg-red-500/20 text-red-300 px-2.5 py-1 rounded-full font-medium';
+        document.getElementById('migration-badge').textContent = 'Failed';
+        runBtn.disabled = false;
+        runBtn.textContent = 'Retry Migration';
+      }
+    });
+  </script>
+</body>
+</html>
