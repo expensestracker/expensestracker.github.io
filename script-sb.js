@@ -7,8 +7,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- Global State ---
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
-let projectsSkeletonTimer = null;
-let expensesSkeletonTimer = null;
 
 // --- DOM Elements ---
 const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
@@ -454,9 +452,20 @@ emailForm?.addEventListener('submit', async e => {
   }
 });
 
-googleSignInBtn?.addEventListener('click', () => {
+// Added redirectTo option so it successfully lands back on your app domain[span_2](start_span)[span_2](end_span)
+googleSignInBtn?.addEventListener('click', async () => {
   if (!navigator.onLine) { showToast("Please connect to internet", "error"); return; }
-  supabase.auth.signInWithOAuth({ provider: 'google' });
+  
+  const { error } = await supabase.auth.signInWithOAuth({ 
+      provider: 'google',
+      options: {
+          redirectTo: window.location.origin
+      }
+  });
+
+  if (error) {
+      showToast(error.message, 'error');
+  }
 });
 
 forgotPasswordLink?.addEventListener('click', async e => {
@@ -526,48 +535,6 @@ async function reloadExpensesData() {
     ]);
 }
 
-// --- Projects & Redesigned Smart Skeleton Loaders ---
-function renderProjectSkeleton() {
-    if (!sidebarProjectList) return;
-    sidebarProjectList.innerHTML = Array(3).fill(0).map((_, i) => `
-        <div class="flex justify-between items-center py-2.5 px-3 rounded-xl animate-pulse" style="animation-delay: ${i * 75}ms">
-            <div class="h-4 bg-slate-200 rounded w-3/5 opacity-70"></div>
-            <div class="h-6 w-6 bg-slate-200 rounded-full opacity-70"></div>
-        </div>
-    `).join('');
-}
-
-function renderExpenseSkeleton() {
-    if (!expenseList) return;
-    expenseList.innerHTML = Array(4).fill(0).map((_, i) => `
-        <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 mb-3 animate-pulse" style="animation-delay: ${i * 75}ms">
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-slate-200 shrink-0 opacity-70"></div>
-                <div class="space-y-2 w-full">
-                    <div class="h-4 bg-slate-200 rounded-md w-1/2 opacity-70"></div>
-                    <div class="h-3 bg-slate-200 rounded-md w-1/3 opacity-70"></div>
-                </div>
-            </div>
-            <div class="space-y-2 text-right flex flex-col items-end shrink-0 ml-3">
-                <div class="h-4 bg-slate-200 rounded-md w-16 opacity-70"></div>
-                <div class="h-3 bg-slate-200 rounded-md w-24 mt-1 opacity-70"></div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function renderDashboardSkeleton() {
-    // Only applied to material summary. Dashboard main numbers removed per instructions.
-    if (materialSummaryEl) {
-        materialSummaryEl.innerHTML = Array(3).fill(0).map((_, i) => `
-            <div class="flex justify-between items-center py-2.5 animate-pulse" style="animation-delay: ${i * 75}ms">
-                <div class="h-4 bg-slate-200 rounded-md w-1/3 opacity-70"></div>
-                <div class="h-4 bg-slate-200 rounded-md w-1/4 opacity-70"></div>
-            </div>
-        `).join('');
-    }
-}
-
 async function fetchProjects(uid) {
   const { data } = await supabase.from('projects').select('*').eq('user_id', uid).order('created_at', { ascending: true });
   return data || [];
@@ -598,16 +565,7 @@ async function processProjects(uid, fetchedProjects) {
 }
 
 async function listenForProjects(uid) {
-  // Smart loader: Only render skeleton if network fetch takes longer than 150ms 
-  let isFetching = true;
-  projectsSkeletonTimer = setTimeout(() => {
-      if (isFetching) renderProjectSkeleton();
-  }, 150);
-  
   await reloadProjectsData();
-  
-  isFetching = false;
-  clearTimeout(projectsSkeletonTimer);
 
   if (projectsUnsubscribe) supabase.removeChannel(projectsUnsubscribe);
   projectsUnsubscribe = supabase.channel('public:projects')
@@ -668,7 +626,6 @@ function populateSidebarProjects(projects) {
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
                 <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </div>`;
-        // Added smooth fade-in animation to items
         return `
             <div class="flex justify-between items-center group rounded-xl hover:bg-slate-50 transition-colors animate-fade-in" style="animation-fill-mode: both; animation-delay: ${index * 30}ms">
                 <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2.5 px-3 text-sm font-semibold flex-grow truncate text-slate-600">${escapeHTML(p.name)}</a>
@@ -771,20 +728,8 @@ async function listenForExpenses(uid, projectId) {
         return;
     }
     
-    // Smart Loader: Delay Skeletons to prevent flicker on fast loads
-    let isFetching = true;
-    expensesSkeletonTimer = setTimeout(() => {
-        if (isFetching) {
-            renderDashboardSkeleton();
-            renderExpenseSkeleton();
-        }
-    }, 150);
-    
     await reloadExpensesData();
     
-    isFetching = false;
-    clearTimeout(expensesSkeletonTimer);
-
     expensesUnsubscribe = supabase.channel('public:expenses')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `project_id=eq.${projectId}` }, async (payload) => {
             await reloadExpensesData(); 
@@ -1339,6 +1284,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "1.8.0: Data Counting & Anti-Flicker Animations";
+const APP_VERSION = "1.8.1: No Skeletons & Fixed OAuth";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
