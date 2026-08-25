@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <title>Admin - HisapBook</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    html { height: 100%; height: -webkit-fill-available; }
+    body {
+      height: 100%; min-height: 100vh; min-height: -webkit-fill-available;
+      overflow: hidden; overscroll-behavior: none; width: 100%; margin: 0; padding: 0;
+    }
+    
+    @keyframes slideUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+    .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
+  </style>
+</head>
+<body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
+  
+  <div id="admin-body" class="w-full max-w-5xl h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none hidden animate-fade-in">
+    
+    <!-- App-Like Header -->
+    <header class="px-6 py-3 flex justify-between items-center bg-slate-50 z-20 sticky top-0 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm border-2 border-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-1.5 text-[11px] text-emerald-500 font-black uppercase tracking-wider">
+                    <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span> Live Sync Active
+                </div>
+                <h1 class="text-lg font-bold text-slate-900 leading-tight">Admin Center</h1>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="index.html" class="p-2 rounded-full bg-white shadow-sm text-slate-600 hover:text-indigo-600 transition focus:outline-none" title="Back to App">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            </a>
+            <button id="admin-logout-btn" class="p-2 rounded-full bg-white shadow-sm text-slate-600 hover:text-rose-600 transition focus:outline-none" title="Sign Out">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Scrollable Content -->
+    <main class="flex-1 overflow-y-auto no-scrollbar px-6 py-6 relative scroll-smooth overscroll-contain">
+      
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Users</p>
+            <p class="text-3xl font-black text-indigo-600 mt-1" id="stat-users">-</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Projects</p>
+            <p class="text-3xl font-black text-indigo-600 mt-1" id="stat-projects">-</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Volume</p>
+            <p class="text-3xl font-black text-rose-500 mt-1" id="stat-volume">-</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Income Flow</p>
+            <p class="text-3xl font-black text-emerald-500 mt-1" id="stat-income">-</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6">
+        <!-- Users Table -->
+        <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[500px]">
+          <div class="p-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-md font-bold text-slate-800">Registered Users</h3>
+          </div>
+          <div class="overflow-x-auto overflow-y-auto flex-1 p-0 no-scrollbar">
+            <table class="w-full text-left border-collapse min-w-[500px]">
+              <thead class="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-10">
+                <tr>
+                  <th class="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">User Details</th>
+                  <th class="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 text-center">Projects</th>
+                  <th class="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 text-center">Status</th>
+                  <th class="px-5 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-slate-50">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Global Settings Controls -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 h-fit">
+          <h3 class="text-md font-bold text-slate-800 mb-5">Platform Settings</h3>
+          <form id="admin-settings-form" class="space-y-5">
+            <div class="flex items-center justify-between p-4 bg-rose-50 rounded-2xl border border-rose-100">
+              <div>
+                <p class="font-bold text-slate-800 text-sm">Maintenance Mode</p>
+                <p class="text-[11px] text-rose-500 font-bold uppercase tracking-wider mt-0.5">Locks out users</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="maintenance-toggle" class="sr-only peer">
+                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+              </label>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Global Alert Banner</label>
+              <textarea id="global-notification-input" rows="3" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm font-medium text-slate-800" placeholder="Broadcast a message..."></textarea>
+            </div>
+
+            <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm transition-colors" id="save-settings-btn">Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Manage User Modal -->
+  <div id="manage-user-modal" class="absolute inset-0 bg-slate-1000/40 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center px-4 overflow-hidden transition-opacity duration-300 opacity-0">
+    <div class="absolute top-0 right-0 w-[30rem] h-[30rem] bg-indigo-100 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-[20rem] h-[20rem] bg-rose-100 rounded-full blur-[100px] pointer-events-none"></div>
+    
+    <div class="relative z-10 flex flex-col items-start p-6 md:p-8 rounded-3xl bg-white border border-slate-200 shadow-2xl max-w-md w-full text-left transform scale-95 transition-transform duration-300" id="manage-modal-content">
+      <div class="flex justify-between w-full items-center mb-6">
+          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Manage User</h2>
+          <button id="close-manage-modal" class="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+      </div>
+
+      <form id="edit-user-form" class="w-full space-y-4">
+          <input type="hidden" id="mu-id">
+          
+          <div class="relative w-full">
+              <input type="text" id="mu-name" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+              <label for="mu-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Full Name</label>
+          </div>
+          
+          <div class="relative w-full">
+              <input type="email" id="mu-email" required class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+              <label for="mu-email" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Email Address</label>
+          </div>
+
+          <div class="flex items-center justify-between py-3 border-b border-t border-slate-100 my-4">
+              <div>
+                  <p class="font-bold text-slate-800 text-sm">Account Status</p>
+                  <p class="text-xs text-slate-500 font-medium mt-0.5" id="mu-status-text">Currently Active</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="mu-status-toggle" class="sr-only peer">
+                  <div class="w-11 h-6 bg-emerald-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500 peer-disabled:bg-slate-300 peer-disabled:cursor-not-allowed"></div>
+              </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-6">
+              <button type="button" id="btn-reset-pw" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors text-center">Reset Pass</button>
+              <button type="button" id="btn-verify-email" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl transition-colors text-center">Send Verify</button>
+              <button type="button" id="btn-delete-user" class="col-span-2 px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-bold rounded-xl transition-colors flex justify-center items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  Delete Account & Data
+              </button>
+          </div>
+
+          <button type="submit" id="mu-save-btn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-95">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 z-[120] flex flex-col items-center gap-2 w-max pointer-events-none max-w-[calc(100vw-2rem)]"></div>
+
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

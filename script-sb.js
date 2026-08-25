@@ -10,7 +10,13 @@ let showAllExpenses = false;
 let activeDataRequest = 0;
 
 // --- DOM Elements ---
-const views = { splash: document.getElementById('splash-view'), auth: document.getElementById('auth-view'), app: document.getElementById('app-view') };
+const views = { 
+    splash: document.getElementById('splash-view'), 
+    auth: document.getElementById('auth-view'), 
+    app: document.getElementById('app-view'),
+    maintenance: document.getElementById('maintenance-view') 
+};
+
 const headerAvatar = document.getElementById('header-avatar');
 const headerUserName = document.getElementById('header-user-name');
 const authTitle = document.getElementById('auth-title');
@@ -361,15 +367,15 @@ const showView = (viewName) => {
       Object.values(views).forEach(v => {
           if(v) {
               v.classList.add('hidden');
-              v.classList.remove('active', 'animate-fade-in');
+              v.classList.remove('active', 'animate-fade-in', 'flex');
           }
       });
       
-      const nextView = viewName === 'app' ? views.app : views[viewName];
+      const nextView = views[viewName] || views.app;
       if (nextView) {
           nextView.classList.remove('hidden');
           nextView.classList.add('active', 'animate-fade-in');
-          if (viewName === 'app') nextView.classList.add('flex');
+          if (viewName === 'app' || viewName === 'maintenance') nextView.classList.add('flex');
       }
   };
 
@@ -384,6 +390,7 @@ const showView = (viewName) => {
   }
 };
 
+
 // --- Authentication ---
 let isInitialLoad = true;
 let isAppInitialized = false; 
@@ -396,6 +403,29 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (user) {
       setupUIForUser(user);
       
+      // -- BEGIN ADMIN SETTINGS CHECK --
+      const { data: settings } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+      const { data: role } = await supabase.from('user_roles').select('is_admin').eq('user_id', user.id).maybeSingle();
+      
+      if (settings) {
+          // Utilizes the #maintenance-view natively if active and NOT an admin
+          if (settings.maintenance_mode && !role?.is_admin) {
+              showView('maintenance');
+              return; 
+          }
+          
+          // Global Notification Banner Check
+          const notifBar = document.getElementById('global-notification');
+          const notifText = document.getElementById('notification-text');
+          if (settings.global_notification && settings.global_notification.trim() !== '') {
+              notifText.textContent = settings.global_notification;
+              notifBar.classList.remove('hidden');
+          } else {
+              notifBar.classList.add('hidden');
+          }
+      }
+      // -- END ADMIN SETTINGS CHECK --
+
       await listenForProjects(user.id);
       
       if (!isAppInitialized) {
@@ -419,6 +449,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     routeUser();
   }
 });
+
+
+// Add this single line anywhere in script-sb.js to allow users to close the notification
+document.getElementById('close-notification')?.addEventListener('click', (e) => e.currentTarget.parentElement.classList.add('hidden'));
+
 
 function setInputStatus(status) {
   if (!passwordInput) return;
