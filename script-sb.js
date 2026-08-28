@@ -705,6 +705,16 @@ restoreInput?.addEventListener('change', async (e) => {
             const data = JSON.parse(event.target.result);
             if (!data.projects || !data.expenses) throw new Error("Invalid format");
             
+            // --- NEW: Security & Ownership Check ---
+            // Check who owns the first project or expense in the backup
+            const backupOwnerId = data.projects[0]?.user_id || data.expenses[0]?.user_id;
+            
+            // If the backup has an owner, and it's not the current user, block it
+            if (backupOwnerId && backupOwnerId !== currentUser.id) {
+                throw new Error("This backup belongs to a different account.");
+            }
+            // ----------------------------------------
+            
             showToast("Restoring data...", "success");
             
             if(data.projects.length > 0) {
@@ -724,6 +734,7 @@ restoreInput?.addEventListener('change', async (e) => {
     };
     reader.readAsText(file);
 });
+
 
 
 // --- Core Helper Functions ---
