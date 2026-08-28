@@ -659,13 +659,6 @@ mobileMenuBackdrop?.addEventListener('click', e => {
 });
 mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
 
-// --- Admin Controls ---
-document.getElementById('admin-dashboard-btn')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeMenu();
-    showToast("Welcome to Admin Dashboard (Placeholder)", "success");
-});
-
 // --- Data Backup & Restore ---
 document.getElementById('backup-btn')?.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -1031,7 +1024,6 @@ document.getElementById('last-year')?.addEventListener('click', () => setDateFil
 // --- Modal Display Flows ---
 fabAddExpense?.addEventListener('click', () => { 
     pushModalState();
-    // FIX: Force population based on current local device time every time FAB is clicked
     const now = new Date();
     document.getElementById('date').value = formatDate(now);
     document.getElementById('time').value = now.toTimeString().slice(0, 5);
@@ -1107,13 +1099,13 @@ function renderExpenses(expenses, animate = false) {
         const animationClass = animate ? `animate-fade-in` : '';
 
         return `
-        <div class="relative overflow-hidden rounded-2xl mb-3 bg-slate-200 swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
+        <div class="relative overflow-hidden rounded-2xl mb-3 bg-transparent swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
             
-            <!-- Swipe Actions Background -->
-            <div class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 flex items-center pl-6 rounded-l-2xl border border-indigo-100 shadow-inner">
+            <!-- Swipe Actions Background (No Inner Shadow) -->
+            <div class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 flex items-center pl-6 rounded-l-2xl border border-indigo-100">
                 <span class="text-indigo-600 font-bold tracking-wider text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg> Edit</span>
             </div>
-            <div class="absolute inset-y-0 right-0 w-1/2 bg-rose-50 flex items-center justify-end pr-6 rounded-r-2xl border border-rose-100 shadow-inner">
+            <div class="absolute inset-y-0 right-0 w-1/2 bg-rose-50 flex items-center justify-end pr-6 rounded-r-2xl border border-rose-100">
                 <span class="text-rose-600 font-bold tracking-wider text-sm flex items-center gap-1.5">Delete <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></span>
             </div>
 
@@ -1138,57 +1130,79 @@ function renderExpenses(expenses, animate = false) {
         </div>
     `}).join('');
 
-    // Setup Swipe Listeners
+    // Setup Swipe Listeners with Directionality check
     document.querySelectorAll('.swipe-front').forEach(el => {
         let startX = 0;
+        let startY = 0;
         let currentX = 0;
         let isSwiping = false;
+        let isScrolling = false;
 
         el.addEventListener('touchstart', e => {
             startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
             el.style.transition = 'none';
             isSwiping = true;
+            isScrolling = false;
         }, { passive: true });
 
         el.addEventListener('touchmove', e => {
             if (!isSwiping) return;
-            currentX = e.touches[0].clientX - startX;
-            // Dampen elasticity for limits
-            if (currentX > 80) currentX = 80 + (currentX - 80) * 0.2; 
-            if (currentX < -80) currentX = -80 + (currentX + 80) * 0.2;
             
-            // Only slide if horizontal movement is significant (avoid vertical scroll locking)
-            if (Math.abs(currentX) > 10) {
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+
+            // Stop horizontal slide if user intents to scroll vertically
+            if (!isScrolling && Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
+                isScrolling = true;
+                isSwiping = false; 
+                el.style.transform = `translateX(0px)`;
+                return;
+            }
+
+            if (isScrolling) return;
+
+            currentX = deltaX;
+            // Dampen elasticity for limits smoothly
+            if (currentX > 75) currentX = 75 + (currentX - 75) * 0.25; 
+            if (currentX < -75) currentX = -75 + (currentX + 75) * 0.25;
+            
+            if (Math.abs(currentX) > 5) {
                 el.style.transform = `translateX(${currentX}px)`;
             }
         }, { passive: true });
 
-        el.addEventListener('touchend', e => {
+        const handleTouchEnd = () => {
+            if (!isSwiping) return;
             isSwiping = false;
             el.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
             
             const expenseId = el.parentElement.dataset.id;
+            const threshold = 65;
 
-            if (currentX > 65) {
-                // Trigger Edit (Swipe Right)
+            if (currentX > threshold) {
+                // Edit swipe completed
                 el.style.transform = `translateX(100px)`;
                 setTimeout(() => {
                     el.style.transform = `translateX(0px)`;
                     handleEdit({ currentTarget: { dataset: { id: expenseId } } });
-                }, 200);
-            } else if (currentX < -65) {
-                // Trigger Delete (Swipe Left)
+                }, 150);
+            } else if (currentX < -threshold) {
+                // Delete swipe completed
                 el.style.transform = `translateX(-100px)`;
                 setTimeout(() => {
                     el.style.transform = `translateX(0px)`;
                     handleDelete({ currentTarget: { dataset: { id: expenseId } } });
-                }, 200);
+                }, 150);
             } else {
                 // Snap Back
                 el.style.transform = `translateX(0px)`;
             }
             currentX = 0;
-        });
+        };
+
+        el.addEventListener('touchend', handleTouchEnd);
+        el.addEventListener('touchcancel', handleTouchEnd);
     });
 }
 
@@ -1597,6 +1611,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.3.0: Backup, Restore & UI gestures";
+const APP_VERSION = "2.4.0: Refined Swipe Gestures & Admin Placement";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
