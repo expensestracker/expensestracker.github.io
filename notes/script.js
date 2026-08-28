@@ -548,7 +548,7 @@ function renderHomeDashboard(summaryData, animate = false) {
                 </div>
                 
                 ${!loan.is_settled ? `
-                <div class="pt-2 flex justify-between items-center border-t border-slate-50 pt-3">
+                <div class="pt-2 flex justify-between items-center">
                     <p class="text-xs font-bold text-slate-500 tracking-tight">${isFlexible ? 'Flexible Plan' : `Next EMI: <span class="font-black text-indigo-600">${nextDateStr}</span>`}</p>
                     <span class="${daysLeftInfo.colorClass} text-[12px]   font-bold tracking-wider px-2 py-1 rounded-md border shadow-sm">${daysLeftInfo.text}</span>
                 </div>` : `<div class="pt-2 flex items-center gap-2 border-t border-slate-50 pt-3"><div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><p class="text-xs font-black text-emerald-600   tracking-wider">Profile Fully Settled</p></div>`}
