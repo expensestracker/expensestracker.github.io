@@ -111,8 +111,6 @@ window.addEventListener('offline', () => { clearTimeout(statusTimeout); updateSt
 window.addEventListener('online', () => { clearTimeout(statusTimeout); updateStatusUI('online'); });
 
 function setupUIForUser(user) {
-    // Only difference from Expense Tracker header: we don't display user name directly inside the layout string 
-    // unless requested. As per previous code, we display "My Portfolio" or User's name.
     const name = user.user_metadata?.full_name || user.email.split('@')[0] || 'User';
     const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=e0e7ff&color=4f46e5`;
 
@@ -215,24 +213,49 @@ function getDaysLeftUI(daysLeft, isSettled, isFlexible) {
 }
 
 
-// --- Modal Interactions ---
+// --- Modal & History Navigation Logic ---
+
+// Listen to physical back button / swipe gestures
+window.addEventListener('popstate', () => {
+    if (!loanDetailView.classList.contains('hidden')) {
+        closeLoanDetail(true);
+    }
+    if (!addLoanModal.classList.contains('hidden')) {
+        closeAddLoanModal(true);
+    }
+});
+
 btnAddLoanInline.addEventListener('click', () => {
     if (!navigator.onLine) { showToast("Cannot add new loans while offline", "error"); return; }
     const now = new Date();
     const y = now.getFullYear(); const m = String(now.getMonth() + 1).padStart(2, '0'); const d = String(now.getDate()).padStart(2, '0');
     document.getElementById('loan-start-date').value = `${y}-${m}-${d}`;
+    
+    history.pushState({ modal: 'addLoan' }, '');
     addLoanModal.classList.remove('hidden');
 });
 
-const closeAddLoanModal = () => addLoanModal.classList.add('hidden');
-document.getElementById('close-add-loan-btn').addEventListener('click', closeAddLoanModal);
+const closeAddLoanModal = (fromPopState = false) => {
+    if (addLoanModal.classList.contains('hidden')) return;
+    addLoanModal.classList.add('hidden');
+    if (fromPopState !== true) {
+        history.back(); // Pops the state we pushed when opening
+    }
+};
+document.getElementById('close-add-loan-btn').addEventListener('click', () => closeAddLoanModal());
 
-const closeLoanDetail = () => {
+const closeLoanDetail = (fromPopState = false) => {
+    if (loanDetailView.classList.contains('hidden')) return;
+    
     loanDetailView.classList.add('translate-x-full');
     setTimeout(() => loanDetailView.classList.add('hidden'), 300);
     activeDetailLoanId = null;
+    
+    if (fromPopState !== true) {
+        history.back();
+    }
 };
-document.getElementById('back-to-home-btn').addEventListener('click', closeLoanDetail);
+document.getElementById('back-to-home-btn').addEventListener('click', () => closeLoanDetail());
 
 const loanTypeRadios = document.querySelectorAll('input[name="loan-type"]');
 loanTypeRadios.forEach(radio => {
@@ -258,7 +281,6 @@ loanTypeRadios.forEach(radio => {
 async function loadAppDashboard(animate = false) {
     if (!currentUser) return;
     
-    // ONE API call handles all math, aggregations, sorting, and fetching.
     const { data, error } = await supabase.rpc('get_loan_dashboard_data', { p_user_id: currentUser.id });
 
     if (error) {
@@ -487,6 +509,8 @@ function renderHomeDashboard(summaryData, animate = false) {
 }
 
 function openLoanDetail(loanId) {
+    const isAlreadyOpen = !loanDetailView.classList.contains('hidden');
+    
     activeDetailLoanId = loanId;
     const loan = loans.find(l => l.id === loanId);
     if(!loan) return;
@@ -563,8 +587,12 @@ function openLoanDetail(loanId) {
     }
 
     document.querySelectorAll('.mark-btn, .undo-btn').forEach(btn => btn.addEventListener('click', handleMarkInst));
-    loanDetailView.classList.remove('hidden');
-    setTimeout(() => loanDetailView.classList.remove('translate-x-full'), 10);
+    
+    if (!isAlreadyOpen) {
+        history.pushState({ modal: 'loanDetail' }, '');
+        loanDetailView.classList.remove('hidden');
+        setTimeout(() => loanDetailView.classList.remove('translate-x-full'), 10);
+    }
 }
 
 // Mark Pay/Undo
