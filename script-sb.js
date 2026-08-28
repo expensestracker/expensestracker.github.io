@@ -8,6 +8,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
 let activeDataRequest = 0;
+let isUserAdmin = false;
 
 // --- DOM Elements ---
 const views = { 
@@ -59,6 +60,19 @@ editProjectForm?.addEventListener('submit', e => e.preventDefault());
 addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
+
+// --- Back Button Modal Management ---
+function pushModalState() { history.pushState({ modalOpen: true }, ''); }
+
+window.addEventListener('popstate', () => {
+    closeAddExpenseModal();
+    closeEditModal();
+    closeEditProjectModal();
+    closeAddProjectModal();
+    closeInfoModal();
+    analyticsModal?.classList.add('hidden');
+    closeMenu();
+});
 
 // FIX: Global date formatter enforcing Local Timezone
 const formatDate = (date) => {
@@ -407,14 +421,20 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       const { data: settings } = await supabase.from('app_settings').select('*').eq('id', 1).single();
       const { data: role } = await supabase.from('user_roles').select('is_admin').eq('user_id', user.id).maybeSingle();
       
+      isUserAdmin = role?.is_admin || false;
+      const adminSection = document.getElementById('admin-menu-section');
+      if(isUserAdmin && adminSection) {
+          adminSection.classList.remove('hidden');
+      } else if (adminSection) {
+          adminSection.classList.add('hidden');
+      }
+
       if (settings) {
-          // Utilizes the #maintenance-view natively if active and NOT an admin
-          if (settings.maintenance_mode && !role?.is_admin) {
+          if (settings.maintenance_mode && !isUserAdmin) {
               showView('maintenance');
               return; 
           }
           
-          // Global Notification Banner Check
           const notifBar = document.getElementById('global-notification');
           const notifText = document.getElementById('notification-text');
           if (settings.global_notification && settings.global_notification.trim() !== '') {
@@ -451,7 +471,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 });
 
 
-// Add this single line anywhere in script-sb.js to allow users to close the notification
 document.getElementById('close-notification')?.addEventListener('click', (e) => e.currentTarget.parentElement.classList.add('hidden'));
 
 
@@ -625,6 +644,7 @@ function setupUIForUser(user) {
 }
 
 const openMenu = () => {
+  pushModalState();
   mobileMenuBackdrop?.classList.remove('pointer-events-none', 'opacity-0');
   mobileMenu?.classList.remove('-translate-x-full');
 };
@@ -638,6 +658,80 @@ mobileMenuBackdrop?.addEventListener('click', e => {
   if (e.target === mobileMenuBackdrop) closeMenu();
 });
 mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
+
+// --- Admin Controls ---
+document.getElementById('admin-dashboard-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeMenu();
+    showToast("Welcome to Admin Dashboard (Placeholder)", "success");
+});
+
+// --- Data Backup & Restore ---
+document.getElementById('backup-btn')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    closeMenu();
+    if (!currentUser || !navigator.onLine) { showToast("Cannot backup offline/unauthenticated.", "error"); return; }
+    showToast("Preparing backup...", "success");
+    try {
+        const { data: projectsData, error: pErr } = await supabase.from('projects').select('*').eq('user_id', currentUser.id);
+        if(pErr) throw pErr;
+        const { data: expensesData, error: eErr } = await supabase.from('expenses').select('*').eq('user_id', currentUser.id);
+        if(eErr) throw eErr;
+        
+        const backupData = { projects: projectsData, expenses: expensesData, exportDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hisapbook_backup_${formatDate(new Date())}.json`;
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showToast("Backup downloaded successfully!", "success");
+    } catch(err) {
+        showToast("Backup failed.", "error");
+        console.error(err);
+    }
+});
+
+const restoreInput = document.getElementById('restore-file-input');
+document.getElementById('restore-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeMenu();
+    restoreInput?.click();
+});
+
+restoreInput?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (!data.projects || !data.expenses) throw new Error("Invalid format");
+            
+            showToast("Restoring data...", "success");
+            
+            if(data.projects.length > 0) {
+                const { error: pErr } = await supabase.from('projects').upsert(data.projects);
+                if (pErr) throw pErr;
+            }
+            if(data.expenses.length > 0) {
+                const { error: eErr } = await supabase.from('expenses').upsert(data.expenses);
+                if (eErr) throw eErr;
+            }
+            showToast("Data restored successfully!", "success");
+            await reloadProjectsData();
+        } catch(err) {
+            showToast("Restore failed: " + err.message, "error");
+        }
+        restoreInput.value = ""; 
+    };
+    reader.readAsText(file);
+});
+
 
 // --- Core Helper Functions ---
 async function reloadProjectsData() {
@@ -779,6 +873,7 @@ async function updateActiveProject() {
 sidebarAddProjectBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     closeMenu();
+    pushModalState();
     setTimeout(() => { addProjectModal.classList.remove('hidden'); }, 300);
 });
 
@@ -844,6 +939,7 @@ function populateSidebarProjects(projects) {
         e.stopPropagation();
         const { projectId, projectName } = e.currentTarget.dataset;
         closeMenu();
+        pushModalState();
         setTimeout(() => handleEditProject(projectId, projectName), 300);
     }));
     
@@ -934,6 +1030,7 @@ document.getElementById('last-year')?.addEventListener('click', () => setDateFil
 
 // --- Modal Display Flows ---
 fabAddExpense?.addEventListener('click', () => { 
+    pushModalState();
     // FIX: Force population based on current local device time every time FAB is clicked
     const now = new Date();
     document.getElementById('date').value = formatDate(now);
@@ -1010,31 +1107,89 @@ function renderExpenses(expenses, animate = false) {
         const animationClass = animate ? `animate-fade-in` : '';
 
         return `
-        <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-all hover:border-indigo-100 mb-3 ${animationClass}" ${animationStyle}>
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-                <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
-                    ${iconSvg}
-                </div>
-                <div class="overflow-hidden flex-1">
-                    <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
-                    <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
-                        ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
-                    </p>
-                    ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
-                </div>
+        <div class="relative overflow-hidden rounded-2xl mb-3 bg-slate-200 swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
+            
+            <!-- Swipe Actions Background -->
+            <div class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 flex items-center pl-6 rounded-l-2xl border border-indigo-100 shadow-inner">
+                <span class="text-indigo-600 font-bold tracking-wider text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg> Edit</span>
             </div>
-            <div class="text-right shrink-0 ml-3">
-                <p class="font-bold ${costColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
-                <div class="flex gap-4 mt-1 justify-end">
-                    <button data-id="${expense.id}" class="edit-btn text-sm text-indigo-600 hover:text-slate-700 font-bold tracking-wider">Edit</button>
-                    <button data-id="${expense.id}" class="delete-btn text-sm text-rose-600 hover:text-slate-600 font-bold tracking-wider">Delete</button>
+            <div class="absolute inset-y-0 right-0 w-1/2 bg-rose-50 flex items-center justify-end pr-6 rounded-r-2xl border border-rose-100 shadow-inner">
+                <span class="text-rose-600 font-bold tracking-wider text-sm flex items-center gap-1.5">Delete <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></span>
+            </div>
+
+            <!-- Swipe Foreground Card -->
+            <div class="relative bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
+                        ${iconSvg}
+                    </div>
+                    <div class="overflow-hidden flex-1 pointer-events-none">
+                        <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
+                        <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
+                            ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
+                        </p>
+                        ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
+                    </div>
+                </div>
+                <div class="text-right shrink-0 ml-3 pointer-events-none">
+                    <p class="font-bold ${costColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                 </div>
             </div>
         </div>
     `}).join('');
 
-    document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
-    document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
+    // Setup Swipe Listeners
+    document.querySelectorAll('.swipe-front').forEach(el => {
+        let startX = 0;
+        let currentX = 0;
+        let isSwiping = false;
+
+        el.addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+            el.style.transition = 'none';
+            isSwiping = true;
+        }, { passive: true });
+
+        el.addEventListener('touchmove', e => {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX - startX;
+            // Dampen elasticity for limits
+            if (currentX > 80) currentX = 80 + (currentX - 80) * 0.2; 
+            if (currentX < -80) currentX = -80 + (currentX + 80) * 0.2;
+            
+            // Only slide if horizontal movement is significant (avoid vertical scroll locking)
+            if (Math.abs(currentX) > 10) {
+                el.style.transform = `translateX(${currentX}px)`;
+            }
+        }, { passive: true });
+
+        el.addEventListener('touchend', e => {
+            isSwiping = false;
+            el.style.transition = 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+            
+            const expenseId = el.parentElement.dataset.id;
+
+            if (currentX > 65) {
+                // Trigger Edit (Swipe Right)
+                el.style.transform = `translateX(100px)`;
+                setTimeout(() => {
+                    el.style.transform = `translateX(0px)`;
+                    handleEdit({ currentTarget: { dataset: { id: expenseId } } });
+                }, 200);
+            } else if (currentX < -65) {
+                // Trigger Delete (Swipe Left)
+                el.style.transform = `translateX(-100px)`;
+                setTimeout(() => {
+                    el.style.transform = `translateX(0px)`;
+                    handleDelete({ currentTarget: { dataset: { id: expenseId } } });
+                }, 200);
+            } else {
+                // Snap Back
+                el.style.transform = `translateX(0px)`;
+            }
+            currentX = 0;
+        });
+    });
 }
 
 async function handleDelete(event) {
@@ -1067,6 +1222,8 @@ function handleEdit(event) {
     const id = event.currentTarget.dataset.id;
     const expense = allExpensesForProject.find(e => e.id === id);
     if (!expense) return;
+    
+    pushModalState();
     
     document.getElementById('edit-expense-id').value = expense.id;
     document.querySelector(`input[name="edit-entry-type"][value="${expense.type || 'expense'}"]`).checked = true;
@@ -1227,6 +1384,7 @@ document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(l
     link.addEventListener('click', e => {
         e.preventDefault();
         closeMenu();
+        pushModalState();
         const { title, content } = infoContent[e.currentTarget.id];
         if (infoModalTitle) infoModalTitle.textContent = title;
         if (infoModalContent) infoModalContent.innerHTML = content;
@@ -1289,6 +1447,7 @@ const routeToAnalytics = async () => {
         return; 
     }
     
+    pushModalState();
     analyticsModal.classList.remove('hidden');
 
     const { data, error } = await supabase.rpc('get_project_analytics', { p_project_id: activeProjectId });
@@ -1438,6 +1597,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.2.0: Local Timezone Enforcement";
+const APP_VERSION = "2.3.0: Backup, Restore & UI gestures";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;

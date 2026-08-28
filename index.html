@@ -246,6 +246,7 @@
                 <div id="history-section" class="pt-2">
                     <div class="flex justify-between items-end mb-4">
                         <h3 class="text-lg font-bold text-slate-800">Recent Transactions</h3>
+                        <div class="text-xs text-slate-400 font-bold tracking-wide absolute -mt-4 ml-1">Swipe L/R to Edit or Delete</div>
                         <button id="filter-btn" class="p-2 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z" />
@@ -255,7 +256,6 @@
 
                     <div id="filter-panel" class="overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 bg-white rounded-2xl mb-4 border border-slate-100 shadow-sm">
                         <div class="p-4 space-y-4">
-                            <!-- Backend Global Search Input with Auto-Suggestions -->
                             <div class="relative w-full">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
                                     <svg class="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
@@ -302,7 +302,7 @@
                         </div>
                     </div>
 
-                    <div id="expense-list" class="space-y-3 pb-4"></div>
+                    <div id="expense-list" class="space-y-3 pb-4 overflow-hidden"></div>
                     <button id="view-all" class="w-full bg-indigo-50 text-indigo-600 font-bold text-md py-3 rounded-2xl transition-all hover:bg-indigo-100 hidden">View all</button>
                 </div>
             </div>
@@ -328,23 +328,37 @@
                     </button>
                 </div>
                 <div id="user-profile-mobile" class="mb-6"></div>
-                <nav class="flex-grow overflow-y-auto no-scrollbar">
+                <nav class="flex-grow overflow-y-auto no-scrollbar pb-6">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider">Projects</h3>
                         <button id="sidebar-add-project-btn" class="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         </button>
                     </div>
-                    <div id="sidebar-project-list" class="space-y-1 mb-8"></div>
+                    <div id="sidebar-project-list" class="space-y-1 mb-6"></div>
                     
                     <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider mb-3">Information</h3>
-                    <div class="space-y-1">
+                    <div class="space-y-1 mb-6">
                         <a href="#" id="about-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>About Us</a>
                         <a href="#" id="privacy-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>Privacy</a>
                         <a href="#" id="contact-link" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>Contact</a>
                     </div>
+                    
+                    <div id="admin-menu-section" class="hidden">
+                        <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider mb-3 mt-4">Admin Controls</h3>
+                        <div class="space-y-1 mb-6">
+                            <a href="#" id="admin-dashboard-btn" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-rose-600 hover:bg-rose-50 transition-colors"><svg class="w-5 h-5 mr-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Admin Dashboard</a>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-sm font-bold text-slate-400 capitalise tracking-wider mb-3 mt-4">Data Management</h3>
+                    <div class="space-y-1">
+                        <a href="#" id="backup-btn" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>Backup Data</a>
+                        <a href="#" id="restore-btn" class="flex items-center py-2.5 px-3 rounded-xl text-md font-semibold text-slate-600 hover:bg-slate-50 transition-colors"><svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>Restore Data</a>
+                        <input type="file" id="restore-file-input" class="hidden" accept=".json">
+                    </div>
                 </nav>
-                <div class="mt-auto pt-6 border-t border-slate-100">
+                <div class="mt-auto pt-6 border-t border-slate-100 shrink-0">
                     <button id="mobile-sign-out-btn" class="w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">Sign Out</button>
                     <p class="mt-4 text-center text-sm text-slate-400 capitalise tracking-wider font-bold" id="app-version"></p>
                 </div>
@@ -453,10 +467,6 @@
                 </form>
             </div>
         </div>
-    </div>
-    
-<!-- [The rest of the Modals (Edit, Info) remain identical to the previous version and are safely omitted from this block to keep the output concise, as requested structure changes only hit the sections above] -->
-
 
     <!-- Edit Entry Modal with Swipe-to-Save -->
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
@@ -484,7 +494,6 @@
                     </label>
                 </div>
 
-                <!-- Autocomplete Wrapper for Edit -->
                 <div class="relative w-full">
                     <input type="text" id="edit-material-name" required autocomplete="off" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
                     <label for="edit-material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Item Name</label>
@@ -512,7 +521,6 @@
                     <label for="edit-additional-info" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Additional Info</label>
                 </div>
                 
-                <!-- Swipe to Save Component -->
                 <div id="edit-expense-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none border border-indigo-100 touch-none mt-4">
                     <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
                         <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to save</span>
