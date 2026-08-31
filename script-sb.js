@@ -9,6 +9,7 @@ let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscri
 let showAllExpenses = false; 
 let activeDataRequest = 0;
 let isUserAdmin = false;
+let authMode = 'default'; // Added for state management: 'default' | 'forgot' | 'update'
 
 // --- DOM Elements ---
 const views = { 
@@ -21,7 +22,22 @@ const views = {
 const headerAvatar = document.getElementById('header-avatar');
 const headerUserName = document.getElementById('header-user-name');
 const authTitle = document.getElementById('auth-title');
-const emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), emailActionBtn = document.getElementById('email-action-btn'), btnText = document.getElementById('btn-text'), btnSpinner = document.getElementById('btn-spinner'), togglePasswordBtn = document.getElementById('toggle-password-btn'), eyeIcon = document.getElementById('eye-icon'), eyeSlashIcon = document.getElementById('eye-slash-icon'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
+const authSubtitle = document.getElementById('auth-subtitle'); // Added
+const emailForm = document.getElementById('email-form'), 
+      emailInput = document.getElementById('email-input'), 
+      passwordInput = document.getElementById('password-input'), 
+      emailContainer = document.getElementById('email-container'), // Added
+      passwordContainer = document.getElementById('password-container'), // Added
+      passwordLabel = document.getElementById('password-label'), // Added
+      emailActionBtn = document.getElementById('email-action-btn'), 
+      btnText = document.getElementById('btn-text'), 
+      btnSpinner = document.getElementById('btn-spinner'), 
+      togglePasswordBtn = document.getElementById('toggle-password-btn'), 
+      eyeIcon = document.getElementById('eye-icon'), 
+      eyeSlashIcon = document.getElementById('eye-slash-icon'), 
+      forgotPasswordLink = document.getElementById('forgot-password-link'), 
+      backToLoginLink = document.getElementById('back-to-login-link'), // Added
+      googleSignInBtn = document.getElementById('google-signin-btn');
 
 const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
 const userProfileMobile = document.getElementById('user-profile-mobile');
@@ -74,7 +90,6 @@ window.addEventListener('popstate', () => {
     closeMenu();
 });
 
-// FIX: Global date formatter enforcing Local Timezone
 const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -405,6 +420,64 @@ const showView = (viewName) => {
 };
 
 
+// --- Dynamic UI State Morphing for Authentication ---
+function morphAuthView(mode) {
+    authMode = mode;
+    passwordInput.value = ''; // clear out security logic
+    setInputStatus('default');
+    
+    if (mode === 'default') {
+        authTitle.textContent = 'Welcome Back';
+        authSubtitle.textContent = 'Log in or sign up to continue';
+        
+        emailContainer.classList.remove('hidden');
+        passwordContainer.classList.remove('hidden');
+        passwordLabel.textContent = 'Password';
+        googleSignInBtn.style.display = 'flex';
+        forgotPasswordLink.classList.remove('hidden');
+        
+        if (backToLoginLink) backToLoginLink.classList.add('hidden');
+        btnText.textContent = 'Continue';
+        
+        // Native Validations
+        emailInput.required = true;
+        passwordInput.required = true;
+
+    } else if (mode === 'forgot') {
+        authTitle.textContent = 'Reset Password';
+        authSubtitle.textContent = 'Enter your email to receive a reset link';
+        
+        emailContainer.classList.remove('hidden');
+        passwordContainer.classList.add('hidden');
+        googleSignInBtn.style.display = 'none';
+        forgotPasswordLink.classList.add('hidden');
+        
+        if (backToLoginLink) backToLoginLink.classList.remove('hidden');
+        btnText.textContent = 'Send Reset Link';
+        
+        // Disable unused required fields so form can submit natively
+        emailInput.required = true;
+        passwordInput.required = false;
+
+    } else if (mode === 'update') {
+        authTitle.textContent = 'Set New Password';
+        authSubtitle.textContent = 'Enter your new secure password below';
+        
+        emailContainer.classList.add('hidden');
+        passwordContainer.classList.remove('hidden');
+        passwordLabel.textContent = 'New Password';
+        googleSignInBtn.style.display = 'none';
+        forgotPasswordLink.classList.add('hidden');
+        
+        if (backToLoginLink) backToLoginLink.classList.remove('hidden');
+        btnText.textContent = 'Update Password';
+        
+        emailInput.required = false;
+        passwordInput.required = true;
+    }
+}
+
+
 // --- Authentication ---
 let isInitialLoad = true;
 let isAppInitialized = false; 
@@ -413,11 +486,19 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   const user = session?.user;
   currentUser = user;
 
+  // Intercept the automatic password recovery flow securely
+  if (event === 'PASSWORD_RECOVERY') {
+      isAppInitialized = false;
+      showView('auth');
+      morphAuthView('update');
+      showToast("Please enter your new password.", "success");
+      return; // Do NOT route them immediately to app views until password is saved
+  }
+
   const routeUser = async () => {
     if (user) {
       setupUIForUser(user);
       
-      // -- BEGIN ADMIN SETTINGS CHECK --
       const { data: settings } = await supabase.from('app_settings').select('*').eq('id', 1).single();
       const { data: role } = await supabase.from('user_roles').select('is_admin').eq('user_id', user.id).maybeSingle();
       
@@ -444,7 +525,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
               notifBar.classList.add('hidden');
           }
       }
-      // -- END ADMIN SETTINGS CHECK --
 
       await listenForProjects(user.id);
       
@@ -472,7 +552,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 
 document.getElementById('close-notification')?.addEventListener('click', (e) => e.currentTarget.parentElement.classList.add('hidden'));
-
 
 function setInputStatus(status) {
   if (!passwordInput) return;
@@ -503,40 +582,84 @@ togglePasswordBtn?.addEventListener('click', () => {
   }
 });
 
-emailForm?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-  if (!password) { showToast('Please enter a password.', 'error'); setInputStatus('error'); return; }
-
-  setAuthButtonLoading(true);
-
-  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+forgotPasswordLink?.addEventListener('click', (e) => {
+    e.preventDefault();
+    morphAuthView('forgot');
+});
   
-  if (!loginError) {
-    setInputStatus('success');
-    showToast("Login successful!", "success");
-    setAuthButtonLoading(false);
-  } else {
-    if (loginError.message.includes("Invalid login")) {
-        const { error: signupError } = await supabase.auth.signUp({ email, password });
-        if (!signupError) {
-            setInputStatus('success');
-            showToast("Account created successfully!", "success");
-            setAuthButtonLoading(false);
+backToLoginLink?.addEventListener('click', (e) => {
+    e.preventDefault();
+    morphAuthView('default');
+});
+
+emailForm?.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
+  
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+  
+    if (authMode === 'default') {
+        if (!password) { showToast('Please enter a password.', 'error'); setInputStatus('error'); return; }
+  
+        setAuthButtonLoading(true);
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        
+        if (!loginError) {
+          setInputStatus('success');
+          showToast("Login successful!", "success");
+          setAuthButtonLoading(false);
         } else {
-            setInputStatus('error');
-            setAuthButtonLoading(false);
-            showToast(signupError.message || "Something went wrong.", 'error');
+          if (loginError.message.includes("Invalid login")) {
+              const { error: signupError } = await supabase.auth.signUp({ email, password });
+              if (!signupError) {
+                  setInputStatus('success');
+                  showToast("Account created successfully!", "success");
+                  setAuthButtonLoading(false);
+              } else {
+                  setInputStatus('error');
+                  setAuthButtonLoading(false);
+                  showToast(signupError.message || "Something went wrong.", 'error');
+              }
+          } else {
+              setInputStatus('error');
+              setAuthButtonLoading(false);
+              showToast(loginError.message, 'error');
+          }
         }
-    } else {
-        setInputStatus('error');
+    } 
+    else if (authMode === 'forgot') {
+        setAuthButtonLoading(true);
+        // Using window.location.origin provides a solid global redirect baseline for standard behavior
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin
+        });
+        
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast('Password reset link sent to your email!', 'success');
+            morphAuthView('default');
+        }
         setAuthButtonLoading(false);
-        showToast(loginError.message, 'error');
+    } 
+    else if (authMode === 'update') {
+        if (!password) { showToast('Please enter a new password.', 'error'); setInputStatus('error'); return; }
+        
+        setAuthButtonLoading(true);
+        const { error } = await supabase.auth.updateUser({ password: password });
+        
+        if (error) {
+            showToast(error.message, 'error');
+            setInputStatus('error');
+        } else {
+            showToast('Password updated successfully!', 'success');
+            setInputStatus('success');
+            morphAuthView('default'); 
+            // The active user session exists, naturally kicking back to the main app dashboard.
+        }
+        setAuthButtonLoading(false);
     }
-  }
 });
 
 googleSignInBtn?.addEventListener('click', async () => {
@@ -554,22 +677,6 @@ googleSignInBtn?.addEventListener('click', async () => {
   }
 });
 
-// --> UPDATED REDIRECT URL LOGIC HERE <--
-forgotPasswordLink?.addEventListener('click', async e => {
-  e.preventDefault();
-  const email = emailInput.value;
-  if (!email) { showToast('Please enter your email address first.', 'error'); return; }
-  
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://hisapbook.web.app/password-reset'
-  });
-
-  if (error) {
-    showToast(error.message, 'error');
-  } else {
-    showToast('Password reset email sent!', 'success');
-  }
-});
 
 // --- Focus Next Autocomplete Function ---
 const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
@@ -642,7 +749,6 @@ function setupUIForUser(user) {
     updateStatusUI('offline');
   }
   
-  // FIX: Formats to exact current local date instead of defaulting to UTC
   const dateInput = document.getElementById('date');
   if (dateInput) dateInput.value = formatDate(new Date());
 }
@@ -709,15 +815,11 @@ restoreInput?.addEventListener('change', async (e) => {
             const data = JSON.parse(event.target.result);
             if (!data.projects || !data.expenses) throw new Error("Invalid format");
             
-            // --- NEW: Security & Ownership Check ---
-            // Check who owns the first project or expense in the backup
             const backupOwnerId = data.projects[0]?.user_id || data.expenses[0]?.user_id;
             
-            // If the backup has an owner, and it's not the current user, block it
             if (backupOwnerId && backupOwnerId !== currentUser.id) {
                 throw new Error("This backup belongs to a different account.");
             }
-            // ----------------------------------------
             
             showToast("Restoring data...", "success");
             
@@ -1626,6 +1728,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.4.0: Refined Swipe Gestures & Admin Placement";
+const APP_VERSION = "2.4.1: Seamless Password Reset Morph System";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
