@@ -171,6 +171,53 @@
         </div>
     </div>
 
+    <div id="update-password-view" class="view hidden absolute inset-0 z-[80] flex flex-col bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-100 to-slate-50 overflow-y-auto no-scrollbar">
+        <div class="px-8 pt-14 pb-14 flex-shrink-0">
+          <h1 class="text-4xl font-extrabold text-[#1e293b] tracking-tight leading-tight mb-2">HisapBook</h1>
+          <p class="text-md text-slate-500 font-medium">Secure your account with a new password.</p>
+        </div>
+        
+        <div class="w-full bg-white rounded-t-[2.5rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.08)] border-t border-sky-300 flex-1 p-8 flex flex-col">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">Set New Password</h2>
+            <p class="text-sm text-slate-500 mt-1">Please enter your new password below.</p>
+          </div>
+          
+          <form id="update-password-form" class="space-y-4">
+            <div class="relative w-full group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <input type="password" id="new-password-input" required minlength="6" class="block w-full pl-11 pr-12 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer" placeholder=" ">
+              <label for="new-password-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">New Password</label>
+              <button type="button" id="toggle-new-password-btn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none z-20">
+                <svg id="new-eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <svg id="new-eye-slash-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+              </button>
+            </div>
+            
+            <div class="relative w-full group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 z-20">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+              </div>
+              <input type="password" id="confirm-password-input" required minlength="6" class="block w-full pl-11 pr-12 py-3.5 text-md text-gray-900 font-bold bg-white rounded-xl border border-gray-300 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-600 peer" placeholder=" ">
+              <label for="confirm-password-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-white px-2 mx-2 start-10 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] cursor-text">Confirm Password</label>
+              <button type="button" id="toggle-confirm-password-btn" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 focus:outline-none z-20">
+                <svg id="confirm-eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                <svg id="confirm-eye-slash-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
+              </button>
+            </div>
+            
+            <div class="pt-2">
+              <button type="submit" id="update-password-btn" class="w-full relative flex items-center justify-center bg-[#0f172a] text-white text-md font-bold py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md">
+                <span id="update-btn-text" class="transition-opacity">Update Password</span>
+                <svg id="update-btn-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              </button>
+            </div>
+          </form>
+        </div>
+    </div>
+
     <div id="app-view" class="view hidden flex-col h-full bg-slate-50 relative z-10">
         
         <header class="px-6 py-2 flex justify-between items-center bg-slate-50 z-20 sticky top-0">
@@ -368,7 +415,6 @@
             </div>
         </div>
 
-        <!-- Analytics Modal -->
         <div id="analytics-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
             <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up flex flex-col max-h-[85dvh]">
                 <div class="flex justify-between items-center mb-3 shrink-0">
@@ -394,7 +440,6 @@
             </div>
         </div>
 
-        <!-- Add Entry Sheet with Toggle Fields and Autocomplete -->
         <div id="add-expense-sheet" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end opacity-100 animate-fade-in">
             <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up overflow-y-auto no-scrollbar">
                 <div class="flex justify-between items-center mb-3">
@@ -419,7 +464,6 @@
                         </label>
                     </div>
                   
-                    <!-- Autocomplete Wrapper for Add -->
                     <div class="relative w-full">
                         <input type="text" id="material-name" required autocomplete="off" class="block w-full px-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
                         <label for="material-name" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Item Name</label>
@@ -431,7 +475,6 @@
                         <label for="cost" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-2 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Amount</label>
                     </div>
 
-                    <!-- Hidden Fields Wrapper -->
                     <div id="add-optional-fields" class="hidden space-y-4 pt-1">
                         <div class="grid grid-cols-2 gap-4">
                             <div class="relative w-full">
@@ -455,7 +498,6 @@
                         <svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
 
-                    <!-- Swipe to Create Component -->
                     <div id="add-expense-swipe" class="w-full relative h-[52px] bg-indigo-50 rounded-xl flex items-center overflow-hidden select-none border border-indigo-100 touch-none mt-4">
                         <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
                             <span class="swipe-text shimmer-text shimmer-indigo transition-opacity duration-300">Swipe to add</span>
@@ -471,7 +513,6 @@
             </div>
         </div>
 
-    <!-- Edit Entry Modal with Swipe-to-Save -->
     <div id="edit-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-3">
@@ -539,7 +580,6 @@
         </div>
     </div>
 
-    <!-- Edit Project Modal -->
     <div id="edit-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
             <div class="flex justify-between items-center mb-3">
@@ -570,7 +610,6 @@
         </div>
     </div>
 
-    <!-- Add Project Modal -->
     <div id="add-project-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
             <div class="flex justify-between items-center mb-3">
@@ -599,8 +638,33 @@
             </form>
         </div>
     </div>
+    
+    <div id="forgot-password-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
+        <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-xl font-bold text-slate-800">Reset Password</h3>
+                <button id="close-forgot-password-btn" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 text-slate-600 hover:bg-slate-200 transition-colors focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">Enter your email address and we'll send you a link to reset your password.</p>
+            <form id="forgot-password-form" class="space-y-4">
+                <div class="relative w-full">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 z-20">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <input type="email" id="forgot-email-input" required class="block w-full pl-11 pr-4 py-3 text-md text-gray-900 font-bold bg-slate-50 rounded-xl border border-slate-200 appearance-none focus:outline-none focus:ring-0 focus:border-indigo-400 focus:bg-white peer transition-colors" placeholder=" ">
+                    <label for="forgot-email-input" class="absolute text-sm rounded-xl text-gray-500 duration-300 transform -translate-y-[18px] scale-75 top-2 z-10 origin-[0] bg-slate-50 px-2 mx-2 start-10 peer-focus:text-indigo-600 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-65 peer-focus:-translate-y-[18px] peer-focus:bg-white cursor-text">Email Address</label>
+                </div>
+                
+                <button type="submit" id="send-reset-btn" class="w-full relative flex items-center justify-center bg-[#0f172a] text-white text-md font-bold py-3.5 rounded-2xl hover:bg-slate-800 transition-all shadow-md mt-2">
+                    <span id="reset-btn-text" class="transition-opacity">Send Reset Link</span>
+                    <svg id="reset-btn-spinner" class="w-5 h-5 animate-spin absolute opacity-0 transition-opacity" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </button>
+            </form>
+        </div>
+    </div>
 
-    <!-- Info Modal -->
     <div id="info-modal" class="absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[100] hidden flex flex-col justify-end animate-fade-in">
         <div class="border-t border-slate-400 bg-white w-full p-6 pb-6 rounded-t-3xl shadow-2xl transform transition-transform animate-slide-up">
             <div class="flex justify-between items-center mb-3">

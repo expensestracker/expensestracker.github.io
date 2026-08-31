@@ -9,19 +9,25 @@ let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscri
 let showAllExpenses = false; 
 let activeDataRequest = 0;
 let isUserAdmin = false;
+let isRecoveringPassword = false;
 
 // --- DOM Elements ---
 const views = { 
     splash: document.getElementById('splash-view'), 
     auth: document.getElementById('auth-view'), 
     app: document.getElementById('app-view'),
-    maintenance: document.getElementById('maintenance-view') 
+    maintenance: document.getElementById('maintenance-view'),
+    updatePassword: document.getElementById('update-password-view')
 };
 
 const headerAvatar = document.getElementById('header-avatar');
 const headerUserName = document.getElementById('header-user-name');
 const authTitle = document.getElementById('auth-title');
 const emailForm = document.getElementById('email-form'), emailInput = document.getElementById('email-input'), passwordInput = document.getElementById('password-input'), emailActionBtn = document.getElementById('email-action-btn'), btnText = document.getElementById('btn-text'), btnSpinner = document.getElementById('btn-spinner'), togglePasswordBtn = document.getElementById('toggle-password-btn'), eyeIcon = document.getElementById('eye-icon'), eyeSlashIcon = document.getElementById('eye-slash-icon'), forgotPasswordLink = document.getElementById('forgot-password-link'), googleSignInBtn = document.getElementById('google-signin-btn');
+
+// Forgot & Update Password Elements
+const forgotPasswordModal = document.getElementById('forgot-password-modal'), closeForgotPasswordBtn = document.getElementById('close-forgot-password-btn'), forgotPasswordForm = document.getElementById('forgot-password-form');
+const updatePasswordForm = document.getElementById('update-password-form'), toggleNewPasswordBtn = document.getElementById('toggle-new-password-btn'), toggleConfirmPasswordBtn = document.getElementById('toggle-confirm-password-btn');
 
 const expenseDashboard = document.getElementById('expense-dashboard'), noProjectMessage = document.getElementById('no-project-message'), expenseForm = document.getElementById('expense-form'), expenseList = document.getElementById('expense-list'), finalExpensesEl = document.getElementById('final-expenses'), materialSummaryEl = document.getElementById('material-summary');
 const userProfileMobile = document.getElementById('user-profile-mobile');
@@ -70,6 +76,7 @@ window.addEventListener('popstate', () => {
     closeEditProjectModal();
     closeAddProjectModal();
     closeInfoModal();
+    closeForgotPasswordModal();
     analyticsModal?.classList.add('hidden');
     closeMenu();
 });
@@ -413,7 +420,16 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   const user = session?.user;
   currentUser = user;
 
+  if (event === 'PASSWORD_RECOVERY') {
+      isRecoveringPassword = true;
+      isAppInitialized = false; 
+      showView('updatePassword');
+      return; 
+  }
+
   const routeUser = async () => {
+    if (isRecoveringPassword) return; // Prevent standard routing during password reset
+
     if (user) {
       setupUIForUser(user);
       
@@ -490,18 +506,34 @@ function setInputStatus(status) {
 
 passwordInput?.addEventListener('input', () => setInputStatus('default'));
 
-togglePasswordBtn?.addEventListener('click', () => {
-  if (!passwordInput || !eyeIcon || !eyeSlashIcon) return;
-  const isPassword = passwordInput.getAttribute('type') === 'password';
-  passwordInput.setAttribute('type', isPassword ? 'text': 'password');
-  if (isPassword) {
-    eyeIcon.classList.add('hidden');
-    eyeSlashIcon.classList.remove('hidden');
-  } else {
-    eyeIcon.classList.remove('hidden');
-    eyeSlashIcon.classList.add('hidden');
-  }
-});
+const setupPasswordToggle = (btn, input, eyeOpen, eyeClosed) => {
+    btn?.addEventListener('click', () => {
+        if (!input || !eyeOpen || !eyeClosed) return;
+        const isPassword = input.getAttribute('type') === 'password';
+        input.setAttribute('type', isPassword ? 'text': 'password');
+        if (isPassword) {
+            eyeOpen.classList.add('hidden');
+            eyeClosed.classList.remove('hidden');
+        } else {
+            eyeOpen.classList.remove('hidden');
+            eyeClosed.classList.add('hidden');
+        }
+    });
+};
+
+setupPasswordToggle(togglePasswordBtn, passwordInput, eyeIcon, eyeSlashIcon);
+setupPasswordToggle(
+    toggleNewPasswordBtn, 
+    document.getElementById('new-password-input'), 
+    document.getElementById('new-eye-icon'), 
+    document.getElementById('new-eye-slash-icon')
+);
+setupPasswordToggle(
+    toggleConfirmPasswordBtn, 
+    document.getElementById('confirm-password-input'), 
+    document.getElementById('confirm-eye-icon'), 
+    document.getElementById('confirm-eye-slash-icon')
+);
 
 emailForm?.addEventListener('submit', async e => {
   e.preventDefault();
@@ -554,18 +586,95 @@ googleSignInBtn?.addEventListener('click', async () => {
   }
 });
 
-forgotPasswordLink?.addEventListener('click', async e => {
+// --- Password Reset Flow ---
+
+const closeForgotPasswordModal = () => { 
+    forgotPasswordModal?.classList.add('hidden'); 
+    forgotPasswordForm?.reset();
+};
+closeForgotPasswordBtn?.addEventListener('click', closeForgotPasswordModal);
+forgotPasswordModal?.addEventListener('click', e => { if (e.target === forgotPasswordModal) closeForgotPasswordModal(); });
+
+forgotPasswordLink?.addEventListener('click', e => {
   e.preventDefault();
-  const email = emailInput.value;
-  if (!email) { showToast('Please enter your email address first.', 'error'); return; }
-  
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
-  if (error) {
-    showToast(error.message, 'error');
-  } else {
-    showToast('Password reset email sent!', 'success');
-  }
+  pushModalState();
+  const currentEmail = emailInput.value.trim();
+  if (currentEmail) document.getElementById('forgot-email-input').value = currentEmail;
+  forgotPasswordModal.classList.remove('hidden');
 });
+
+forgotPasswordForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
+
+    const email = document.getElementById('forgot-email-input').value.trim();
+    if (!email) return;
+
+    const btnTextReset = document.getElementById('reset-btn-text');
+    const btnSpinnerReset = document.getElementById('reset-btn-spinner');
+    const btnReset = document.getElementById('send-reset-btn');
+
+    btnTextReset.classList.add('opacity-0');
+    btnSpinnerReset.classList.remove('opacity-0');
+    btnReset.disabled = true;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+    });
+
+    btnTextReset.classList.remove('opacity-0');
+    btnSpinnerReset.classList.add('opacity-0');
+    btnReset.disabled = false;
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast('Password reset email sent!', 'success');
+        closeForgotPasswordModal();
+    }
+});
+
+updatePasswordForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
+
+    const newPassword = document.getElementById('new-password-input').value;
+    const confirmPassword = document.getElementById('confirm-password-input').value;
+
+    if (newPassword !== confirmPassword) {
+        showToast('Passwords do not match.', 'error');
+        return;
+    }
+    if (newPassword.length < 6) {
+        showToast('Password must be at least 6 characters.', 'error');
+        return;
+    }
+
+    const btnTextUpdate = document.getElementById('update-btn-text');
+    const btnSpinnerUpdate = document.getElementById('update-btn-spinner');
+    const btnUpdate = document.getElementById('update-password-btn');
+
+    btnTextUpdate.classList.add('opacity-0');
+    btnSpinnerUpdate.classList.remove('opacity-0');
+    btnUpdate.disabled = true;
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    btnTextUpdate.classList.remove('opacity-0');
+    btnSpinnerUpdate.classList.add('opacity-0');
+    btnUpdate.disabled = false;
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast('Password updated successfully!', 'success');
+        isRecoveringPassword = false;
+        
+        // Refresh to re-trigger standard routing logic
+        window.location.reload();
+    }
+});
+
 
 // --- Focus Next Autocomplete Function ---
 const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
@@ -1112,7 +1221,6 @@ function renderExpenses(expenses, animate = false) {
         return `
         <div class="relative overflow-hidden rounded-2xl mb-3 bg-transparent swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
             
-            <!-- Swipe Actions Background (No Inner Shadow) -->
             <div class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 flex items-center pl-6 rounded-l-2xl border border-indigo-100">
                 <span class="text-indigo-600 font-bold tracking-wider text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg> Edit</span>
             </div>
@@ -1120,7 +1228,6 @@ function renderExpenses(expenses, animate = false) {
                 <span class="text-rose-600 font-bold tracking-wider text-sm flex items-center gap-1.5">Delete <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></span>
             </div>
 
-            <!-- Swipe Foreground Card -->
             <div class="relative bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
@@ -1622,6 +1729,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.4.0: Refined Swipe Gestures & Admin Placement";
+const APP_VERSION = "2.5.0: Enhanced Security & Authentication Flow";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
