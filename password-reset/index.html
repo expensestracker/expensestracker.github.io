@@ -25,7 +25,15 @@
     @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
     .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
   </style>
+  <script>
+    // Execute immediately before the page renders
+    // If the URL does not contain a Supabase secure token, redirect back to login
+    if (!window.location.href.includes('access_token=')) {
+      window.location.replace('index.html');
+    }
+  </script>
 </head>
+
 <body class="bg-slate-200/50 flex items-center justify-center h-full text-slate-800 font-sans overflow-hidden overscroll-none w-full">
 
   <div class="w-full max-w-md h-full sm:h-[850px] bg-slate-50 sm:rounded-3xl sm:shadow-2xl relative overflow-clip flex flex-col overscroll-none">
