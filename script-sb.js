@@ -554,25 +554,22 @@ googleSignInBtn?.addEventListener('click', async () => {
   }
 });
 
+// --> UPDATED REDIRECT URL LOGIC HERE <--
 forgotPasswordLink?.addEventListener('click', async e => {
-  e.preventDefault();
-  const email = forgotPasswordLink?.addEventListener('click', async e => {
   e.preventDefault();
   const email = emailInput.value;
   if (!email) { showToast('Please enter your email address first.', 'error'); return; }
   
-  // Update this function to include the redirectTo URL
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://hisapbook.web.app/password-reset'
   });
-  
+
   if (error) {
     showToast(error.message, 'error');
   } else {
     showToast('Password reset email sent!', 'success');
   }
 });
-
 
 // --- Focus Next Autocomplete Function ---
 const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
