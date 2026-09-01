@@ -590,6 +590,7 @@ forgotPasswordLink?.addEventListener('click', e => {
 closeResetRequestBtn?.addEventListener('click', () => {
     resetRequestModal?.classList.add('hidden');
 });
+// The background click-to-close listener has been removed here to ensure the modal stays open when clicking outside.
 
 // 2. Submit Reset Request
 resetRequestForm?.addEventListener('submit', async (e) => {
@@ -651,6 +652,7 @@ setNewPasswordForm?.addEventListener('submit', async (e) => {
         setNewPasswordForm.reset();
     }
 });
+// The background click-to-close listener has been removed here to ensure the modal stays open when clicking outside.
 
 // --- Focus Next Autocomplete Function ---
 const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
@@ -1054,7 +1056,7 @@ function updateSidebarSelection() {
 }
 
 const toggleDashboardVisibility = (hasProjects) => {
-    if (expenseDashboard) expenseDashboard.style.display = hasProjects ? 'none' : 'block';
+    if (expenseDashboard) expenseDashboard.style.display = hasProjects ? 'block' : 'none';
     if (noProjectMessage) noProjectMessage.style.display = hasProjects ? 'none' : 'block';
 };
 
