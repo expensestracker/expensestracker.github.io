@@ -83,13 +83,46 @@ window.addEventListener('popstate', () => {
     closeMenu();
 });
 
-// FIX: Global date formatter enforcing Local Timezone
 const formatDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+const formatDisplayTime = (timeStr) => {
+    if(!timeStr) return '';
+    const [h, m] = timeStr.split(':');
+    const d = new Date();
+    d.setHours(h, m);
+    return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
+// --- 12-Hour Display Formatting for Time Inputs ---
+const apply12HourDisplay = (inputId) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener('blur', (e) => {
+        if (e.target.value && e.target.type === 'time') {
+            const rawTime = e.target.value;
+            e.target.dataset.rawTime = rawTime; 
+            e.target.type = 'text';
+            e.target.value = formatDisplayTime(rawTime);
+        }
+    });
+
+    input.addEventListener('focus', (e) => {
+        if (e.target.type === 'text') {
+            e.target.type = 'time';
+            e.target.value = e.target.dataset.rawTime || '';
+        }
+    });
+};
+
+apply12HourDisplay('time');
+apply12HourDisplay('edit-time');
+
 
 // --- Animation Helper ---
 const activeAnimations = new Map();
@@ -419,7 +452,6 @@ let isInitialLoad = true;
 let isAppInitialized = false; 
 
 supabase.auth.onAuthStateChange(async (event, session) => {
-  // Password Recovery Flow
   if (event === 'PASSWORD_RECOVERY') {
       if (setNewPasswordModal) {
           pushModalState();
@@ -434,7 +466,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (user) {
       setupUIForUser(user);
       
-      // -- BEGIN ADMIN SETTINGS CHECK --
       const { data: settings } = await supabase.from('app_settings').select('*').eq('id', 1).single();
       const { data: role } = await supabase.from('user_roles').select('is_admin').eq('user_id', user.id).maybeSingle();
       
@@ -461,7 +492,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
               notifBar.classList.add('hidden');
           }
       }
-      // -- END ADMIN SETTINGS CHECK --
 
       await listenForProjects(user.id);
       
@@ -571,9 +601,6 @@ googleSignInBtn?.addEventListener('click', async () => {
   }
 });
 
-// --- UPDATED PASSWORD RESET LOGIC ---
-
-// 1. Open Forgot Password Modal
 forgotPasswordLink?.addEventListener('click', e => {
     e.preventDefault();
     const email = emailInput.value.trim();
@@ -590,9 +617,7 @@ forgotPasswordLink?.addEventListener('click', e => {
 closeResetRequestBtn?.addEventListener('click', () => {
     resetRequestModal?.classList.add('hidden');
 });
-// The background click-to-close listener has been removed here to ensure the modal stays open when clicking outside.
 
-// 2. Submit Reset Request
 resetRequestForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
@@ -607,7 +632,7 @@ resetRequestForm?.addEventListener('submit', async (e) => {
     submitBtn.disabled = true;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin // Automatically redirect back to the app root
+        redirectTo: window.location.origin 
     });
 
     btnText.classList.remove('opacity-0');
@@ -623,7 +648,6 @@ resetRequestForm?.addEventListener('submit', async (e) => {
     }
 });
 
-// 3. Submit New Password Update (After user clicks link in email)
 setNewPasswordForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
@@ -637,7 +661,6 @@ setNewPasswordForm?.addEventListener('submit', async (e) => {
     btnSpinner.classList.remove('opacity-0');
     submitBtn.disabled = true;
 
-    // Securely update user password
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     btnText.classList.remove('opacity-0');
@@ -652,9 +675,7 @@ setNewPasswordForm?.addEventListener('submit', async (e) => {
         setNewPasswordForm.reset();
     }
 });
-// The background click-to-close listener has been removed here to ensure the modal stays open when clicking outside.
 
-// --- Focus Next Autocomplete Function ---
 const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
     const input = document.getElementById(inputId);
     const dropdown = document.getElementById(dropdownId);
@@ -697,7 +718,6 @@ setupAutocomplete('material-name', 'add-material-suggestions', () => document.ge
 setupAutocomplete('edit-material-name', 'edit-material-suggestions', () => document.getElementById('edit-cost').focus());
 setupAutocomplete('search-input', 'search-suggestions', () => debouncedApplyFilters(true));
 
-// --- Toggle Hide/Show Fields Logic ---
 toggleAddOptional?.addEventListener('click', () => {
     const isHidden = addOptionalFields.classList.contains('hidden');
     if (isHidden) {
@@ -725,7 +745,6 @@ function setupUIForUser(user) {
     updateStatusUI('offline');
   }
   
-  // FIX: Formats to exact current local date instead of defaulting to UTC
   const dateInput = document.getElementById('date');
   if (dateInput) dateInput.value = formatDate(new Date());
 }
@@ -792,15 +811,10 @@ restoreInput?.addEventListener('change', async (e) => {
             const data = JSON.parse(event.target.result);
             if (!data.projects || !data.expenses) throw new Error("Invalid format");
             
-            // --- NEW: Security & Ownership Check ---
-            // Check who owns the first project or expense in the backup
             const backupOwnerId = data.projects[0]?.user_id || data.expenses[0]?.user_id;
-            
-            // If the backup has an owner, and it's not the current user, block it
             if (backupOwnerId && backupOwnerId !== currentUser.id) {
                 throw new Error("This backup belongs to a different account.");
             }
-            // ----------------------------------------
             
             showToast("Restoring data...", "success");
             
@@ -831,7 +845,6 @@ async function reloadProjectsData() {
     await processProjects(currentUser.id, updated);
 }
 
-// Backend-Powered Unified Fetch
 const applyFilters = async (animate = false) => {
     if (!activeProjectId) return;
     const currentRequestId = ++activeDataRequest;
@@ -846,7 +859,6 @@ const applyFilters = async (animate = false) => {
 
     const isFiltering = searchTerm || startDate || endDate || startTime || endTime || minAmount || maxAmount;
     
-    // Build List Query via PostgREST
     let query = supabase.from('expenses').select('*', { count: 'exact' }).eq('project_id', activeProjectId);
     
     if (searchTerm) {
@@ -872,7 +884,6 @@ const applyFilters = async (animate = false) => {
 
     if (!isFiltering && !showAllExpenses) query = query.limit(5);
 
-    // Fetch Aggregations via Backend RPC
     const summaryPromise = supabase.rpc('get_filtered_summary', {
         p_project_id: activeProjectId,
         p_search_term: searchTerm,
@@ -884,7 +895,17 @@ const applyFilters = async (animate = false) => {
         p_max_amount: maxAmount ? parseFloat(maxAmount) : null
     });
 
-    const [expensesRes, summaryRes] = await Promise.all([query, summaryPromise]);
+    // Fetch Today/Weekly subset independently to ensure perfect totals ignoring pagination limits
+    const d = new Date(); 
+    d.setDate(d.getDate() - 7);
+    const weekStr = formatDate(d);
+    
+    const recentStatsPromise = supabase.from('expenses')
+        .select('cost, type, date')
+        .eq('project_id', activeProjectId)
+        .gte('date', weekStr);
+
+    const [expensesRes, summaryRes, recentStatsRes] = await Promise.all([query, summaryPromise, recentStatsPromise]);
 
     if (currentRequestId !== activeDataRequest) return;
 
@@ -898,10 +919,9 @@ const applyFilters = async (animate = false) => {
     }
 
     renderExpenses(allExpensesForProject, animate);
-    renderSummaries(summaryRes.data, animate);
+    renderSummaries(summaryRes.data, recentStatsRes.data, animate);
 };
 
-// Debounce filter inputs
 let filterTimeout;
 const debouncedApplyFilters = (animate = false) => {
     clearTimeout(filterTimeout);
@@ -1089,7 +1109,7 @@ async function listenForExpenses(projectId) {
     if (!projectId) {
         allExpensesForProject = [];
         renderExpenses([], false);
-        renderSummaries(null, false);
+        renderSummaries(null, null, false);
         return;
     }
     
@@ -1124,7 +1144,12 @@ fabAddExpense?.addEventListener('click', () => {
     pushModalState();
     const now = new Date();
     document.getElementById('date').value = formatDate(now);
-    document.getElementById('time').value = now.toTimeString().slice(0, 5);
+    
+    const timeInput = document.getElementById('time');
+    timeInput.type = 'time'; // Reset to default time type for setting value
+    timeInput.value = now.toTimeString().slice(0, 5);
+    timeInput.dataset.rawTime = timeInput.value;
+
     addExpenseSheet.classList.remove('hidden'); 
 });
 
@@ -1139,7 +1164,9 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
     const date = document.getElementById('date').value;
-    const time = document.getElementById('time').value;
+    
+    const timeInput = document.getElementById('time');
+    const time = timeInput.dataset.rawTime || timeInput.value;
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date && time) {
@@ -1169,14 +1196,6 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     } else { throw new Error("Invalid Payload"); }
 });
 
-const formatDisplayTime = (timeStr) => {
-    if(!timeStr) return '';
-    const [h, m] = timeStr.split(':');
-    const d = new Date();
-    d.setHours(h, m);
-    return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
-};
-
 function renderExpenses(expenses, animate = false) {
     if (!expenseList) return;
     if (expenses.length === 0) {
@@ -1187,7 +1206,8 @@ function renderExpenses(expenses, animate = false) {
     expenseList.innerHTML = expenses.map((expense, index) => {
         const isIncome = expense.type === 'income';
         const costSign = '';
-        const costColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
+        const parentCostColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
+        const splitCostColor = isIncome ? 'text-emerald-600' : 'text-rose-600';
         const iconBgColor = isIncome ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500';
         const iconSvg = isIncome 
             ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
@@ -1195,6 +1215,35 @@ function renderExpenses(expenses, animate = false) {
         
         const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms;"` : '';
         const animationClass = animate ? `animate-fade-in` : '';
+
+        // --- Clean Split Extraction & Inline Formatting ---
+        const splitRegex = /([a-zA-Z0-9_]+)#(\d+(?:\.\d+)?)/g;
+        let cleanInfo = expense.info || '';
+        let match;
+        const matches = [];
+
+        if (expense.info) {
+            while ((match = splitRegex.exec(expense.info)) !== null) {
+                matches.push({ name: match[1], amount: parseFloat(match[2]) });
+            }
+            
+            if (matches.length > 0) {
+                // Strip out the raw tags
+                cleanInfo = cleanInfo.replace(/[a-zA-Z0-9_]+#\d+(?:\.\d+)?/g, '');
+                // Clean up orphaned spaces and commas
+                cleanInfo = cleanInfo.replace(/,\s*(?=[, ]|$)/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                const splitsText = matches.map(m => `<span class="${splitCostColor} font-bold">${m.name} ₹${m.amount}</span>`).join(', ');
+                
+                if (cleanInfo) {
+                    cleanInfo = `<span class="font-bold text-slate-700">${escapeHTML(cleanInfo)}</span> <span class="text-slate-400 mx-1">•</span> ${splitsText}`;
+                } else {
+                    cleanInfo = splitsText;
+                }
+            } else {
+                cleanInfo = `<span class="font-medium text-slate-500">${escapeHTML(cleanInfo)}</span>`;
+            }
+        }
 
         return `
         <div class="relative overflow-hidden rounded-2xl mb-3 bg-transparent swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
@@ -1206,21 +1255,23 @@ function renderExpenses(expenses, animate = false) {
                 <span class="text-rose-600 font-bold tracking-wider text-sm flex items-center gap-1.5">Delete <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></span>
             </div>
 
-            <div class="relative bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100 group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
-                <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
-                        ${iconSvg}
+            <div class="relative bg-white p-4 rounded-2xl shadow-sm flex flex-col border border-slate-100 group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
+                <div class="flex items-center justify-between w-full">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
+                            ${iconSvg}
+                        </div>
+                        <div class="overflow-hidden flex-1 pointer-events-none">
+                            <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
+                            <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
+                                ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
+                            </p>
+                            ${expense.info ? `<p class="text-xs mt-1 break-words whitespace-normal leading-relaxed">${cleanInfo}</p>` : ''}
+                        </div>
                     </div>
-                    <div class="overflow-hidden flex-1 pointer-events-none">
-                        <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
-                        <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
-                            ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
-                        </p>
-                        ${expense.info ? `<p class="text-xs font-medium text-slate-400 mt-1 truncate max-w-[140px]">${escapeHTML(expense.info)}</p>` : ''}
+                    <div class="text-right shrink-0 ml-3 pointer-events-none">
+                        <p class="font-bold ${parentCostColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                     </div>
-                </div>
-                <div class="text-right shrink-0 ml-3 pointer-events-none">
-                    <p class="font-bold ${costColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                 </div>
             </div>
         </div>
@@ -1228,11 +1279,7 @@ function renderExpenses(expenses, animate = false) {
 
     // Setup Swipe Listeners with Directionality check
     document.querySelectorAll('.swipe-front').forEach(el => {
-        let startX = 0;
-        let startY = 0;
-        let currentX = 0;
-        let isSwiping = false;
-        let isScrolling = false;
+        let startX = 0, startY = 0, currentX = 0, isSwiping = false, isScrolling = false;
 
         el.addEventListener('touchstart', e => {
             startX = e.touches[0].clientX;
@@ -1248,7 +1295,6 @@ function renderExpenses(expenses, animate = false) {
             const deltaX = e.touches[0].clientX - startX;
             const deltaY = e.touches[0].clientY - startY;
 
-            // Stop horizontal slide if user intents to scroll vertically
             if (!isScrolling && Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
                 isScrolling = true;
                 isSwiping = false; 
@@ -1259,7 +1305,6 @@ function renderExpenses(expenses, animate = false) {
             if (isScrolling) return;
 
             currentX = deltaX;
-            // Dampen elasticity for limits smoothly
             if (currentX > 75) currentX = 75 + (currentX - 75) * 0.25; 
             if (currentX < -75) currentX = -75 + (currentX + 75) * 0.25;
             
@@ -1277,21 +1322,18 @@ function renderExpenses(expenses, animate = false) {
             const threshold = 65;
 
             if (currentX > threshold) {
-                // Edit swipe completed
                 el.style.transform = `translateX(100px)`;
                 setTimeout(() => {
                     el.style.transform = `translateX(0px)`;
                     handleEdit({ currentTarget: { dataset: { id: expenseId } } });
                 }, 150);
             } else if (currentX < -threshold) {
-                // Delete swipe completed
                 el.style.transform = `translateX(-100px)`;
                 setTimeout(() => {
                     el.style.transform = `translateX(0px)`;
                     handleDelete({ currentTarget: { dataset: { id: expenseId } } });
                 }, 150);
             } else {
-                // Snap Back
                 el.style.transform = `translateX(0px)`;
             }
             currentX = 0;
@@ -1340,7 +1382,21 @@ function handleEdit(event) {
     document.getElementById('edit-material-name').value = expense.material;
     document.getElementById('edit-cost').value = expense.cost;
     document.getElementById('edit-date').value = expense.date;
-    document.getElementById('edit-time').value = expense.time ? expense.time.slice(0, 5) : '';
+    
+    const editTimeInput = document.getElementById('edit-time');
+    if (expense.time) {
+        editTimeInput.type = 'time'; // Revert back to time to set correctly
+        editTimeInput.value = expense.time.slice(0, 5);
+        editTimeInput.dataset.rawTime = editTimeInput.value;
+        if (document.activeElement !== editTimeInput) {
+            editTimeInput.type = 'text';
+            editTimeInput.value = formatDisplayTime(editTimeInput.dataset.rawTime);
+        }
+    } else {
+        editTimeInput.value = '';
+        editTimeInput.dataset.rawTime = '';
+    }
+
     const infoInput = document.getElementById('edit-additional-info');
     if(infoInput) infoInput.value = expense.info || '';
     
@@ -1352,12 +1408,14 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
     if (!navigator.onLine) { showToast("Offline: Cannot update.", "error"); throw new Error("Offline"); }
     
     const id = document.getElementById('edit-expense-id').value;
+    const editTimeInput = document.getElementById('edit-time');
+    
     const updatedData = {
         type: document.querySelector('input[name="edit-entry-type"]:checked').value,
         material: document.getElementById('edit-material-name').value.trim(),
         cost: parseFloat(document.getElementById('edit-cost').value),
         date: document.getElementById('edit-date').value,
-        time: document.getElementById('edit-time').value,
+        time: editTimeInput.dataset.rawTime || editTimeInput.value,
         info: document.getElementById('edit-additional-info').value.trim()
     };
     
@@ -1445,7 +1503,6 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
 const closeAddExpenseModal = () => { 
     addExpenseSheet?.classList.add('hidden'); 
     
-    // Reset toggle fields UI state
     addOptionalFields?.classList.add('hidden');
     if (toggleAddOptional) toggleAddOptional.innerHTML = `<span>Show more options (Date, Time, Info)</span><svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
     
@@ -1506,7 +1563,7 @@ const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
 
-function renderSummaries(data, animate = false) {
+function renderSummaries(data, recentStats, animate = false) {
     if (!finalExpensesEl) return;
     
     if (!data) data = { net_balance: 0, total_income: 0, total_expense: 0, material_totals: [] };
@@ -1526,11 +1583,46 @@ function renderSummaries(data, animate = false) {
         animateNumber(cardExpenseCopy, currentExp, Math.abs(data.total_expense || 0));
     }
 
+    // Process Today/Weekly mini-summary calculation
+    const twContainer = document.getElementById('summary-today-weekly');
+    if (twContainer) {
+        let label = "Today's";
+        let tInc = 0, tExp = 0;
+        const todayStr = formatDate(new Date());
+        
+        if (recentStats && recentStats.length > 0) {
+            const todayStats = recentStats.filter(e => e.date === todayStr);
+            if (todayStats.length > 0) {
+                todayStats.forEach(e => { if(e.type === 'income') tInc += e.cost; else tExp += e.cost; });
+            } else {
+                label = "Weekly";
+                recentStats.forEach(e => { if(e.type === 'income') tInc += e.cost; else tExp += e.cost; });
+            }
+            
+            if (tInc > 0 || tExp > 0) {
+                let extraHtml = `<span class="text-slate-400 font-bold">${label}:</span> `;
+                if (tExp > 0) extraHtml += `<span class="text-rose-500 font-bold ml-1.5">₹${tExp.toLocaleString('en-IN')}</span>`;
+                if (tInc > 0) extraHtml += `<span class="text-emerald-500 font-bold ml-1.5">₹${tInc.toLocaleString('en-IN')}</span>`;
+                twContainer.innerHTML = `<div class="text-xs bg-slate-100/70 px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center">${extraHtml}</div>`;
+            } else {
+                twContainer.innerHTML = '';
+            }
+        } else {
+            twContainer.innerHTML = '';
+        }
+    }
+
     const matTotals = data.material_totals || [];
     if (matTotals.length === 0) {
         if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
         return;
     }
+
+    // Sort: Standard items first, then Splits. Sub-sorted by Amount Descending.
+    matTotals.sort((a, b) => {
+        if (a.is_split === b.is_split) return Math.abs(b.net_amount) - Math.abs(a.net_amount);
+        return a.is_split ? 1 : -1;
+    });
 
     if (materialSummaryEl) {
         materialSummaryEl.innerHTML = matTotals.map((item, index) => {
@@ -1541,7 +1633,16 @@ function renderSummaries(data, animate = false) {
             const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms"` : '';
             const animationClass = animate ? `animate-fade-in` : '';
 
-            return `<div class="flex justify-between items-center py-1 ${animationClass}" ${animationStyle}><span class="font-semibold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(displayName)}</span><span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span></div>`;
+            const splitIcon = item.is_split 
+                ? `<svg class="w-3.5 h-3.5 mr-1.5 inline-block shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>` 
+                : '';
+
+            return `<div class="flex justify-between items-center py-1.5 ${animationClass}" ${animationStyle}>
+                        <span class="font-semibold text-slate-700 flex items-center leading-tight">
+                            ${splitIcon}${escapeHTML(displayName)}
+                        </span>
+                        <span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                    </div>`;
         }).join('');
     }
 }
@@ -1707,6 +1808,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.5.0: Password Reset Flow Integrated";
+const APP_VERSION = "2.7.0: Splits and Summary UI Enhancements";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
