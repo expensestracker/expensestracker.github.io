@@ -4,13 +4,13 @@ const supabaseUrl = 'https://qbdzwwqkcjnfcqlgnknc.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiZHp3d3FrY2puZmNxbGdua25jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0MzgyNTEsImV4cCI6MjEwMzAxNDI1MX0.GgeDNJCZwQdbfe9pKsDiV8Ld6rgJm_WkccI7iGbB4mg';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- Global State ---
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif';
+
 let currentUser = null, activeProjectId = null, projects = [], projectsUnsubscribe = null, expensesUnsubscribe = null, allExpensesForProject = [];
 let showAllExpenses = false; 
 let activeDataRequest = 0;
 let isUserAdmin = false;
 
-// --- DOM Elements ---
 const views = { 
     splash: document.getElementById('splash-view'), 
     auth: document.getElementById('auth-view'), 
@@ -54,7 +54,6 @@ const closeAddProjectBtn = document.getElementById('close-add-project-btn');
 const toggleAddOptional = document.getElementById('toggle-add-optional');
 const addOptionalFields = document.getElementById('add-optional-fields');
 
-// Password Reset Modals
 const resetRequestModal = document.getElementById('reset-request-modal');
 const closeResetRequestBtn = document.getElementById('close-reset-request-btn');
 const resetRequestForm = document.getElementById('reset-request-form');
@@ -68,7 +67,6 @@ addProjectFormModal?.addEventListener('submit', e => e.preventDefault());
 
 const escapeHTML = (str) => { const div = document.createElement('div'); div.appendChild(document.createTextNode(str || '')); return div.innerHTML; };
 
-// --- Back Button Modal Management ---
 function pushModalState() { history.pushState({ modalOpen: true }, ''); }
 
 window.addEventListener('popstate', () => {
@@ -98,33 +96,67 @@ const formatDisplayTime = (timeStr) => {
     return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true });
 };
 
-// --- 12-Hour Display Formatting for Time Inputs ---
-const apply12HourDisplay = (inputId) => {
+const setDateValue = (inputId, rawDateStr) => {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    el.dataset.rawDate = rawDateStr;
+    el.type = 'text';
+    if (rawDateStr) {
+        const [y, m, d] = rawDateStr.split('-');
+        el.value = `${d}/${m}/${y}`;
+    } else {
+        el.value = '';
+    }
+};
+
+const setTimeValue = (inputId, rawTimeStr) => {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    el.dataset.rawTime = rawTimeStr;
+    el.type = 'text';
+    if (rawTimeStr) {
+        el.value = formatDisplayTime(rawTimeStr);
+    } else {
+        el.value = '';
+    }
+};
+
+const applyDateDisplay = (inputId) => {
     const input = document.getElementById(inputId);
     if (!input) return;
-
     input.addEventListener('blur', (e) => {
-        if (e.target.value && e.target.type === 'time') {
-            const rawTime = e.target.value;
-            e.target.dataset.rawTime = rawTime; 
-            e.target.type = 'text';
-            e.target.value = formatDisplayTime(rawTime);
-        }
+        if (e.target.type === 'date') setDateValue(inputId, e.target.value);
     });
-
     input.addEventListener('focus', (e) => {
         if (e.target.type === 'text') {
-            e.target.type = 'time';
-            e.target.value = e.target.dataset.rawTime || '';
+            e.target.type = 'date';
+            e.target.value = e.target.dataset.rawDate || '';
+            e.target.showPicker && e.target.showPicker();
         }
     });
 };
 
-apply12HourDisplay('time');
-apply12HourDisplay('edit-time');
+const applyTimeDisplay = (inputId) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.addEventListener('blur', (e) => {
+        if (e.target.type === 'time') setTimeValue(inputId, e.target.value);
+    });
+    input.addEventListener('focus', (e) => {
+        if (e.target.type === 'text') {
+            e.target.type = 'time';
+            e.target.value = e.target.dataset.rawTime || '';
+            e.target.showPicker && e.target.showPicker();
+        }
+    });
+};
+
+applyDateDisplay('date');
+applyDateDisplay('edit-date');
+applyTimeDisplay('time');
+applyTimeDisplay('edit-time');
 
 
-// --- Animation Helper ---
 const activeAnimations = new Map();
 function animateNumber(element, start, end, duration = 800) {
     if (!element) return;
@@ -152,17 +184,16 @@ function animateNumber(element, start, end, duration = 800) {
     activeAnimations.set(element, window.requestAnimationFrame(step));
 }
 
-// --- Custom Toast Notification ---
 function showToast(message, type = 'error') {
   const toastContainer = document.getElementById('toast-container');
   if (!toastContainer) return;
 
   const toast = document.createElement('div');
   let icon = type === 'error' ? 
-      `<svg class="w-5 h-5 text-red-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : 
-      `<svg class="w-5 h-5 text-green-400 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+      `<svg class="w-5 h-5 text-ios-red mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : 
+      `<svg class="w-5 h-5 text-ios-green mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
-  toast.className = `bg-slate-800 text-white px-5 py-3 rounded-full shadow-2xl flex items-center text-sm font-bold tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-slate-700/50`;
+  toast.className = `bg-white text-ios-label px-5 py-3.5 rounded-full shadow-lg flex items-center text-[15px] font-semibold tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-ios-separator/20`;
   toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
 
   toastContainer.appendChild(toast);
@@ -194,7 +225,6 @@ function setAuthButtonLoading(isLoading) {
   }
 }
 
-// --- Universal Swipe Logic Hook ---
 function initSwipeButton(containerId, onConfirmAsync) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -214,7 +244,7 @@ function initSwipeButton(containerId, onConfirmAsync) {
         spinner.classList.add('opacity-0');
         text.style.opacity = '1';
         thumb.style.transform = `translateX(0px)`;
-        track.style.width = `3.25rem`;
+        track.style.width = `3.5rem`;
     };
 
     const onDragStart = (e) => {
@@ -233,7 +263,7 @@ function initSwipeButton(containerId, onConfirmAsync) {
         currentX = Math.max(0, Math.min(clientX - startX, maxDrag));
         
         thumb.style.transform = `translateX(${currentX}px)`;
-        track.style.width = `calc(3.25rem + ${currentX}px)`;
+        track.style.width = `calc(3.5rem + ${currentX}px)`;
     };
 
     const onDragEnd = async () => {
@@ -261,7 +291,7 @@ function initSwipeButton(containerId, onConfirmAsync) {
             }
         } else {
             thumb.style.transform = `translateX(0px)`;
-            track.style.width = `3.25rem`;
+            track.style.width = `3.5rem`;
             text.style.opacity = '1';
         }
     };
@@ -283,34 +313,33 @@ function showConfirm(title, onConfirmAsync = null) {
     const targetParent = appContainer || document.body;
       
     const overlay = document.createElement('div');
-    overlay.className = 'absolute inset-0 bg-slate-1000/100 backdrop-blur-sm z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
+    overlay.className = 'absolute inset-0 bg-transparent backdrop-blur-md z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-white p-6 pb-6 border-t border-red-300 rounded-t-3xl shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-[#F2F2F7] pb-8 rounded-t-[32px] shadow-2xl w-full text-center transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
-    <div class="flex justify-between items-start">
-        <h3 class="text-xl font-bold text-slate-800 pr-4 leading-snug">${title}</h3>
-        <button id="confirm-close-btn" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 hover:bg-slate-200 transition-colors focus:outline-none">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-    </div>
-    <div class="relative w-full h-[52px] bg-red-50 rounded-xl flex items-center overflow-hidden select-none border border-red-100 touch-none mt-2">
-        <div class="absolute inset-0 flex items-center justify-center font-bold tracking-wide pointer-events-none z-0">
-            <span id="swipe-text" class="swipe-text shimmer-text shimmer-red transition-opacity duration-300">Swipe to delete</span>
+    <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-4"></div>
+    <div class="px-6 flex flex-col items-center">
+        <h3 class="text-[20px] font-semibold text-ios-label mb-6 leading-snug max-w-[80%]">${title}</h3>
+        <div class="w-full relative h-[56px] bg-ios-grayLight rounded-full flex items-center overflow-hidden select-none touch-none shadow-inner">
+            <div class="absolute inset-0 flex items-center justify-center text-[17px] font-semibold pointer-events-none z-0">
+                <span id="swipe-text" class="swipe-text text-ios-gray transition-opacity duration-300">Slide to delete</span>
+            </div>
+            <div id="swipe-track" class="absolute left-0 top-0 bottom-0 bg-ios-red rounded-full z-10 pointer-events-none flex items-center justify-center overflow-hidden transition-all" style="width: 3.5rem;">
+                <svg id="swipe-spinner" class="w-5 h-5 animate-spin opacity-0 transition-opacity text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+            <div id="swipe-thumb" class="absolute left-1 w-[48px] h-[48px] bg-white rounded-full shadow cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-ios-red transition-transform">
+                <svg class="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 5l7 7-7 7"></path></svg>
+            </div>
         </div>
-        <div id="swipe-track" class="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-transparent to-red-500 rounded-xl z-10 pointer-events-none flex items-center justify-center overflow-hidden" style="width: 3.25rem;">
-            <svg id="swipe-spinner" class="w-5 h-5 animate-spin opacity-0 transition-opacity text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        </div>
-        <div id="swipe-thumb" class="absolute left-1 w-11 h-[44px] bg-white rounded-lg shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center z-20 text-red-500 hover:scale-[1.02] transition-transform">
-            <svg class="w-5 h-5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-        </div>
+        <button id="confirm-cancel-btn" class="w-full mt-4 bg-white text-ios-blue text-[17px] font-semibold py-3.5 rounded-[14px] active:bg-ios-bg transition-colors">Cancel</button>
     </div>`;
 
     overlay.appendChild(modal);
     targetParent.appendChild(overlay);
 
-    const closeBtn = modal.querySelector('#confirm-close-btn');
+    const cancelBtn = modal.querySelector('#confirm-cancel-btn');
     const swipeThumb = modal.querySelector('#swipe-thumb');
     const swipeTrack = modal.querySelector('#swipe-track');
     const swipeText = modal.querySelector('#swipe-text');
@@ -343,7 +372,7 @@ function showConfirm(title, onConfirmAsync = null) {
       }, 300); 
     };
 
-    closeBtn.addEventListener('click', () => closeAndResolve(false));
+    cancelBtn.addEventListener('click', () => closeAndResolve(false));
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) closeAndResolve(false);
     });
@@ -364,7 +393,7 @@ function showConfirm(title, onConfirmAsync = null) {
         currentX = Math.max(0, Math.min(clientX - startX, maxDrag));
         
         swipeThumb.style.transform = `translateX(${currentX}px)`;
-        swipeTrack.style.width = `calc(3.25rem + ${currentX}px)`;
+        swipeTrack.style.width = `calc(3.5rem + ${currentX}px)`;
     };
 
     const onDragEnd = async () => {
@@ -393,14 +422,14 @@ function showConfirm(title, onConfirmAsync = null) {
                     swipeSpinner.classList.add('opacity-0');
                     swipeText.style.opacity = '1';
                     swipeThumb.style.transform = `translateX(0px)`;
-                    swipeTrack.style.width = `3.25rem`;
+                    swipeTrack.style.width = `3.5rem`;
                 }
             } else {
                 closeAndResolve(true);
             }
         } else {
             swipeThumb.style.transform = `translateX(0px)`;
-            swipeTrack.style.width = `3.25rem`;
+            swipeTrack.style.width = `3.5rem`;
             swipeText.style.opacity = '1';
         }
     };
@@ -520,22 +549,37 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
 document.getElementById('close-notification')?.addEventListener('click', (e) => e.currentTarget.parentElement.classList.add('hidden'));
 
+emailForm?.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
 
-function setInputStatus(status) {
-  if (!passwordInput) return;
-  passwordInput.classList.remove('border-red-500', 'ring-1', 'ring-red-500', 'border-green-500', 'ring-green-500', 'focus:ring-indigo-600', 'border-gray-300');
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+  if (!password) { showToast('Please enter a password.', 'error'); return; }
 
-  if (status === 'error') {
-    passwordInput.classList.add('border-red-500', 'ring-1', 'ring-red-500');
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-  } else if (status === 'success') {
-    passwordInput.classList.add('border-green-500', 'ring-1', 'ring-green-500');
+  setAuthButtonLoading(true);
+
+  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (!loginError) {
+    showToast("Login successful!", "success");
+    setAuthButtonLoading(false);
   } else {
-    passwordInput.classList.add('border-gray-300', 'focus:ring-indigo-600');
+    if (loginError.message.includes("Invalid login")) {
+        const { error: signupError } = await supabase.auth.signUp({ email, password });
+        if (!signupError) {
+            showToast("Account created successfully!", "success");
+            setAuthButtonLoading(false);
+        } else {
+            setAuthButtonLoading(false);
+            showToast(signupError.message || "Something went wrong.", 'error');
+        }
+    } else {
+        setAuthButtonLoading(false);
+        showToast(loginError.message, 'error');
+    }
   }
-}
-
-passwordInput?.addEventListener('input', () => setInputStatus('default'));
+});
 
 togglePasswordBtn?.addEventListener('click', () => {
   if (!passwordInput || !eyeIcon || !eyeSlashIcon) return;
@@ -547,42 +591,6 @@ togglePasswordBtn?.addEventListener('click', () => {
   } else {
     eyeIcon.classList.remove('hidden');
     eyeSlashIcon.classList.add('hidden');
-  }
-});
-
-emailForm?.addEventListener('submit', async e => {
-  e.preventDefault();
-  if (!navigator.onLine) { showToast("Please connect to the internet", "error"); return; }
-
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-  if (!password) { showToast('Please enter a password.', 'error'); setInputStatus('error'); return; }
-
-  setAuthButtonLoading(true);
-
-  const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
-  
-  if (!loginError) {
-    setInputStatus('success');
-    showToast("Login successful!", "success");
-    setAuthButtonLoading(false);
-  } else {
-    if (loginError.message.includes("Invalid login")) {
-        const { error: signupError } = await supabase.auth.signUp({ email, password });
-        if (!signupError) {
-            setInputStatus('success');
-            showToast("Account created successfully!", "success");
-            setAuthButtonLoading(false);
-        } else {
-            setInputStatus('error');
-            setAuthButtonLoading(false);
-            showToast(signupError.message || "Something went wrong.", 'error');
-        }
-    } else {
-        setInputStatus('error');
-        setAuthButtonLoading(false);
-        showToast(loginError.message, 'error');
-    }
   }
 });
 
@@ -691,7 +699,7 @@ const setupAutocomplete = (inputId, dropdownId, onSelectCallback) => {
         timeout = setTimeout(async () => {
             const { data } = await supabase.rpc('get_item_suggestions', { p_project_id: activeProjectId, p_search_term: term });
             if (data && data.length > 0) {
-                dropdown.innerHTML = data.map(d => `<li class="px-4 py-2 hover:bg-indigo-50 cursor-pointer text-sm font-semibold text-slate-700">${escapeHTML(d.material)}</li>`).join('');
+                dropdown.innerHTML = data.map(d => `<li class="px-4 py-3 border-b border-ios-separator/30 last:border-b-0 hover:bg-ios-bg cursor-pointer text-[17px] font-medium text-ios-label">${escapeHTML(d.material)}</li>`).join('');
                 dropdown.classList.remove('hidden');
                 
                 dropdown.querySelectorAll('li').forEach(li => {
@@ -718,26 +726,33 @@ setupAutocomplete('material-name', 'add-material-suggestions', () => document.ge
 setupAutocomplete('edit-material-name', 'edit-material-suggestions', () => document.getElementById('edit-cost').focus());
 setupAutocomplete('search-input', 'search-suggestions', () => debouncedApplyFilters(true));
 
+// iOS Switch logic for optional fields
 toggleAddOptional?.addEventListener('click', () => {
     const isHidden = addOptionalFields.classList.contains('hidden');
+    const track = document.getElementById('optional-switch-track');
+    const thumb = document.getElementById('optional-switch-thumb');
+    
     if (isHidden) {
         addOptionalFields.classList.remove('hidden');
-        toggleAddOptional.innerHTML = `<span>Hide options</span><svg class="w-4 h-4 transform rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+        track.classList.add('bg-ios-green');
+        track.classList.remove('bg-ios-grayLight');
+        thumb.classList.add('translate-x-5');
     } else {
         addOptionalFields.classList.add('hidden');
-        toggleAddOptional.innerHTML = `<span>Show more options (Date, Time, Info)</span><svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+        track.classList.remove('bg-ios-green');
+        track.classList.add('bg-ios-grayLight');
+        thumb.classList.remove('translate-x-5');
     }
 });
 
 
 // --- UI Setup & Mobile Menu ---
 function setupUIForUser(user) {
-  const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email || 'U')}&background=e0e7ff&color=4f46e5`;
+  const photo = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.full_name || user.email || 'U')}&background=007AFF&color=fff`;
 
   if (headerAvatar) headerAvatar.src = photo;
-  if (headerUserName) headerUserName.textContent = escapeHTML(user.user_metadata?.full_name || user.email.split('@')[0] || 'User');
   
-  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-12 h-12 rounded-full border-2 border-indigo-100 overflow-hidden mr-3"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-slate-800">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-sm text-slate-500 font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-14 h-14 rounded-full overflow-hidden mr-4 shadow-sm"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-[20px] text-ios-label">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-[15px] text-ios-gray font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
 
   if (navigator.onLine) {
     updateStatusUI('welcome');
@@ -746,17 +761,20 @@ function setupUIForUser(user) {
   }
   
   const dateInput = document.getElementById('date');
-  if (dateInput) dateInput.value = formatDate(new Date());
+  if (dateInput) {
+      dateInput.value = formatDate(new Date());
+      setDateValue('date', dateInput.value);
+  }
 }
 
 const openMenu = () => {
   pushModalState();
   mobileMenuBackdrop?.classList.remove('pointer-events-none', 'opacity-0');
-  mobileMenu?.classList.remove('-translate-x-full');
+  mobileMenu?.classList.remove('translate-x-full');
 };
 const closeMenu = () => {
   mobileMenuBackdrop?.classList.add('pointer-events-none', 'opacity-0');
-  mobileMenu?.classList.add('-translate-x-full');
+  mobileMenu?.classList.add('translate-x-full');
 };
 hamburgerBtn?.addEventListener('click', openMenu);
 closeMenuBtn?.addEventListener('click', closeMenu);
@@ -837,7 +855,6 @@ restoreInput?.addEventListener('change', async (e) => {
 });
 
 
-
 // --- Core Helper Functions ---
 async function reloadProjectsData() {
     if(!currentUser) return;
@@ -850,10 +867,10 @@ const applyFilters = async (animate = false) => {
     const currentRequestId = ++activeDataRequest;
 
     const searchTerm = searchInput?.value.trim() || null;
-    const startDate = startDateInput?.value || null;
-    const endDate = endDateInput?.value || null;
-    const startTime = startTimeInput?.value || null;
-    const endTime = endTimeInput?.value || null;
+    const startDate = startDateInput?.dataset?.rawDate || startDateInput?.value || null;
+    const endDate = endDateInput?.dataset?.rawDate || endDateInput?.value || null;
+    const startTime = startTimeInput?.dataset?.rawTime || startTimeInput?.value || null;
+    const endTime = endTimeInput?.dataset?.rawTime || endTimeInput?.value || null;
     const minAmount = minAmountInput?.value || null;
     const maxAmount = maxAmountInput?.value || null;
 
@@ -895,7 +912,6 @@ const applyFilters = async (animate = false) => {
         p_max_amount: maxAmount ? parseFloat(maxAmount) : null
     });
 
-    // Fetch Today/Weekly subset independently to ensure perfect totals ignoring pagination limits
     const d = new Date(); 
     d.setDate(d.getDate() - 7);
     const weekStr = formatDate(d);
@@ -938,7 +954,7 @@ async function fetchProjects(uid) {
 async function processProjects(uid, fetchedProjects) {
   projects = fetchedProjects;
   if (projects.length === 0 && navigator.onLine) {
-    const { data: newProject } = await supabase.from('projects').insert([{ name: "General Project", user_id: uid }]).select();
+    const { data: newProject } = await supabase.from('projects').insert([{ name: "General", user_id: uid }]).select();
     if(newProject && newProject.length > 0) {
         projects = newProject;
     }
@@ -1016,13 +1032,13 @@ function populateSidebarProjects(projects) {
     if (!sidebarProjectList) return;
     sidebarProjectList.innerHTML = projects.map((p, index) => {
         const buttonsHTML = `
-            <div class="flex items-center space-x-1">
-                <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 rounded-full text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
-                <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1.5 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50"><svg class="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            <div class="flex items-center space-x-2">
+                <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="edit-project-btn p-1.5 text-ios-blue active:opacity-70"><svg class="w-[18px] h-[18px] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg></button>
+                <button data-project-id="${p.id}" data-project-name="${escapeHTML(p.name)}" class="delete-project-btn p-1.5 text-ios-red active:opacity-70"><svg class="w-[18px] h-[18px] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </div>`;
         return `
-            <div class="flex justify-between items-center group rounded-xl hover:bg-slate-50 transition-colors">
-                <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2.5 px-3 text-sm font-semibold flex-grow truncate text-slate-600">${escapeHTML(p.name)}</a>
+            <div class="flex justify-between items-center group active:bg-ios-bg border-b border-ios-separator/30 last:border-b-0 px-4 transition-colors">
+                <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-3.5 text-[17px] font-medium flex-grow truncate text-ios-label">${escapeHTML(p.name)}</a>
                 ${buttonsHTML}
             </div>`;
     }).join('');
@@ -1066,11 +1082,13 @@ function populateSidebarProjects(projects) {
 function updateSidebarSelection() {
     document.querySelectorAll('.sidebar-project-link').forEach(link => {
         if(link.dataset.projectId === activeProjectId) {
-            link.classList.add('text-indigo-600', 'bg-indigo-50');
-            link.classList.remove('text-slate-600');
+            link.classList.add('text-ios-blue');
+            link.classList.remove('text-ios-label');
+            link.parentElement.classList.add('bg-ios-blue/5');
         } else {
-            link.classList.remove('text-indigo-600', 'bg-indigo-50');
-            link.classList.add('text-slate-600');
+            link.classList.remove('text-ios-blue');
+            link.classList.add('text-ios-label');
+            link.parentElement.classList.remove('bg-ios-blue/5');
         }
     });
 }
@@ -1090,14 +1108,13 @@ const filterPanel = document.getElementById('filter-panel');
 filterBtn?.addEventListener('click', () => {
     const isClosed = filterPanel.classList.contains('max-h-0');
     if (isClosed) {
-        filterPanel.classList.remove('max-h-0', 'opacity-0', 'hidden');
+        filterPanel.classList.remove('max-h-0', 'opacity-0');
         filterPanel.classList.add('max-h-[500px]', 'opacity-100');
-        filterBtn.classList.add('bg-indigo-100', 'text-indigo-600');
+        filterBtn.classList.add('text-ios-blue');
     } else {
         filterPanel.classList.add('max-h-0', 'opacity-0');
         filterPanel.classList.remove('max-h-[500px]', 'opacity-100');
-        filterBtn.classList.remove('bg-indigo-100', 'text-indigo-600');
-        setTimeout(() => filterPanel.classList.add('hidden'), 300);
+        filterBtn.classList.remove('text-ios-blue');
     }
 });
 
@@ -1130,8 +1147,8 @@ const setDateFilter = (timeframe) => {
         case 'last-month': startDate.setMonth(startDate.getMonth() - 1); break;
         case 'last-year': startDate.setFullYear(startDate.getFullYear() - 1); break;
     }
-    if (startDateInput) startDateInput.value = formatDate(startDate);
-    if (endDateInput) endDateInput.value = formatDate(endDate);
+    setDateValue('start-date-input', formatDate(startDate));
+    setDateValue('end-date-input', formatDate(endDate));
     applyFilters(false);
 };
 
@@ -1143,12 +1160,9 @@ document.getElementById('last-year')?.addEventListener('click', () => setDateFil
 fabAddExpense?.addEventListener('click', () => { 
     pushModalState();
     const now = new Date();
-    document.getElementById('date').value = formatDate(now);
     
-    const timeInput = document.getElementById('time');
-    timeInput.type = 'time'; // Reset to default time type for setting value
-    timeInput.value = now.toTimeString().slice(0, 5);
-    timeInput.dataset.rawTime = timeInput.value;
+    setDateValue('date', formatDate(now));
+    setTimeValue('time', now.toTimeString().slice(0, 5));
 
     addExpenseSheet.classList.remove('hidden'); 
 });
@@ -1163,10 +1177,13 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
     const type = document.querySelector('input[name="entry-type"]:checked').value;
     const material = document.getElementById('material-name').value.trim();
     const cost = parseFloat(document.getElementById('cost').value);
-    const date = document.getElementById('date').value;
+    
+    const dateInput = document.getElementById('date');
+    const date = dateInput.dataset.rawDate || dateInput.value;
     
     const timeInput = document.getElementById('time');
     const time = timeInput.dataset.rawTime || timeInput.value;
+    
     const info = document.getElementById('additional-info').value.trim();
 
     if (material && !isNaN(cost) && date && time) {
@@ -1199,24 +1216,23 @@ let addExpenseSwipeObj = initSwipeButton('add-expense-swipe', async () => {
 function renderExpenses(expenses, animate = false) {
     if (!expenseList) return;
     if (expenses.length === 0) {
-        expenseList.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-medium">No transactions found.</div>`;
+        expenseList.innerHTML = `<div class="text-center py-6 text-ios-gray text-[15px] font-medium">No transactions found.</div>`;
         return;
     }
     
     expenseList.innerHTML = expenses.map((expense, index) => {
         const isIncome = expense.type === 'income';
         const costSign = '';
-        const parentCostColor = isIncome ? 'text-emerald-600' : 'text-slate-700';
-        const splitCostColor = isIncome ? 'text-emerald-600' : 'text-rose-600';
-        const iconBgColor = isIncome ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500';
+        const parentCostColor = isIncome ? 'text-ios-green' : 'text-ios-label';
+        const splitCostColor = isIncome ? 'text-ios-green' : 'text-ios-red';
+        const iconBgColor = isIncome ? 'bg-ios-green/10 text-ios-green' : 'bg-ios-grayLight/50 text-ios-label';
         const iconSvg = isIncome 
-            ? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
-            : '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>';
+            ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>'
+            : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"></path></svg>';
         
         const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms;"` : '';
         const animationClass = animate ? `animate-fade-in` : '';
 
-        // --- Clean Split Extraction & Inline Formatting ---
         const splitRegex = /([a-zA-Z0-9_]+)#(\d+(?:\.\d+)?)/g;
         let cleanInfo = expense.info || '';
         let match;
@@ -1228,56 +1244,61 @@ function renderExpenses(expenses, animate = false) {
             }
             
             if (matches.length > 0) {
-                // Strip out the raw tags
                 cleanInfo = cleanInfo.replace(/[a-zA-Z0-9_]+#\d+(?:\.\d+)?/g, '');
-                // Clean up orphaned spaces and commas
                 cleanInfo = cleanInfo.replace(/,\s*(?=[, ]|$)/g, ' ').replace(/\s+/g, ' ').trim();
                 
-                const splitsText = matches.map(m => `<span class="${splitCostColor} font-bold">${m.name} ₹${m.amount}</span>`).join(', ');
+                const splitsHtml = `<div class="mt-2 flex flex-wrap gap-1.5 w-full">` + 
+                    matches.map(m => `
+                        <div class="bg-ios-grayLight/50 px-2 py-1 rounded-[8px] inline-flex items-center text-[13px] border border-ios-separator/30">
+                            <span class="text-ios-secondaryLabel font-medium mr-1.5">${escapeHTML(m.name)}</span>
+                            <span class="${splitCostColor} font-semibold">₹${m.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                        </div>
+                    `).join('') + `</div>`;
                 
                 if (cleanInfo) {
-                    cleanInfo = `<span class="font-bold text-slate-700">${escapeHTML(cleanInfo)}</span> <span class="text-slate-400 mx-1">•</span> ${splitsText}`;
+                    cleanInfo = `<p class="text-[14px] mt-1 break-words whitespace-normal leading-relaxed text-ios-secondaryLabel"><span class="font-bold">${escapeHTML(cleanInfo)}</span></p>` + splitsHtml;
                 } else {
-                    cleanInfo = splitsText;
+                    cleanInfo = splitsHtml;
                 }
             } else {
-                cleanInfo = `<span class="font-medium text-slate-500">${escapeHTML(cleanInfo)}</span>`;
+                cleanInfo = `<p class="text-[14px] mt-1 break-words whitespace-normal leading-relaxed text-ios-secondaryLabel">${escapeHTML(cleanInfo)}</p>`;
             }
         }
 
         return `
-        <div class="relative overflow-hidden rounded-2xl mb-3 bg-transparent swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
+        <div class="relative bg-white border-b border-ios-separator/30 last:border-b-0 swipe-item ${animationClass}" ${animationStyle} data-id="${expense.id}">
             
-            <div class="absolute inset-y-0 left-0 w-1/2 bg-indigo-50 flex items-center pl-6 rounded-l-2xl border border-indigo-100">
-                <span class="text-indigo-600 font-bold tracking-wider text-sm flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"></path></svg> Edit</span>
+            <div class="absolute inset-y-0 left-0 w-1/2 bg-ios-blue flex items-center pl-6 text-white text-[15px] font-semibold">
+                Edit
             </div>
-            <div class="absolute inset-y-0 right-0 w-1/2 bg-rose-50 flex items-center justify-end pr-6 rounded-r-2xl border border-rose-100">
-                <span class="text-rose-600 font-bold tracking-wider text-sm flex items-center gap-1.5">Delete <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></span>
+            <div class="absolute inset-y-0 right-0 w-1/2 bg-ios-red flex items-center justify-end pr-6 text-white text-[15px] font-semibold">
+                Delete
             </div>
 
-            <div class="relative bg-white p-4 rounded-2xl shadow-sm flex flex-col border border-slate-100 group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
-                <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <div class="w-10 h-10 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0">
+            <div class="relative bg-white px-4 py-3 flex flex-col group transition-transform duration-200 swipe-front z-10 w-full touch-pan-y">
+                <div class="flex items-start justify-between w-full">
+                    <div class="flex items-start gap-3 flex-1 min-w-0">
+                        <div class="w-[38px] h-[38px] rounded-full ${iconBgColor} flex items-center justify-center shrink-0 mt-0.5">
                             ${iconSvg}
                         </div>
-                        <div class="overflow-hidden flex-1 pointer-events-none">
-                            <h4 class="font-bold text-slate-700 break-words whitespace-normal leading-tight">${escapeHTML(expense.material)}</h4>
-                            <p class="text-sm font-bold tracking-wider text-slate-500 mt-0.5">
-                                ${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })} &bull; ${formatDisplayTime(expense.time)}
-                            </p>
-                            ${expense.info ? `<p class="text-xs mt-1 break-words whitespace-normal leading-relaxed">${cleanInfo}</p>` : ''}
+                        <div class="overflow-hidden flex-1 pointer-events-none pb-1">
+                            <h4 class="font-semibold text-[17px] text-ios-label leading-tight truncate">${escapeHTML(expense.material)}</h4>
+                            <div class="flex items-center text-[13px] text-ios-gray mt-0.5 space-x-1">
+                                <span>${new Date(expense.date).toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span>&bull;</span>
+                                <span>${formatDisplayTime(expense.time)}</span>
+                            </div>
+                            ${expense.info ? cleanInfo : ''}
                         </div>
                     </div>
-                    <div class="text-right shrink-0 ml-3 pointer-events-none">
-                        <p class="font-bold ${parentCostColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
+                    <div class="text-right shrink-0 ml-3 pointer-events-none mt-0.5">
+                        <p class="font-semibold text-[17px] ${parentCostColor}">${costSign}₹${Math.abs(expense.cost).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</p>
                     </div>
                 </div>
             </div>
         </div>
     `}).join('');
 
-    // Setup Swipe Listeners with Directionality check
     document.querySelectorAll('.swipe-front').forEach(el => {
         let startX = 0, startY = 0, currentX = 0, isSwiping = false, isScrolling = false;
 
@@ -1352,9 +1373,8 @@ async function handleDelete(event) {
     const expense = allExpensesForProject.find(e => e.id === id);
     if(!expense) return;
     
-    const sign = ''; 
     const costStr = `₹${Math.abs(expense.cost).toLocaleString('en-IN')}`;
-    const modalTitle = `Delete ${escapeHTML(expense.material)} (${sign}${costStr})?`;
+    const modalTitle = `Delete "${escapeHTML(expense.material)}" (${costStr})?`;
 
     await showConfirm(modalTitle, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
@@ -1381,20 +1401,17 @@ function handleEdit(event) {
     document.querySelector(`input[name="edit-entry-type"][value="${expense.type || 'expense'}"]`).checked = true;
     document.getElementById('edit-material-name').value = expense.material;
     document.getElementById('edit-cost').value = expense.cost;
-    document.getElementById('edit-date').value = expense.date;
     
-    const editTimeInput = document.getElementById('edit-time');
-    if (expense.time) {
-        editTimeInput.type = 'time'; // Revert back to time to set correctly
-        editTimeInput.value = expense.time.slice(0, 5);
-        editTimeInput.dataset.rawTime = editTimeInput.value;
-        if (document.activeElement !== editTimeInput) {
-            editTimeInput.type = 'text';
-            editTimeInput.value = formatDisplayTime(editTimeInput.dataset.rawTime);
-        }
+    if (expense.date) {
+        setDateValue('edit-date', expense.date);
     } else {
-        editTimeInput.value = '';
-        editTimeInput.dataset.rawTime = '';
+        setDateValue('edit-date', '');
+    }
+    
+    if (expense.time) {
+        setTimeValue('edit-time', expense.time.slice(0, 5));
+    } else {
+        setTimeValue('edit-time', '');
     }
 
     const infoInput = document.getElementById('edit-additional-info');
@@ -1409,12 +1426,13 @@ let editExpenseSwipeObj = initSwipeButton('edit-expense-swipe', async () => {
     
     const id = document.getElementById('edit-expense-id').value;
     const editTimeInput = document.getElementById('edit-time');
+    const editDateInput = document.getElementById('edit-date');
     
     const updatedData = {
         type: document.querySelector('input[name="edit-entry-type"]:checked').value,
         material: document.getElementById('edit-material-name').value.trim(),
         cost: parseFloat(document.getElementById('edit-cost').value),
-        date: document.getElementById('edit-date').value,
+        date: editDateInput.dataset.rawDate || editDateInput.value,
         time: editTimeInput.dataset.rawTime || editTimeInput.value,
         info: document.getElementById('edit-additional-info').value.trim()
     };
@@ -1503,8 +1521,17 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
 const closeAddExpenseModal = () => { 
     addExpenseSheet?.classList.add('hidden'); 
     
+    // Reset iOS Switch UI to hidden state
     addOptionalFields?.classList.add('hidden');
-    if (toggleAddOptional) toggleAddOptional.innerHTML = `<span>Show more options (Date, Time, Info)</span><svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    const track = document.getElementById('optional-switch-track');
+    const thumb = document.getElementById('optional-switch-thumb');
+    if(track) {
+        track.classList.remove('bg-ios-green');
+        track.classList.add('bg-ios-grayLight');
+    }
+    if(thumb) {
+        thumb.classList.remove('translate-x-5');
+    }
     
     if(addExpenseSwipeObj) addExpenseSwipeObj.reset(); 
 };
@@ -1539,11 +1566,11 @@ const infoContent = {
     },
     'privacy-link': {
         title: 'Privacy Policy',
-        content: `<h4 class="font-bold text-slate-800 mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-slate-800 mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-slate-800 mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
+        content: `<h4 class="font-bold text-ios-label mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-ios-label mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-ios-label mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
     },
     'contact-link': {
         title: 'Contact Us',
-        content: `<p class="mb-4">We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback.</p><div class="bg-slate-50 p-4 rounded-xl border border-slate-100"><h4 class="font-bold text-slate-800 mb-2">Email Support</h4><a href="mailto:support@fintrack.app" class="text-indigo-600 font-semibold hover:underline">support@expensetracker.app</a><p class="text-[10px] uppercase text-slate-400 mt-2">We aim to respond within 24-48 hours.</p></div>`
+        content: `<p class="mb-4">We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback.</p><div class="bg-white p-4 rounded-[14px] shadow-sm"><h4 class="font-bold text-ios-label mb-2">Email Support</h4><a href="mailto:support@fintrack.app" class="text-ios-blue font-semibold hover:opacity-80">support@expensetracker.app</a><p class="text-[12px] uppercase text-ios-gray mt-2 font-medium">We aim to respond within 24-48 hours.</p></div>`
     }
 };
 
@@ -1562,6 +1589,23 @@ document.querySelectorAll('#about-link, #privacy-link, #contact-link').forEach(l
 const closeInfoModal = () => { infoModal?.classList.add('hidden'); };
 closeInfoModalBtn?.addEventListener('click', closeInfoModal);
 infoModal?.addEventListener('click', e => { if (e.target === infoModal) closeInfoModal(); });
+
+const summaryToggleBtn = document.getElementById('summary-toggle-btn');
+const summaryContentWrapper = document.getElementById('summary-content-wrapper');
+const summaryChevron = document.getElementById('summary-chevron');
+
+summaryToggleBtn?.addEventListener('click', () => {
+    const isClosed = summaryContentWrapper.classList.contains('max-h-0');
+    if (isClosed) {
+        summaryContentWrapper.classList.remove('max-h-0', 'opacity-0');
+        summaryContentWrapper.classList.add('max-h-[2000px]', 'opacity-100');
+        summaryChevron.classList.add('rotate-180');
+    } else {
+        summaryContentWrapper.classList.add('max-h-0', 'opacity-0');
+        summaryContentWrapper.classList.remove('max-h-[2000px]', 'opacity-100');
+        summaryChevron.classList.remove('rotate-180');
+    }
+});
 
 function renderSummaries(data, recentStats, animate = false) {
     if (!finalExpensesEl) return;
@@ -1583,10 +1627,9 @@ function renderSummaries(data, recentStats, animate = false) {
         animateNumber(cardExpenseCopy, currentExp, Math.abs(data.total_expense || 0));
     }
 
-    // Process Today/Weekly mini-summary calculation
     const twContainer = document.getElementById('summary-today-weekly');
     if (twContainer) {
-        let label = "Today's";
+        let label = "Today";
         let tInc = 0, tExp = 0;
         const todayStr = formatDate(new Date());
         
@@ -1595,15 +1638,15 @@ function renderSummaries(data, recentStats, animate = false) {
             if (todayStats.length > 0) {
                 todayStats.forEach(e => { if(e.type === 'income') tInc += e.cost; else tExp += e.cost; });
             } else {
-                label = "Weekly";
+                label = "Week";
                 recentStats.forEach(e => { if(e.type === 'income') tInc += e.cost; else tExp += e.cost; });
             }
             
             if (tInc > 0 || tExp > 0) {
-                let extraHtml = `<span class="text-slate-400 font-bold">${label}:</span> `;
-                if (tExp > 0) extraHtml += `<span class="text-rose-500 font-bold ml-1.5">₹${tExp.toLocaleString('en-IN')}</span>`;
-                if (tInc > 0) extraHtml += `<span class="text-emerald-500 font-bold ml-1.5">₹${tInc.toLocaleString('en-IN')}</span>`;
-                twContainer.innerHTML = `<div class="text-xs bg-slate-100/70 px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center">${extraHtml}</div>`;
+                let extraHtml = `<span class="text-ios-gray">${label}</span>`;
+                if (tExp > 0) extraHtml += `<span class="text-ios-label font-bold ml-1.5">₹${tExp.toLocaleString('en-IN')}</span>`;
+                if (tInc > 0) extraHtml += `<span class="text-ios-green font-bold ml-1.5">₹${tInc.toLocaleString('en-IN')}</span>`;
+                twContainer.innerHTML = extraHtml;
             } else {
                 twContainer.innerHTML = '';
             }
@@ -1613,37 +1656,54 @@ function renderSummaries(data, recentStats, animate = false) {
     }
 
     const matTotals = data.material_totals || [];
+    const initialWrapper = document.getElementById('material-summary-initial');
+    const expandedWrapper = document.getElementById('material-summary-expanded');
+    
     if (matTotals.length === 0) {
-        if (materialSummaryEl) materialSummaryEl.innerHTML = `<p class="text-slate-400 py-2">No summary available yet.</p>`;
+        if (initialWrapper) initialWrapper.innerHTML = `<p class="text-ios-gray py-2">No summary available yet.</p>`;
+        if (expandedWrapper) expandedWrapper.innerHTML = '';
         return;
     }
 
-    // Sort: Standard items first, then Splits. Sub-sorted by Amount Descending.
     matTotals.sort((a, b) => {
         if (a.is_split === b.is_split) return Math.abs(b.net_amount) - Math.abs(a.net_amount);
         return a.is_split ? 1 : -1;
     });
 
-    if (materialSummaryEl) {
-        materialSummaryEl.innerHTML = matTotals.map((item, index) => {
-            const netAmount = item.net_amount;
-            const colorClass = netAmount > 0 ? 'text-red-500' : (netAmount < 0 ? 'text-green-700' : 'text-slate-900');
-            const displayName = item.material_name;
-            
-            const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms"` : '';
-            const animationClass = animate ? `animate-fade-in` : '';
+    const generateItemHTML = (item, index, animate) => {
+        const netAmount = item.net_amount;
+        const colorClass = netAmount > 0 ? 'text-ios-red' : (netAmount < 0 ? 'text-ios-green' : 'text-ios-label');
+        const displayName = item.material_name;
+        
+        const animationStyle = animate ? `style="animation-fill-mode: both; animation-delay: ${index * 30}ms"` : '';
+        const animationClass = animate ? `animate-fade-in` : '';
 
-            const splitIcon = item.is_split 
-                ? `<svg class="w-3.5 h-3.5 mr-1.5 inline-block shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>` 
-                : '';
+        const splitIcon = item.is_split 
+            ? `<svg class="w-4 h-4 mr-2 text-ios-gray inline-block shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>` 
+            : '';
 
-            return `<div class="flex justify-between items-center py-1.5 ${animationClass}" ${animationStyle}>
-                        <span class="font-semibold text-slate-700 flex items-center leading-tight">
-                            ${splitIcon}${escapeHTML(displayName)}
-                        </span>
-                        <span class="font-bold ${colorClass} ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
-                    </div>`;
-        }).join('');
+        return `<div class="flex justify-between items-center py-2.5 border-b border-ios-separator/30 last:border-b-0 ${animationClass}" ${animationStyle}>
+                    <span class="font-medium text-ios-label flex items-center leading-tight text-[17px]">
+                        ${splitIcon}${escapeHTML(displayName)}
+                    </span>
+                    <span class="font-semibold ${colorClass} text-[17px] ml-3">₹${Math.abs(netAmount).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                </div>`;
+    };
+
+    if (initialWrapper && expandedWrapper) {
+        initialWrapper.innerHTML = matTotals.slice(0, 5).map((item, index) => generateItemHTML(item, index, animate)).join('');
+        expandedWrapper.innerHTML = matTotals.slice(5).map((item, index) => generateItemHTML(item, index + 5, animate)).join('');
+        
+        const toggleBtn = document.getElementById('summary-toggle-btn');
+        const chevron = document.getElementById('summary-chevron');
+        
+        if (matTotals.length <= 5) {
+            chevron.style.display = 'none';
+            toggleBtn.classList.remove('cursor-pointer', 'active:bg-ios-bg');
+        } else {
+            chevron.style.display = 'block';
+            toggleBtn.classList.add('cursor-pointer', 'active:bg-ios-bg');
+        }
     }
 }
 
@@ -1696,8 +1756,8 @@ const renderCharts = (categoryTotals, monthlyExpenseTotals, monthlyIncomeTotals)
             datasets: [{
                 data: Object.values(categoryTotals),
                 backgroundColor: [
-                    '#4F46E5', '#10B981', '#F59E0B', '#EF4444', 
-                    '#8B5CF6', '#3B82F6', '#EC4899', '#64748B'
+                    '#007AFF', '#34C759', '#FF9500', '#FF3B30', 
+                    '#5856D6', '#5AC8FA', '#FF2D55', '#8E8E93'
                 ],
                 borderWidth: 0,
                 hoverOffset: 4
@@ -1722,13 +1782,13 @@ const renderCharts = (categoryTotals, monthlyExpenseTotals, monthlyIncomeTotals)
                 {
                     label: 'Income',
                     data: Object.values(monthlyIncomeTotals),
-                    backgroundColor: '#10B981',
+                    backgroundColor: '#34C759',
                     borderRadius: 4
                 },
                 {
                     label: 'Expenses',
                     data: Object.values(monthlyExpenseTotals),
-                    backgroundColor: '#EF4444',
+                    backgroundColor: '#FF3B30',
                     borderRadius: 4
                 }
             ]
@@ -1763,21 +1823,21 @@ function updateStatusUI(state) {
     setTimeout(() => {
         if (state === 'offline') {
             userStatusDisplay.innerHTML = `
-            <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-            <span class="text-sm font-semibold">Offline</span>
+            <span class="w-2.5 h-2.5 bg-ios-red rounded-full animate-pulse"></span>
+            <span class="text-[11px] font-semibold tracking-wider">Offline</span>
             `;
         } else if (state === 'online') {
             userStatusDisplay.innerHTML = `
-            <span class="relative flex size-3">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
-            <span class="relative inline-flex size-3 rounded-full bg-sky-500"></span>
+            <span class="relative flex size-2.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-ios-blue opacity-75"></span>
+            <span class="relative inline-flex size-2.5 rounded-full bg-ios-blue"></span>
             </span>
-            <span class="text-sm font-semibold">Back Online</span>
+            <span class="text-[11px] font-semibold tracking-wider">Back Online</span>
             `;
             statusTimeout = setTimeout(() => updateStatusUI('welcome'), 5000);
         } else if (state === 'welcome') {
             const name = currentUser?.user_metadata?.full_name || currentUser?.email.split('@')[0] || 'User';
-            userStatusDisplay.innerHTML = `<span class="text-sm text-gray-700">Welcome, <strong>${escapeHTML(name)}</strong></span>`;
+            userStatusDisplay.innerHTML = `<span class="text-[11px] font-semibold tracking-wider">Welcome, ${escapeHTML(name)}</span>`;
         }
 
         userStatusDisplay.classList.remove('opacity-0');
@@ -1808,6 +1868,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "2.7.0: Splits and Summary UI Enhancements";
+const APP_VERSION = "3.4.0: iOS Blur Polish";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
