@@ -31,8 +31,6 @@ const editModal = document.getElementById('edit-modal'), editExpenseForm = docum
 const searchInput = document.getElementById('search-input'), 
       startDateInput = document.getElementById('start-date-input'), 
       endDateInput = document.getElementById('end-date-input'),
-      startTimeInput = document.getElementById('start-time-input'),
-      endTimeInput = document.getElementById('end-time-input'),
       minAmountInput = document.getElementById('min-amount-input'),
       maxAmountInput = document.getElementById('max-amount-input');
 
@@ -193,7 +191,7 @@ function showToast(message, type = 'error') {
       `<svg class="w-5 h-5 text-ios-red mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` : 
       `<svg class="w-5 h-5 text-ios-green mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
-  toast.className = `bg-white text-ios-label px-5 py-3.5 rounded-full shadow-lg flex items-center text-[15px] font-semibold tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-ios-separator/20`;
+  toast.className = `bg-white text-ios-label px-5 py-3.5 rounded-full shadow-ios flex items-center text-[15px] font-medium tracking-wide transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto border border-ios-separator/20`;
   toast.innerHTML = `${icon}<span>${escapeHTML(message)}</span>`;
 
   toastContainer.appendChild(toast);
@@ -313,17 +311,22 @@ function showConfirm(title, onConfirmAsync = null) {
     const targetParent = appContainer || document.body;
       
     const overlay = document.createElement('div');
-    overlay.className = 'absolute inset-0 bg-transparent backdrop-blur-md z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
+    overlay.className = 'absolute inset-0 bg-black/10 backdrop-blur-md z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
-    modal.className = 'bg-[#F2F2F7] pb-8 rounded-t-[32px] shadow-2xl w-full text-center transform translate-y-full transition-transform duration-300';
+    modal.className = 'bg-[#F2F2F7] pb-8 rounded-t-[32px] shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
 
     modal.innerHTML = `
     <div class="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-4"></div>
-    <div class="px-6 flex flex-col items-center">
-        <h3 class="text-[20px] font-semibold text-ios-label mb-6 leading-snug max-w-[80%]">${title}</h3>
+    <div class="px-6 flex justify-between items-center mb-6">
+        <h3 class="text-[22px] font-semibold text-ios-label tracking-tight flex-1 pr-4 leading-tight">${title}</h3>
+        <button id="confirm-cancel-btn" class="w-8 h-8 rounded-full bg-ios-grayLight flex items-center justify-center shrink-0 text-ios-gray active:opacity-70 focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+    <div class="px-6 pb-2 flex flex-col items-center">
         <div class="w-full relative h-[56px] bg-ios-grayLight rounded-full flex items-center overflow-hidden select-none touch-none shadow-inner">
-            <div class="absolute inset-0 flex items-center justify-center text-[17px] font-semibold pointer-events-none z-0">
+            <div class="absolute inset-0 flex items-center justify-center text-[17px] font-medium pointer-events-none z-0">
                 <span id="swipe-text" class="swipe-text text-ios-gray transition-opacity duration-300">Slide to delete</span>
             </div>
             <div id="swipe-track" class="absolute left-0 top-0 bottom-0 bg-ios-red rounded-full z-10 pointer-events-none flex items-center justify-center overflow-hidden transition-all" style="width: 3.5rem;">
@@ -333,7 +336,6 @@ function showConfirm(title, onConfirmAsync = null) {
                 <svg class="w-6 h-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 5l7 7-7 7"></path></svg>
             </div>
         </div>
-        <button id="confirm-cancel-btn" class="w-full mt-4 bg-white text-ios-blue text-[17px] font-semibold py-3.5 rounded-[14px] active:bg-ios-bg transition-colors">Cancel</button>
     </div>`;
 
     overlay.appendChild(modal);
@@ -752,7 +754,7 @@ function setupUIForUser(user) {
 
   if (headerAvatar) headerAvatar.src = photo;
   
-  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-14 h-14 rounded-full overflow-hidden mr-4 shadow-sm"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-bold text-[20px] text-ios-label">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-[15px] text-ios-gray font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
+  if (userProfileMobile) userProfileMobile.innerHTML = `<div class="flex items-center"><div class="w-14 h-14 rounded-full overflow-hidden mr-4 shadow-sm"><img src="${photo}" alt="User photo" class="w-full h-full object-cover"></div><div><p class="font-semibold text-[20px] text-ios-label">${escapeHTML(user.user_metadata?.full_name || 'User')}</p><p class="text-[15px] text-ios-gray font-medium truncate">${escapeHTML(user.email)}</p></div></div>`;
 
   if (navigator.onLine) {
     updateStatusUI('welcome');
@@ -869,12 +871,10 @@ const applyFilters = async (animate = false) => {
     const searchTerm = searchInput?.value.trim() || null;
     const startDate = startDateInput?.dataset?.rawDate || startDateInput?.value || null;
     const endDate = endDateInput?.dataset?.rawDate || endDateInput?.value || null;
-    const startTime = startTimeInput?.dataset?.rawTime || startTimeInput?.value || null;
-    const endTime = endTimeInput?.dataset?.rawTime || endTimeInput?.value || null;
     const minAmount = minAmountInput?.value || null;
     const maxAmount = maxAmountInput?.value || null;
 
-    const isFiltering = searchTerm || startDate || endDate || startTime || endTime || minAmount || maxAmount;
+    const isFiltering = searchTerm || startDate || endDate || minAmount || maxAmount;
     
     let query = supabase.from('expenses').select('*', { count: 'exact' }).eq('project_id', activeProjectId);
     
@@ -892,8 +892,6 @@ const applyFilters = async (animate = false) => {
 
     if (startDate) query = query.gte('date', startDate);
     if (endDate) query = query.lte('date', endDate);
-    if (startTime) query = query.gte('time', startTime);
-    if (endTime) query = query.lte('time', endTime);
     if (minAmount) query = query.gte('cost', minAmount);
     if (maxAmount) query = query.lte('cost', maxAmount);
     
@@ -906,8 +904,8 @@ const applyFilters = async (animate = false) => {
         p_search_term: searchTerm,
         p_start_date: startDate,
         p_end_date: endDate,
-        p_start_time: startTime,
-        p_end_time: endTime,
+        p_start_time: null,
+        p_end_time: null,
         p_min_amount: minAmount ? parseFloat(minAmount) : null,
         p_max_amount: maxAmount ? parseFloat(maxAmount) : null
     });
@@ -943,7 +941,7 @@ const debouncedApplyFilters = (animate = false) => {
     clearTimeout(filterTimeout);
     filterTimeout = setTimeout(() => applyFilters(animate), 300);
 };
-[searchInput, startDateInput, endDateInput, startTimeInput, endTimeInput, minAmountInput, maxAmountInput].forEach(el => el?.addEventListener('input', () => debouncedApplyFilters(false)));
+[searchInput, startDateInput, endDateInput, minAmountInput, maxAmountInput].forEach(el => el?.addEventListener('input', () => debouncedApplyFilters(false)));
 
 
 async function fetchProjects(uid) {
@@ -1038,7 +1036,7 @@ function populateSidebarProjects(projects) {
             </div>`;
         return `
             <div class="flex justify-between items-center group active:bg-ios-bg border-b border-ios-separator/30 last:border-b-0 px-4 transition-colors">
-                <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-3.5 text-[17px] font-medium flex-grow truncate text-ios-label">${escapeHTML(p.name)}</a>
+                <a href="#" data-project-id="${p.id}" class="sidebar-project-link block py-2.5 text-[16px] font-medium flex-grow truncate text-ios-label">${escapeHTML(p.name)}</a>
                 ${buttonsHTML}
             </div>`;
     }).join('');
@@ -1256,7 +1254,7 @@ function renderExpenses(expenses, animate = false) {
                     `).join('') + `</div>`;
                 
                 if (cleanInfo) {
-                    cleanInfo = `<p class="text-[14px] mt-1 break-words whitespace-normal leading-relaxed text-ios-secondaryLabel"><span class="font-bold">${escapeHTML(cleanInfo)}</span></p>` + splitsHtml;
+                    cleanInfo = `<p class="text-[14px] mt-1 break-words whitespace-normal leading-relaxed text-ios-secondaryLabel"><span class="font-semibold">${escapeHTML(cleanInfo)}</span></p>` + splitsHtml;
                 } else {
                     cleanInfo = splitsHtml;
                 }
@@ -1374,7 +1372,7 @@ async function handleDelete(event) {
     if(!expense) return;
     
     const costStr = `₹${Math.abs(expense.cost).toLocaleString('en-IN')}`;
-    const modalTitle = `Delete "${escapeHTML(expense.material)}" (${costStr})?`;
+    const modalTitle = `Delete "${escapeHTML(expense.material)}"?`;
 
     await showConfirm(modalTitle, async () => {
         if (!navigator.onLine) { showToast("Cannot delete while offline.", "error"); throw new Error("Offline"); }
@@ -1521,7 +1519,6 @@ let editProjectSwipeObj = initSwipeButton('edit-project-swipe', async () => {
 const closeAddExpenseModal = () => { 
     addExpenseSheet?.classList.add('hidden'); 
     
-    // Reset iOS Switch UI to hidden state
     addOptionalFields?.classList.add('hidden');
     const track = document.getElementById('optional-switch-track');
     const thumb = document.getElementById('optional-switch-thumb');
@@ -1566,11 +1563,11 @@ const infoContent = {
     },
     'privacy-link': {
         title: 'Privacy Policy',
-        content: `<h4 class="font-bold text-ios-label mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-bold text-ios-label mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-bold text-ios-label mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
+        content: `<h4 class="font-semibold text-ios-label mb-1">1. Introduction</h4><p class="mb-4">We are committed to protecting your personal data when you use HisapBook.</p><h4 class="font-semibold text-ios-label mb-1">2. Data We Collect</h4><p class="mb-4">We collect basic Identity Data (email, profile) and Financial Data (expenses, incomes, budgets) to provide our service.</p><h4 class="font-semibold text-ios-label mb-1">3. Storage & Security</h4><p>Your data is authenticated and securely stored using Supabase, accessible only by you.</p>`
     },
     'contact-link': {
         title: 'Contact Us',
-        content: `<p class="mb-4">We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback.</p><div class="bg-white p-4 rounded-[14px] shadow-sm"><h4 class="font-bold text-ios-label mb-2">Email Support</h4><a href="mailto:support@fintrack.app" class="text-ios-blue font-semibold hover:opacity-80">support@expensetracker.app</a><p class="text-[12px] uppercase text-ios-gray mt-2 font-medium">We aim to respond within 24-48 hours.</p></div>`
+        content: `<p class="mb-4">We're here to help! Whether you have a question about a feature, need technical support, or want to provide feedback.</p><div class="bg-white p-4 rounded-[14px] shadow-sm"><h4 class="font-semibold text-ios-label mb-2">Email Support</h4><a href="mailto:support@fintrack.app" class="text-ios-blue font-semibold hover:opacity-80">support@expensetracker.app</a><p class="text-[12px] uppercase text-ios-gray mt-2 font-medium">We aim to respond within 24-48 hours.</p></div>`
     }
 };
 
@@ -1644,8 +1641,8 @@ function renderSummaries(data, recentStats, animate = false) {
             
             if (tInc > 0 || tExp > 0) {
                 let extraHtml = `<span class="text-ios-gray">${label}</span>`;
-                if (tExp > 0) extraHtml += `<span class="text-ios-label font-bold ml-1.5">₹${tExp.toLocaleString('en-IN')}</span>`;
-                if (tInc > 0) extraHtml += `<span class="text-ios-green font-bold ml-1.5">₹${tInc.toLocaleString('en-IN')}</span>`;
+                if (tExp > 0) extraHtml += `<span class="text-ios-label font-semibold ml-1.5">₹${tExp.toLocaleString('en-IN')}</span>`;
+                if (tInc > 0) extraHtml += `<span class="text-ios-green font-semibold ml-1.5">₹${tInc.toLocaleString('en-IN')}</span>`;
                 twContainer.innerHTML = extraHtml;
             } else {
                 twContainer.innerHTML = '';
@@ -1868,6 +1865,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "3.4.0: iOS Blur Polish";
+const APP_VERSION = "3.7.0: Fix Auth Modals & Adjust Blur";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
