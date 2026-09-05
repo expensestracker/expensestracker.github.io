@@ -311,7 +311,8 @@ function showConfirm(title, onConfirmAsync = null) {
     const targetParent = appContainer || document.body;
       
     const overlay = document.createElement('div');
-    overlay.className = 'absolute inset-0 bg-black/10 backdrop-blur-md z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
+    // Backdrop blur without dimming (bg-transparent instead of bg-black/10)
+    overlay.className = 'absolute inset-0 bg-transparent backdrop-blur-md z-[150] flex flex-col justify-end opacity-0 transition-opacity duration-300';
 
     const modal = document.createElement('div');
     modal.className = 'bg-[#F2F2F7] pb-8 rounded-t-[32px] shadow-2xl w-full text-left transform translate-y-full transition-transform duration-300';
@@ -783,7 +784,10 @@ closeMenuBtn?.addEventListener('click', closeMenu);
 mobileMenuBackdrop?.addEventListener('click', e => {
   if (e.target === mobileMenuBackdrop) closeMenu();
 });
-mobileSignOutBtn?.addEventListener('click', () => supabase.auth.signOut());
+mobileSignOutBtn?.addEventListener('click', () => {
+    closeMenu();
+    supabase.auth.signOut();
+});
 
 // --- Data Backup & Restore ---
 document.getElementById('backup-btn')?.addEventListener('click', async (e) => {
@@ -1865,6 +1869,6 @@ document.getElementById('shareFinTrackBtn')?.addEventListener('click', async () 
     }
 });
 
-const APP_VERSION = "3.7.0: Fix Auth Modals & Adjust Blur";
+const APP_VERSION = "3.7.1: Fix Modals Layout and Backdrops";
 const appVersionEl = document.getElementById("app-version");
 if (appVersionEl) appVersionEl.textContent = `Version ${APP_VERSION}`;
